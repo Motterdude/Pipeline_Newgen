@@ -33,7 +33,7 @@ from .plot_point_filter import (
     prompt_plot_point_filter_from_metas,
 )
 from .runtime_dirs import PromptRuntimeDirsFunc
-from .stages import STAGE_PIPELINE_ORDER, STAGE_REGISTRY
+from .stages import CONFIG_STAGE_ORDER, PROCESSING_STAGE_ORDER, STAGE_PIPELINE_ORDER, STAGE_REGISTRY
 
 
 RUNTIME_OUTPUT_DIRNAME = "pipeline_newgen_runtime"
@@ -143,9 +143,9 @@ def _discover_and_read_inputs(ctx: RuntimeContext) -> None:
                 ctx.labview_rows.append(summarize_labview_read(labview_read))
                 ctx.labview_frames.append(pd.DataFrame(labview_read.rows))
             elif file_meta.source_type == "MOTEC" and file_meta.path.suffix.lower() == ".csv":
-                ctx.motec_rows.append(
-                    summarize_motec_read(read_motec_csv(file_meta.path, process_root=ctx.input_dir, meta=file_meta))
-                )
+                motec_read = read_motec_csv(file_meta.path, process_root=ctx.input_dir, meta=file_meta)
+                ctx.motec_rows.append(summarize_motec_read(motec_read))
+                ctx.motec_frames.append(pd.DataFrame(motec_read.rows))
             elif file_meta.source_type == "KIBOX" and file_meta.path.suffix.lower() == ".csv":
                 kibox_read = read_kibox_csv(file_meta.path, process_root=ctx.input_dir, meta=file_meta)
                 ctx.kibox_rows.append(summarize_kibox_read(kibox_read))
@@ -284,7 +284,8 @@ def run_load_sweep(
         plot_filter_prompt_func=_plot_filter_prompt_func,
     )
 
-    for feature_key in STAGE_PIPELINE_ORDER:
+    # Phase 1: config stages — resolve bundle, runtime dirs, optional preflight.
+    for feature_key in CONFIG_STAGE_ORDER:
         stage = STAGE_REGISTRY.get(feature_key)
         if stage is None:
             continue
@@ -292,6 +293,14 @@ def run_load_sweep(
 
     _finalize_runtime_state(ctx)
     _discover_and_read_inputs(ctx)
+
+    # Phase 2: processing stages — can consume ctx.labview_frames now.
+    for feature_key in PROCESSING_STAGE_ORDER:
+        stage = STAGE_REGISTRY.get(feature_key)
+        if stage is None:
+            continue
+        stage.run(ctx)
+
     _apply_plot_filter(ctx)
     _write_summary_artifacts(ctx)
 

@@ -1,6 +1,6 @@
 # Painel de estações
 
-Estado atual: 2026-04-24.
+Estado atual: 2026-04-24 (atualizado após port de run_unitary_plots).
 
 Legenda:
 - 🟢 **Portada** — estação implementada dentro do pacote novo, sem dependência do galpão antigo.
@@ -38,16 +38,17 @@ Legenda:
 
 | Estação | feature_key | Estado | newgen | Âncora legado | Última mudança |
 |---|---|---|---|---|---|
-| Diagnóstico de tempo | `run_time_diagnostics` | 🔴 | — | `nanum_pipeline_29.py::build_time_diagnostics` + `summarize_time_diagnostics` | — |
-| Agregação por trechos e pontos | — | 🔴 | — | `nanum_pipeline_29.py::compute_trechos_stats` + `compute_ponto_stats` | — |
-| Consulta de propriedades do combustível (LHV/densidade/custo) | — | 🔴 | — | `nanum_pipeline_29.py::load_fuel_properties_lookup` | — |
-| Agregação KiBox por ponto | — | 🔴 | — | `nanum_pipeline_29.py::kibox_aggregate` | — |
-| Regra de vazão de ar (MAF vs consumo+lambda) | — | 🔴 | — | `nanum_pipeline_29.py` (fluxo airflow) | — |
-| Emissões específicas g/kWh | — | 🔴 | — | `nanum_pipeline_29.py` (fluxo emissões) | — |
-| Eficiência volumétrica (ETA_V) | — | 🔴 | — | `nanum_pipeline_29.py` (fluxo ETA_V) | — |
-| Economia vs diesel + cenários de máquinas | — | 🔴 | — | `nanum_pipeline_29.py` (fluxo economia) | — |
-| Propagação de incertezas (uA/uB/uc/U) | — | 🔴 | — | `nanum_pipeline_29.py` (fluxo incertezas) | — |
-| **Montagem da tabela final → `lv_kpis_clean.xlsx`** | `build_final_table` | 🟡 bridge | `bridges/legacy_runtime.py::BuildFinalTableBridgeStage` | `nanum_pipeline_29.py::build_final_table` | 2026-04-24 — Passo 2b |
+| Diagnóstico de tempo | `run_time_diagnostics` | 🟢 | `runtime/time_diagnostics/` + `runtime/stages/run_time_diagnostics.py` | `nanum_pipeline_29.py::build_time_diagnostics` + `summarize_time_diagnostics` | 2026-04-25 — Passo 3a (port nativo) |
+| Agregação por trechos e pontos | `compute_trechos_ponto` | 🟢 | `runtime/trechos_ponto/` + `runtime/stages/compute_trechos_ponto.py` | `nanum_pipeline_29.py::compute_trechos_stats` + `compute_ponto_stats` | 2026-04-24 — Passo 3b.2 (port nativo) |
+| Consulta de propriedades do combustível (LHV/densidade/custo) | `prepare_upstream_frames` | 🟢 | `runtime/fuel_properties.py` + `runtime/stages/prepare_upstream_frames.py` | `nanum_pipeline_29.py::load_fuel_properties_lookup` | 2026-04-24 — Passo 3b.3 (port nativo) |
+| Agregação KiBox por ponto | `prepare_upstream_frames` | 🟢 | `runtime/stages/prepare_upstream_frames.py` | `nanum_pipeline_29.py::kibox_aggregate` | 2026-04-24 — Passo 3b.3 (port nativo) |
+| Regra de vazão de ar (MAF vs consumo+lambda) | — | 🟢 | `runtime/final_table/_airflow.py` | `nanum_pipeline_29.py` (fluxo airflow) | 2026-04-24 — port build_final_table |
+| Emissões específicas g/kWh | — | 🟢 | `runtime/final_table/_emissions.py` | `nanum_pipeline_29.py` (fluxo emissões) | 2026-04-24 — port build_final_table |
+| Eficiência volumétrica (ETA_V) | — | 🟢 | `runtime/final_table/_volumetric_efficiency.py` | `nanum_pipeline_29.py` (fluxo ETA_V) | 2026-04-24 — port build_final_table |
+| Economia vs diesel + cenários de máquinas | — | 🟢 | `runtime/final_table/_diesel_cost_delta.py` + `_machine_scenarios.py` | `nanum_pipeline_29.py` (fluxo economia) | 2026-04-24 — port build_final_table |
+| Propagação de incertezas (uA/uB/uc/U) | — | 🟢 | `runtime/final_table/_uncertainty_instruments.py` | `nanum_pipeline_29.py` (fluxo incertezas) | 2026-04-24 — port build_final_table |
+| **Montagem da tabela final → `lv_kpis_clean.xlsx`** | `build_final_table` | 🟢 | `runtime/final_table/core.py` + `runtime/stages/build_final_table.py` | `nanum_pipeline_29.py::build_final_table` | 2026-04-24 — port nativo |
+| Audit layer de incerteza (uB_res, uB_acc, %uA_contrib) | `enrich_final_table_audit` | 🟢 | `runtime/uncertainty_audit/` + `runtime/stages/enrich_final_table_audit.py` | — (nativa) | 2026-04-25 — Passo 3b.1 |
 | Sweep binning | `apply_sweep_binning` | 🔴 | — | `nanum_pipeline_30.py::_apply_runtime_sweep_binning` + `_cluster_sweep_bin_centers` | — |
 | Seletor de duplicatas de sweep | `prompt_sweep_duplicate_selector` | 🔴 | — | `nanum_pipeline_30.py::prompt_sweep_duplicate_filter` + `_apply_sweep_duplicate_filter` | — |
 | Filtro de pontos para plot (load mode) | — | 🟢 | `runtime/plot_point_filter.py` | `nanum_pipeline_29.py::prompt_plot_point_filter` | 2026-04-23 |
@@ -56,10 +57,10 @@ Legenda:
 
 | Estação | feature_key | Estado | newgen | Âncora legado | Última mudança |
 |---|---|---|---|---|---|
-| Dispatcher de plots | — | 🔴 | — | `nanum_pipeline_29.py::make_plots_from_config_with_summary` | — |
-| Plots unitários | `run_unitary_plots` | 🟡 bridge | `bridges/legacy_runtime.py::RunUnitaryPlotsBridgeStage` | `nanum_pipeline_29.py::make_plots_from_config_with_summary` | 2026-04-24 — Passo 2c (paridade 37/37 PNGs) |
+| Dispatcher de plots | — | 🟢 | `runtime/unitary_plots/dispatch.py` | `nanum_pipeline_29.py::make_plots_from_config_with_summary` | 2026-04-24 — port nativo |
+| Plots unitários | `run_unitary_plots` | 🟢 | `runtime/unitary_plots/` + `runtime/stages/run_unitary_plots.py` | `nanum_pipeline_29.py::make_plots_from_config_with_summary` | 2026-04-24 — port nativo (subpacote 5 módulos) |
 | Plots compare (subida × descida) | `run_compare_plots` | 🔴 | — | `nanum_pipeline_29.py::iter_compare_plot_groups` | — |
-| Plots compare_iteracoes | `run_compare_iteracoes` | 🔴 | — | `nanum_pipeline_29.py::_plot_compare_iteracoes_bl_vs_adtv` | — |
+| Plots compare_iteracoes | `run_compare_iteracoes` | 🟡 bridge | `bridges/legacy_runtime.py::RunCompareIteracoesBridgeStage` | `nanum_pipeline_29.py::_plot_compare_iteracoes_bl_vs_adtv` | 2026-04-24 — Passo 2d |
 | Plots especiais de load (ethanol_equivalent, máquinas) | `run_special_load_plots` | 🔴 | — | `nanum_pipeline_30.py::_plot_ethanol_equivalent_*` + `_plot_machine_scenario_suite` | — |
 | Plot_scope gating (`all`/`unitary`/`compare`/`none`) | — | 🟡 parcial | feature flags sim, CLI não | `nanum_pipeline_29.py::main` — `--plot-scope` | — |
 | Reescrita de eixo para modo sweep | `rewrite_plot_axis_to_sweep` | 🔴 | — | `nanum_pipeline_30.py::_resolve_plot_x_request` + `_runtime_sweep_axis_token_for_col` | — |
@@ -68,7 +69,7 @@ Legenda:
 
 | Estação | feature_key | Estado | newgen | Âncora legado | Última mudança |
 |---|---|---|---|---|---|
-| Export Excel consolidado (rounding + incertezas) | `export_excel` | 🟡 bridge | `bridges/legacy_runtime.py::ExportExcelBridgeStage` (ativa quando `build_final_table` upstream roda) | `nanum_pipeline_29.py::safe_to_excel` | 2026-04-24 — Passo 2b |
+| Export Excel consolidado (rounding + incertezas) | `export_excel` | 🟢 | `runtime/stages/export_excel.py` | `nanum_pipeline_29.py::safe_to_excel` | 2026-04-24 — port nativo |
 | Export `compare_iteracoes_metricas_incertezas.xlsx` | — | 🔴 | — | `nanum_pipeline_29.py::_plot_compare_iteracoes_bl_vs_adtv` (lado b) | — |
 
 ## Fase 5 — Superfície

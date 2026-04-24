@@ -50,6 +50,7 @@ class RuntimeContext:
     labview_rows: List[Dict[str, Any]] = field(default_factory=list)
     labview_plot_rows: List[Dict[str, Any]] = field(default_factory=list)
     motec_rows: List[Dict[str, Any]] = field(default_factory=list)
+    motec_frames: List[pd.DataFrame] = field(default_factory=list)
     kibox_rows: List[Dict[str, Any]] = field(default_factory=list)
     kibox_aggregate_rows: List[Dict[str, Any]] = field(default_factory=list)
     labview_frames: List[pd.DataFrame] = field(default_factory=list)
@@ -69,6 +70,12 @@ class RuntimeContext:
     lv_kpis_path: Optional[Path] = None
     legacy_bundle: Any = None  # Pipeline29ConfigBundle from the frozen legacy module; cached across bridge stages
     unitary_plot_summary: Optional[Dict[str, Any]] = None
+    compare_iteracoes_export_path: Optional[Path] = None
+
+    # --- Populated by native stages ---
+    trechos: Optional[pd.DataFrame] = None
+    time_diagnostics: Optional[pd.DataFrame] = None
+    time_diagnostics_summary: Optional[pd.DataFrame] = None
 
     @classmethod
     def from_kwargs(

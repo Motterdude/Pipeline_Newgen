@@ -139,28 +139,36 @@
   - `E:\out_Nanum_rev2\pipeline_newgen_runtime\newgen_runtime_summary.json`
   - `E:\out_Nanum_rev2\pipeline_newgen_runtime\newgen_runtime_summary.xlsx`
 
+## Processing stages — ported (2026-04-24/25)
+- `runtime/stages/run_time_diagnostics.py` + `runtime/time_diagnostics/` (4 modules)
+- `runtime/stages/compute_trechos_ponto.py` + `runtime/trechos_ponto/` (4 modules)
+- `runtime/stages/prepare_upstream_frames.py` + `runtime/fuel_properties.py` + `runtime/motec_stats.py`
+- `runtime/stages/build_final_table.py` + `runtime/final_table/` (15 modules, 2200+ lines)
+  - GUM uncertainty propagation (uA/uB/uc/U), airflow, emissions g/kWh, ETA_V, diesel economy, machine scenarios
+- `runtime/stages/enrich_final_table_audit.py` + `runtime/uncertainty_audit/` (audit layer: uB_res, uB_acc, pct_uA_contrib)
+- `runtime/stages/export_excel.py` (trivial df.to_excel with PermissionError fallback)
+- `runtime/stages/run_unitary_plots.py` + `runtime/unitary_plots/` (5 modules, ~900 lines)
+  - fuel grouping, config parsing, 3 matplotlib renderers, dispatch loop
+
+## Bridges remaining
+- `run_compare_iteracoes` — last bridge, generates BL×ADTV comparison plots via legacy
+
+## Parity validation (2026-04-24)
+- `lv_kpis_clean.xlsx`: `DataFrame.equals=True` (19×511) — cell-by-cell identical
+- 74/74 PNGs present, 55 byte-identical, 19 differ only in error bars (improved GUM propagation)
+- 260 unit tests passing
+
 ## Current known gap
-- the migrated executor is now operational for input discovery, reader validation, runtime-dir prompting, preflight, and plot-point filtering
-- the project is still short of full parity with the legacy monolith for:
-  - final processed KPI outputs
-  - final plot generation
-  - full reporting/export behavior
+- `run_compare_iteracoes`: still via bridge (last one)
+- sweep mode: binning, duplicate selector, axis rewrite — not started
+- compare plots (subida × descida): not started
+- special load plots (ethanol_equivalent, machines): not started
+- CLI flags: `--plot-scope`, `--compare-iter-pairs`, `--config-source` — partial
+- env vars: `PIPELINE29_PLOT_SCOPE`, `PIPELINE29_COMPARE_ITER_PAIRS` — not started
 
 ## Next migration targets
-1. input discovery:
-   - richer schema hints and value normalization for LabVIEW
-   - richer schema hints and value normalization for MoTeC
-   - richer schema hints and value normalization for KiBox
-2. sweep runtime adapters:
-   - binning
-   - duplicate selector
-3. plotting adapters:
-   - unitary plots
-   - compare plots
-   - compare_iteracoes
-4. GUI integration follow-up:
-   - keep `Save & Run` routed to the migrated executor and remove remaining edge-case regressions
-   - replace remaining legacy runtime helper internals with migrated modules where possible
-5. processing/output parity:
-   - migrate the real end-to-end processing chain behind the current summary executor
-   - migrate final plot generation and reporting outputs until they match the legacy tool behavior
+1. port `run_compare_iteracoes` (last bridge → native)
+2. sweep runtime adapters: binning, duplicate selector
+3. compare plots (subida × descida)
+4. special load plots
+5. CLI flags and env vars for full feature parity

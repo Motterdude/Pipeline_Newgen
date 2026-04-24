@@ -95,7 +95,21 @@ DEFAULT_COMPARE_METRIC_OPTIONS = [
     "o2",
     "nox",
     "thc",
+    "co2_g_kwh",
+    "co_g_kwh",
+    "nox_g_kwh",
+    "thc_g_kwh",
 ]
+
+# Metricas que por padrao geram tanto plot com incerteza quanto sem incerteza
+# na aba Compare. Emissoes especificas (g/kWh) entram aqui porque a incerteza
+# da bancada (Moreira_R13 Tab.C1) ainda e recente e e util comparar visualmente.
+DEFAULT_DUAL_UNCERTAINTY_METRICS = {
+    "co2_g_kwh",
+    "co_g_kwh",
+    "nox_g_kwh",
+    "thc_g_kwh",
+}
 DEFAULT_FUEL_PROPERTY_COLUMNS = [
     "Fuel_Label",
     "DIES_pct",
@@ -289,11 +303,12 @@ def _default_compare_rows() -> List[Dict[str, str]]:
     for left_series, right_series in pair_rows:
         for metric_id in DEFAULT_COMPARE_METRIC_OPTIONS:
             enabled = "1" if (left_series, right_series) in default_enabled_pairs else "0"
+            without_uncertainty = "1" if metric_id in DEFAULT_DUAL_UNCERTAINTY_METRICS else "0"
             out.append(
                 {
                     "enabled": enabled,
                     "with_uncertainty": "1",
-                    "without_uncertainty": "0",
+                    "without_uncertainty": without_uncertainty,
                     "left_series": left_series,
                     "right_series": right_series,
                     "metric_id": metric_id,

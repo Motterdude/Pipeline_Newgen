@@ -5091,6 +5091,16 @@ def _prefix_from_key_norm(key_norm: str) -> str:
         return "Consumo_kg_h"
     if key_norm == "lhv_kj_kg":
         return "LHV_kJ_kg"
+    emission_prefixes = {
+        "co_pct":   "CO_pct",
+        "co2_pct":  "CO2_pct",
+        "o2_pct":   "O2_pct",
+        "nox_ppm":  "NOx_ppm",
+        "no_ppm":   "NO_ppm",
+        "thc_ppm":  "THC_ppm",
+    }
+    if key_norm in emission_prefixes:
+        return emission_prefixes[key_norm]
     return key_norm.upper()
 
 
@@ -5480,6 +5490,7 @@ def build_final_table(
     rel_uc = ((ucP / PkW) ** 2 + (ucF / Fkgh) ** 2 + (uBL / LHVv) ** 2) ** 0.5
     df["uc_n_th"] = df["n_th"] * rel_uc
     df["U_n_th"] = K_COVERAGE * df["uc_n_th"]
+    df["uc_n_th_pct"] = df["uc_n_th"] * 100.0
     df["U_n_th_pct"] = df["U_n_th"] * 100.0
 
     volume_factor = 1000.0 / fuel_density
@@ -5603,6 +5614,65 @@ def build_final_table(
             f"[WARN] THC negativo em {int(thc_neg_mask.sum())} ponto(s); "
             "vou calcular e plotar THC_g_kWh mesmo assim para preservar o diagnostico do analisador."
         )
+
+    # Propagacao de incerteza para emissoes especificas (g/kWh) — mesma logica do BSFC.
+    # Reusa uA/uB/uc/U das concentracoes medidas (prefix CO_pct, CO2_pct, NOx_ppm, THC_ppm — geradas
+    # por add_uncertainties_from_mappings via config_incertezas_rev3.xlsx / Moreira_R13 Tab.C1) e
+    # combina via RSS relativo com as incertezas de potencia (P_kw) e vazao de combustivel (Consumo_kg_h).
+    def _series_or_na(col_name: str) -> pd.Series:
+        if col_name in df.columns:
+            return pd.to_numeric(df[col_name], errors="coerce")
+        return pd.Series(np.nan, index=df.index, dtype="float64")
+
+    # NOx e sempre reportado em uma base (NO ou NO2); legado usa 'NO' como default. Aliasamos para
+    # que o compare generico funcione com metric_col='NOx_g_kWh'.
+    if "NOx_g_kWh" not in df.columns and "NOx_g_kWh_as_NO" in df.columns:
+        df["NOx_g_kWh"] = pd.to_numeric(df["NOx_g_kWh_as_NO"], errors="coerce")
+
+    emission_uncertainty_specs = [
+        ("CO_g_kWh",  "CO_mean_of_windows",  "CO_pct"),
+        ("CO2_g_kWh", "CO2_mean_of_windows", "CO2_pct"),
+        ("NOx_g_kWh", "NOX_mean_of_windows", "NOx_ppm"),
+        ("THC_g_kWh", "THC_mean_of_windows", "THC_ppm"),
+    ]
+    for value_col, conc_col, conc_prefix in emission_uncertainty_specs:
+        value = _series_or_na(value_col)
+        conc = _series_or_na(conc_col)
+        uA_conc = _series_or_na(f"uA_{conc_prefix}")
+        uB_conc = _series_or_na(f"uB_{conc_prefix}")
+
+        safe_conc = conc.where(conc.abs().gt(0), pd.NA)
+        safe_P = PkW.where(PkW.gt(0), pd.NA)
+        safe_F = Fkgh.where(Fkgh.gt(0), pd.NA)
+
+        rel_uA = ((uA_conc / safe_conc) ** 2 + (uA_P / safe_P) ** 2 + (uA_F / safe_F) ** 2) ** 0.5
+        rel_uB = ((uB_conc / safe_conc) ** 2 + (uB_P / safe_P) ** 2 + (uB_F / safe_F) ** 2) ** 0.5
+
+        # abs(value) para evitar incerteza negativa quando a leitura for negativa (CO/THC podem
+        # ficar ligeiramente abaixo de zero no analisador).
+        abs_value = value.abs()
+        uA_value = abs_value * rel_uA
+        uB_value = abs_value * rel_uB
+        uc_value = (uA_value ** 2 + uB_value ** 2) ** 0.5
+        U_value = K_COVERAGE * uc_value
+
+        valid = value.notna()
+        df[f"uA_{value_col}"] = uA_value.where(valid, pd.NA)
+        df[f"uB_{value_col}"] = uB_value.where(valid, pd.NA)
+        df[f"uc_{value_col}"] = uc_value.where(valid, pd.NA)
+        df[f"U_{value_col}"]  = U_value.where(valid, pd.NA)
+
+    # Variantes NOx_as_NO / NOx_as_NO2 (se existirem): mesmo fator multiplicativo que o NOx_g_kWh,
+    # propagacao relativa identica.
+    for nox_variant in ("NOx_g_kWh_as_NO", "NOx_g_kWh_as_NO2", "NOx_as_NO_g_kWh", "NOx_as_NO2_g_kWh"):
+        if nox_variant not in df.columns:
+            continue
+        base_value = _series_or_na(nox_variant)
+        base_nox = _series_or_na("NOx_g_kWh")
+        ratio = (base_value / base_nox).where(base_nox.abs().gt(0), pd.NA)
+        for suffix in ("uA", "uB", "uc", "U"):
+            src = _series_or_na(f"{suffix}_NOx_g_kWh")
+            df[f"{suffix}_{nox_variant}"] = (src * ratio).where(base_value.notna(), pd.NA)
 
     # Thermal efficiency based on E94H6 equivalent flow:
     # n_th_E94H6_eq_flow = P / (m_dot_eq_E94H6 * LHV_E94H6)
@@ -6119,12 +6189,15 @@ def _mean_subida_descida_per_campaign(d: pd.DataFrame) -> pd.DataFrame:
     U_sub = pd.to_numeric(m["U_kg_h_sub"], errors="coerce")
     U_des = pd.to_numeric(m["U_kg_h_des"], errors="coerce")
 
+    # uA (aleatória, IID): reduzida por 1/√N.
     out["uA_kg_h"] = (ua_sub**2 + ua_des**2) ** 0.5 / 2.0
-    out["uB_kg_h"] = (ub_sub**2 + ub_des**2) ** 0.5 / 2.0
+    # uB (sistemática, mesmo instrumento): não encolhe — média simples. GUM §F.1.2.4.
+    out["uB_kg_h"] = (ub_sub + ub_des) / 2.0
     out["uc_kg_h"] = (out["uA_kg_h"] ** 2 + out["uB_kg_h"] ** 2) ** 0.5
-    out["uc_kg_h"] = out["uc_kg_h"].where(out["uc_kg_h"].notna(), (uc_sub**2 + uc_des**2) ** 0.5 / 2.0)
+    # Fallback para métricas sem uA/uB separados: trata uc como sistemático.
+    out["uc_kg_h"] = out["uc_kg_h"].where(out["uc_kg_h"].notna(), (uc_sub + uc_des) / 2.0)
     out["U_kg_h"] = K_COVERAGE * out["uc_kg_h"]
-    out["U_kg_h"] = out["U_kg_h"].where(out["U_kg_h"].notna(), (U_sub**2 + U_des**2) ** 0.5 / 2.0)
+    out["U_kg_h"] = out["U_kg_h"].where(out["U_kg_h"].notna(), (U_sub + U_des) / 2.0)
     out["n_points"] = pd.to_numeric(m["n_points_sub"], errors="coerce").fillna(0) + pd.to_numeric(m["n_points_des"], errors="coerce").fillna(0)
 
     return out.sort_values("Load_kW").copy()
@@ -6196,6 +6269,46 @@ COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
         "title": "THC medido",
         "y_label": "THC medido (ppm)",
         "filename_slug": "thc_medido",
+    },
+    {
+        "metric_id": "co2_g_kwh",
+        "metric_col": "CO2_g_kWh",
+        "value_name": "co2_g_kwh",
+        "title": "CO2 especifico",
+        "y_label": "CO2 especifico (g/kWh)",
+        "filename_slug": "co2_g_kwh",
+    },
+    {
+        "metric_id": "co_g_kwh",
+        "metric_col": "CO_g_kWh",
+        "value_name": "co_g_kwh",
+        "title": "CO especifico",
+        "y_label": "CO especifico (g/kWh)",
+        "filename_slug": "co_g_kwh",
+    },
+    {
+        "metric_id": "nox_g_kwh",
+        "metric_col": "NOx_g_kWh",
+        "value_name": "nox_g_kwh",
+        "title": "NOx especifico",
+        "y_label": "NOx especifico (g/kWh)",
+        "filename_slug": "nox_g_kwh",
+    },
+    {
+        "metric_id": "thc_g_kwh",
+        "metric_col": "THC_g_kWh",
+        "value_name": "thc_g_kwh",
+        "title": "THC especifico",
+        "y_label": "THC especifico (g/kWh)",
+        "filename_slug": "thc_g_kwh",
+    },
+    {
+        "metric_id": "n_th",
+        "metric_col": "n_th_pct",
+        "value_name": "n_th_pct",
+        "title": "Eficiencia termica",
+        "y_label": "eta_th (%)",
+        "filename_slug": "n_th_pct",
     },
 ]
 COMPARE_ITER_METRIC_SPECS_BY_ID: Dict[str, Dict[str, str]] = {
@@ -6785,17 +6898,25 @@ def _mean_subida_descida_per_campaign_metric(d: pd.DataFrame, *, value_name: str
     out["_campaign_bl_adtv"] = m["_campaign_bl_adtv"]
     out["Load_kW"] = pd.to_numeric(m["Load_kW"], errors="coerce")
     out[value_name] = (value_sub + value_des) / 2.0
+    # uA (aleatória, IID entre subida/descida): reduzida por 1/√N — mantida.
     out[f"uA_{value_name}"] = (ua_sub**2 + ua_des**2) ** 0.5 / 2.0
-    out[f"uB_{value_name}"] = (ub_sub**2 + ub_des**2) ** 0.5 / 2.0
+    # uB (sistemática, mesmo instrumento na mesma campanha → 100% correlacionada):
+    # NÃO encolhe ao fazer média. GUM §F.1.2.4, §5.2.2.
+    out[f"uB_{value_name}"] = (ub_sub + ub_des) / 2.0
     out[f"uc_{value_name}"] = (out[f"uA_{value_name}"] ** 2 + out[f"uB_{value_name}"] ** 2) ** 0.5
+    # Fallback: métrica sem separação uA/uB (derivada, ex.: n_th). Aqui o
+    # uc vem inteiro da propagação de instrumentos (LHV, P, Consumo),
+    # então é 100% sistemático e deve ser tratado como perfeitamente
+    # correlacionado entre subida e descida do mesmo ensaio — não pode
+    # encolher por 1/√N. GUM §F.1.2.4, §5.2.2.
     out[f"uc_{value_name}"] = out[f"uc_{value_name}"].where(
         out[f"uc_{value_name}"].notna(),
-        (uc_sub**2 + uc_des**2) ** 0.5 / 2.0,
+        (uc_sub + uc_des) / 2.0,
     )
     out[f"U_{value_name}"] = K_COVERAGE * out[f"uc_{value_name}"]
     out[f"U_{value_name}"] = out[f"U_{value_name}"].where(
         out[f"U_{value_name}"].notna(),
-        (U_sub**2 + U_des**2) ** 0.5 / 2.0,
+        (U_sub + U_des) / 2.0,
     )
     out["n_points"] = pd.to_numeric(m["n_points_sub"], errors="coerce").fillna(0) + pd.to_numeric(m["n_points_des"], errors="coerce").fillna(0)
     return out.sort_values("Load_kW").copy()
@@ -6935,7 +7056,17 @@ def _build_compare_metric_delta_table(
     m["d_delta_d_left"] = -100.0 * m["value_right"] / (m["value_left"] ** 2)
     m["uA_delta_pct"] = ((m["d_delta_d_right"].abs() * m["uA_right"]) ** 2 + (m["d_delta_d_left"].abs() * m["uA_left"]) ** 2) ** 0.5
     m["uB_delta_pct"] = ((m["d_delta_d_right"].abs() * m["uB_right"]) ** 2 + (m["d_delta_d_left"].abs() * m["uB_left"]) ** 2) ** 0.5
-    m["uc_delta_pct"] = (m["uA_delta_pct"] ** 2 + m["uB_delta_pct"] ** 2) ** 0.5
+    # uc_delta_pct via partials × uc per side — mathematically equivalent to
+    # sqrt(uA_delta² + uB_delta²) when uA/uB are present, and still works for
+    # derived metrics (e.g. η_th) where only uc is tracked. GUM §5.
+    m["uc_delta_pct"] = (
+        (m["d_delta_d_right"].abs() * m["uc_right"]) ** 2
+        + (m["d_delta_d_left"].abs() * m["uc_left"]) ** 2
+    ) ** 0.5
+    # Fallback to the uA/uB-combined path only if direct uc computation yielded
+    # NaN (e.g. uc missing but uA/uB present).
+    uc_fallback = (m["uA_delta_pct"] ** 2 + m["uB_delta_pct"] ** 2) ** 0.5
+    m["uc_delta_pct"] = m["uc_delta_pct"].where(m["uc_delta_pct"].notna(), uc_fallback)
     m["U_delta_pct"] = K_COVERAGE * m["uc_delta_pct"]
     m["delta_over_U"] = m["delta_pct"] / m["U_delta_pct"]
     m["label_left"] = label_left

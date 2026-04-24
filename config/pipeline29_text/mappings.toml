@@ -129,3 +129,39 @@ schema_version = 1
 "mean" = "ETA_V_pct"
 "unit" = "%"
 "notes" = "Volumetric efficiency using T_ADMISSAO, 101.3 kPa reference pressure, Rotação_mean_of_windows and 3.992 L displacement. Diesel uses MAF when valid."
+
+[mappings."CO_pct"]
+"mean" = "CO_mean_of_windows"
+"sd" = "CO_sd_of_windows"
+"unit" = "%"
+"notes" = "California Analytical Model 30 (NDIR). Moreira_R13 Tabela C1."
+
+[mappings."CO2_pct"]
+"mean" = "CO2_mean_of_windows"
+"sd" = "CO2_sd_of_windows"
+"unit" = "%"
+"notes" = "California Analytical Model 30 (NDIR). Moreira_R13 Tabela C1."
+
+[mappings."O2_pct"]
+"mean" = "O2_mean_of_windows"
+"sd" = "O2_sd_of_windows"
+"unit" = "%"
+"notes" = "California Analytical Model 30 (paramagnetico). Moreira_R13 Tabela C1."
+
+[mappings."NOx_ppm"]
+"mean" = "NOX_mean_of_windows"
+"sd" = "NOX_sd_of_windows"
+"unit" = "ppm"
+"notes" = "California Analytical 400-HCLD (quimiluminescencia). Moreira_R13 Tabela C1."
+
+[mappings."NO_ppm"]
+"mean" = "NO_mean_of_windows"
+"sd" = "NO_sd_of_windows"
+"unit" = "ppm"
+"notes" = "California Analytical 400-HCLD (quimiluminescencia). Moreira_R13 Tabela C1."
+
+[mappings."THC_ppm"]
+"mean" = "THC_mean_of_windows"
+"sd" = "THC_sd_of_windows"
+"unit" = "ppm"
+"notes" = "California Analytical 300M-HFID (FID). Moreira_R13 Tabela C1."

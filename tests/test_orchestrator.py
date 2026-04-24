@@ -26,7 +26,7 @@ class OrchestratorTests(unittest.TestCase):
 
     def test_summary_counts_enabled_and_disabled_steps(self) -> None:
         summary = summarize_plan(build_load_sweep_plan("load"))
-        self.assertEqual(summary["total_steps"], 15)
+        self.assertEqual(summary["total_steps"], 18)
         self.assertGreater(summary["enabled_steps"], 0)
         self.assertGreater(summary["disabled_steps"], 0)
         self.assertIn("plotting", summary["enabled_stage_counts"])

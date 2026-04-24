@@ -124,28 +124,40 @@ def _build_legacy_intermediate_frames(ctx: "RuntimeContext") -> Dict[str, Any]:
     motec_metas = buckets["MOTEC"]
 
     # 4. Read LabVIEW → concat → trechos → ponto
-    lv_frames = []
-    for meta in lv_metas:
-        try:
-            lv_frames.append(legacy.read_labview_xlsx(meta))
-        except Exception as exc:
-            print(f"[WARN] build_final_table bridge | LabVIEW read failed for {meta.path.name}: {exc}")
-    lv_raw = pd.concat(lv_frames, ignore_index=True) if lv_frames else pd.DataFrame()
+    #    If the native compute_trechos_ponto stage already ran, reuse its output.
+    if ctx.ponto is not None:
+        ponto = ctx.ponto
+    else:
+        lv_frames = []
+        for meta in lv_metas:
+            try:
+                lv_frames.append(legacy.read_labview_xlsx(meta))
+            except Exception as exc:
+                print(f"[WARN] build_final_table bridge | LabVIEW read failed for {meta.path.name}: {exc}")
+        lv_raw = pd.concat(lv_frames, ignore_index=True) if lv_frames else pd.DataFrame()
 
-    trechos = legacy.compute_trechos_stats(lv_raw, instruments_df=instruments_df)
-    ponto = legacy.compute_ponto_stats(trechos)
+        trechos = legacy.compute_trechos_stats(lv_raw, instruments_df=instruments_df)
+        ponto = legacy.compute_ponto_stats(trechos)
 
     # 5. Fuel properties lookup
-    fuel_properties = legacy.load_fuel_properties_lookup(legacy_bundle, defaults_cfg)
+    #    If the native prepare_upstream_frames stage already ran, reuse its output.
+    if ctx.fuel_properties is not None:
+        fuel_properties = ctx.fuel_properties
+    else:
+        fuel_properties = legacy.load_fuel_properties_lookup(legacy_bundle, defaults_cfg)
 
     # 6. KiBox aggregate (empty frame if no files)
-    if kibox_metas:
+    if ctx.kibox_agg is not None:
+        kibox_agg = ctx.kibox_agg
+    elif kibox_metas:
         kibox_agg = legacy.kibox_aggregate(kibox_metas)
     else:
         kibox_agg = pd.DataFrame()
 
     # 7. MoTeC chain
-    if motec_metas:
+    if ctx.motec_ponto is not None:
+        motec_ponto = ctx.motec_ponto
+    elif motec_metas:
         motec_frames = []
         for meta in motec_metas:
             try:
@@ -277,6 +289,54 @@ class RunUnitaryPlotsBridgeStage:
             print(f"[OK] run_unitary_plots bridge | generated={generated} skipped={skipped} disabled={disabled} dir={plot_dir}")
         except Exception as exc:
             print(f"[WARN] run_unitary_plots bridge | legacy plot run failed: {type(exc).__name__}: {exc}")
+
+
+@dataclass(frozen=True)
+class RunCompareIteracoesBridgeStage:
+    """Bridge: generate the legacy compare_iteracoes BL vs ADTV plots and
+    ``compare_iteracoes_metricas_incertezas.xlsx`` via
+    ``nanum_pipeline_29._plot_compare_iteracoes_bl_vs_adtv``.
+
+    Reads ``ctx.final_table`` and the bundle's compare config (``compare.toml``).
+    Writes PNGs and one Excel file into ``<out_dir>/plots/compare_iteracoes_bl_vs_adtv/``.
+    """
+
+    feature_key: str = "run_compare_iteracoes"
+
+    def run(self, ctx: "RuntimeContext") -> None:
+        if ctx.final_table is None:
+            print("[INFO] run_compare_iteracoes bridge | nothing to compare (final_table is None)")
+            return
+        if ctx.output_dir is None:
+            raise RuntimeError("run_compare_iteracoes bridge requires ctx.output_dir to be resolved first")
+        legacy = _try_load_legacy_pipeline29()
+        if legacy is None:
+            return
+
+        bundle = _ensure_legacy_bundle(ctx, legacy)
+        plot_dir = ctx.output_dir / "plots"
+        plot_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            compare_requests, _source = legacy._resolve_compare_iter_requests(
+                bundle.compare_df,
+                fallback_pairs=legacy._default_compare_iter_pairs(),
+            )
+
+            legacy._plot_compare_iteracoes_bl_vs_adtv(
+                df=ctx.final_table,
+                root_plot_dir=plot_dir,
+                mappings=bundle.mappings,
+                compare_requests=compare_requests,
+            )
+
+            target_dir = plot_dir / "compare_iteracoes_bl_vs_adtv"
+            n_pngs = len(list(target_dir.glob("*.png"))) if target_dir.exists() else 0
+            xlsx = target_dir / "compare_iteracoes_metricas_incertezas.xlsx"
+            ctx.compare_iteracoes_export_path = xlsx if xlsx.exists() else None
+            print(f"[OK] run_compare_iteracoes bridge | pngs={n_pngs} xlsx={'yes' if xlsx.exists() else 'no'} dir={target_dir}")
+        except Exception as exc:
+            print(f"[WARN] run_compare_iteracoes bridge | legacy call failed: {type(exc).__name__}: {exc}")
 
 
 @dataclass(frozen=True)
