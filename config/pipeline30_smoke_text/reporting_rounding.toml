@@ -1,0 +1,29 @@
+schema_version = 1
+
+[[reporting]]
+"key" = "Same logical key (from Mappings). One row per key."
+"report_resolution" = "Reporting resolution (engineering unit).\nExample: 0.1 °C, 0.01 kW."
+"report_digits" = "Optional alternative to report_resolution.\nIf used, Python will derive rounding from digits."
+"rule" = "Rounding rule (documentation).\nSuggested: round_half_up."
+"notes" = "Free notes about reporting/UPD decisions."
+
+[[reporting]]
+"key" = "power_kw"
+"report_resolution" = "nan"
+"report_digits" = "nan"
+"rule" = "round_half_up"
+"notes" = "nan"
+
+[[reporting]]
+"key" = "fuel_kgh"
+"report_resolution" = "nan"
+"report_digits" = "nan"
+"rule" = "round_half_up"
+"notes" = "nan"
+
+[[reporting]]
+"key" = "LHV_kJ_kg"
+"report_resolution" = "nan"
+"report_digits" = "nan"
+"rule" = "round_half_up"
+"notes" = "nan"

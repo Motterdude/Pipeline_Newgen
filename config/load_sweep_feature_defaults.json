@@ -1,0 +1,35 @@
+{
+  "load": {
+    "load_text_config": true,
+    "sync_runtime_dirs": true,
+    "show_runtime_preflight": false,
+    "convert_missing_open_files": false,
+    "parse_sweep_metadata": false,
+    "apply_sweep_binning": false,
+    "prompt_sweep_duplicate_selector": false,
+    "rewrite_plot_axis_to_sweep": false,
+    "run_time_diagnostics": true,
+    "export_excel": true,
+    "run_unitary_plots": true,
+    "run_compare_plots": true,
+    "run_compare_iteracoes": true,
+    "run_special_load_plots": true
+  },
+  "sweep": {
+    "load_text_config": true,
+    "sync_runtime_dirs": true,
+    "show_runtime_preflight": true,
+    "convert_missing_open_files": false,
+    "parse_sweep_metadata": true,
+    "apply_sweep_binning": true,
+    "prompt_sweep_duplicate_selector": true,
+    "rewrite_plot_axis_to_sweep": true,
+    "run_time_diagnostics": true,
+    "export_excel": true,
+    "run_unitary_plots": true,
+    "run_compare_plots": false,
+    "run_compare_iteracoes": false,
+    "run_special_load_plots": false
+  }
+}
+

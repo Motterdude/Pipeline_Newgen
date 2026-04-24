@@ -1,0 +1,1171 @@
+from __future__ import annotations
+
+import json
+import math
+import os
+import tomllib
+import unicodedata
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Optional
+
+import pandas as pd
+from openpyxl import load_workbook
+
+
+TEXT_CONFIG_SCHEMA_VERSION = 1
+TEXT_CONFIG_DIR_NAME = "pipeline29_text"
+
+METADATA_FILENAME = "metadata.toml"
+DEFAULTS_FILENAME = "defaults.toml"
+DATA_QUALITY_FILENAME = "data_quality.toml"
+MAPPINGS_FILENAME = "mappings.toml"
+INSTRUMENTS_FILENAME = "instruments.toml"
+REPORTING_FILENAME = "reporting_rounding.toml"
+PLOTS_FILENAME = "plots.toml"
+COMPARE_FILENAME = "compare.toml"
+FUEL_PROPERTIES_FILENAME = "fuel_properties.toml"
+
+DEFAULT_MAPPING_COLUMNS = ["key", "col_mean", "col_sd", "unit", "notes"]
+DEFAULT_INSTRUMENT_COLUMNS = [
+    "key",
+    "component",
+    "dist",
+    "range_min",
+    "range_max",
+    "acc_abs",
+    "acc_pct",
+    "digits",
+    "lsd",
+    "resolution",
+    "source",
+    "notes",
+    "setting_param",
+    "setting_value",
+]
+DEFAULT_REPORTING_COLUMNS = ["key", "report_resolution", "report_digits", "rule", "notes"]
+DEFAULT_PLOT_COLUMNS = [
+    "enabled",
+    "with_uncertainty",
+    "without_uncertainty",
+    "plot_type",
+    "filename",
+    "title",
+    "x_col",
+    "y_col",
+    "yerr_col",
+    "show_uncertainty",
+    "x_label",
+    "y_label",
+    "x_min",
+    "x_max",
+    "x_step",
+    "y_min",
+    "y_max",
+    "y_step",
+    "y_tol_plus",
+    "y_tol_minus",
+    "filter_h2o_list",
+    "label_variant",
+    "notes",
+]
+DEFAULT_COMPARE_COLUMNS = [
+    "enabled",
+    "with_uncertainty",
+    "without_uncertainty",
+    "left_series",
+    "right_series",
+    "metric_id",
+    "show_uncertainty",
+    "notes",
+]
+DEFAULT_COMPARE_SERIES_OPTIONS = [
+    "baseline_media",
+    "baseline_subida",
+    "baseline_descida",
+    "aditivado_media",
+    "aditivado_subida",
+    "aditivado_descida",
+]
+DEFAULT_COMPARE_METRIC_OPTIONS = [
+    "consumo",
+    "co2",
+    "co",
+    "o2",
+    "nox",
+    "thc",
+]
+DEFAULT_FUEL_PROPERTY_COLUMNS = [
+    "Fuel_Label",
+    "DIES_pct",
+    "BIOD_pct",
+    "EtOH_pct",
+    "H2O_pct",
+    "LHV_kJ_kg",
+    "Fuel_Density_kg_m3",
+    "Fuel_Cost_R_L",
+    "reference",
+    "notes",
+]
+DEFAULT_KEY_VALUE_COLUMNS = ["param", "value", "notes"]
+
+REQUIRED_FLOW_PLOTS: List[Dict[str, str]] = [
+    {
+        "enabled": "1",
+        "with_uncertainty": "0",
+        "without_uncertainty": "1",
+        "plot_type": "all_fuels_yx",
+        "filename": "co2_g_kwh_vs_power_all.png",
+        "title": "CO2 specific emissions vs Power (all fuels)",
+        "x_col": "Load_kW",
+        "y_col": "CO2_g_kWh",
+        "yerr_col": "off",
+        "show_uncertainty": "off",
+        "x_label": "Power (kW)",
+        "y_label": "CO2 (g/kWh)",
+        "x_min": "0.0",
+        "x_max": "55.0",
+        "x_step": "5.0",
+        "y_min": "nan",
+        "y_max": "nan",
+        "y_step": "nan",
+        "y_tol_plus": "0.0",
+        "y_tol_minus": "0.0",
+        "filter_h2o_list": "0,6,25,35",
+        "label_variant": "nan",
+        "notes": "Auto-added by backend migration: specific CO2 emissions in the standard pipeline flow.",
+    },
+    {
+        "enabled": "1",
+        "with_uncertainty": "0",
+        "without_uncertainty": "1",
+        "plot_type": "all_fuels_yx",
+        "filename": "co_g_kwh_vs_power_all.png",
+        "title": "CO specific emissions vs Power (all fuels)",
+        "x_col": "Load_kW",
+        "y_col": "CO_g_kWh",
+        "yerr_col": "off",
+        "show_uncertainty": "off",
+        "x_label": "Power (kW)",
+        "y_label": "CO (g/kWh)",
+        "x_min": "0.0",
+        "x_max": "55.0",
+        "x_step": "5.0",
+        "y_min": "nan",
+        "y_max": "nan",
+        "y_step": "nan",
+        "y_tol_plus": "0.0",
+        "y_tol_minus": "0.0",
+        "filter_h2o_list": "0,6,25,35",
+        "label_variant": "nan",
+        "notes": "Auto-added by backend migration: specific CO emissions in the standard pipeline flow.",
+    },
+    {
+        "enabled": "1",
+        "with_uncertainty": "0",
+        "without_uncertainty": "1",
+        "plot_type": "all_fuels_yx",
+        "filename": "thc_g_kwh_vs_power_all.png",
+        "title": "THC specific emissions vs Power (all fuels)",
+        "x_col": "Load_kW",
+        "y_col": "THC_g_kWh",
+        "yerr_col": "off",
+        "show_uncertainty": "off",
+        "x_label": "Power (kW)",
+        "y_label": "THC (g/kWh, propane eq.)",
+        "x_min": "0.0",
+        "x_max": "55.0",
+        "x_step": "5.0",
+        "y_min": "nan",
+        "y_max": "nan",
+        "y_step": "nan",
+        "y_tol_plus": "0.0",
+        "y_tol_minus": "0.0",
+        "filter_h2o_list": "0,6,25,35",
+        "label_variant": "nan",
+        "notes": "Auto-added by backend migration: specific THC emissions in the standard pipeline flow.",
+    },
+    {
+        "enabled": "1",
+        "with_uncertainty": "0",
+        "without_uncertainty": "1",
+        "plot_type": "all_fuels_yx",
+        "filename": "nox_as_no_g_kwh_vs_power_all.png",
+        "title": "NOx specific emissions vs Power (NO equivalent, all fuels)",
+        "x_col": "Load_kW",
+        "y_col": "NOx_as_NO_g_kWh",
+        "yerr_col": "off",
+        "show_uncertainty": "off",
+        "x_label": "Power (kW)",
+        "y_label": "NOx (g/kWh as NO)",
+        "x_min": "0.0",
+        "x_max": "55.0",
+        "x_step": "5.0",
+        "y_min": "nan",
+        "y_max": "nan",
+        "y_step": "nan",
+        "y_tol_plus": "0.0",
+        "y_tol_minus": "0.0",
+        "filter_h2o_list": "0,6,25,35",
+        "label_variant": "nan",
+        "notes": "Auto-added by backend migration: specific NOx emissions as NO in the standard pipeline flow.",
+    },
+    {
+        "enabled": "1",
+        "with_uncertainty": "0",
+        "without_uncertainty": "1",
+        "plot_type": "all_fuels_yx",
+        "filename": "nox_as_no2_g_kwh_vs_power_all.png",
+        "title": "NOx specific emissions vs Power (NO2 equivalent, all fuels)",
+        "x_col": "Load_kW",
+        "y_col": "NOx_as_NO2_g_kWh",
+        "yerr_col": "off",
+        "show_uncertainty": "off",
+        "x_label": "Power (kW)",
+        "y_label": "NOx (g/kWh as NO2)",
+        "x_min": "0.0",
+        "x_max": "55.0",
+        "x_step": "5.0",
+        "y_min": "nan",
+        "y_max": "nan",
+        "y_step": "nan",
+        "y_tol_plus": "0.0",
+        "y_tol_minus": "0.0",
+        "filter_h2o_list": "0,6,25,35",
+        "label_variant": "nan",
+        "notes": "Auto-added by backend migration: specific NOx emissions as NO2 in the standard pipeline flow.",
+    },
+    {
+        "enabled": "1",
+        "with_uncertainty": "0",
+        "without_uncertainty": "1",
+        "plot_type": "all_fuels_yx",
+        "filename": "exhaust_h2o_kg_h_vs_power_all.png",
+        "title": "Exhaust water mass flow vs Power (all fuels)",
+        "x_col": "Load_kW",
+        "y_col": "Exhaust_H2O_kg_h",
+        "yerr_col": "off",
+        "show_uncertainty": "off",
+        "x_label": "Power (kW)",
+        "y_label": "Exhaust H2O (kg/h)",
+        "x_min": "0.0",
+        "x_max": "55.0",
+        "x_step": "5.0",
+        "y_min": "nan",
+        "y_max": "nan",
+        "y_step": "nan",
+        "y_tol_plus": "0.0",
+        "y_tol_minus": "0.0",
+        "filter_h2o_list": "0,6,25,35",
+        "label_variant": "nan",
+        "notes": "Auto-added by backend migration: exhaust water mass flow in the standard pipeline flow.",
+    },
+]
+
+
+def _default_compare_rows() -> List[Dict[str, str]]:
+    default_enabled_pairs = {
+        ("baseline_media", "aditivado_media"),
+        ("baseline_subida", "aditivado_subida"),
+        ("baseline_descida", "aditivado_descida"),
+        ("baseline_subida", "baseline_descida"),
+        ("aditivado_subida", "aditivado_descida"),
+    }
+    pair_rows = [
+        ("baseline_media", "aditivado_media"),
+        ("baseline_subida", "aditivado_subida"),
+        ("baseline_descida", "aditivado_descida"),
+        ("baseline_subida", "baseline_descida"),
+        ("aditivado_subida", "aditivado_descida"),
+        ("baseline_descida", "aditivado_descida"),
+        ("baseline_media", "aditivado_subida"),
+        ("baseline_media", "aditivado_descida"),
+        ("baseline_subida", "aditivado_media"),
+        ("baseline_descida", "aditivado_media"),
+        ("baseline_subida", "aditivado_descida"),
+    ]
+    out: List[Dict[str, str]] = []
+    for left_series, right_series in pair_rows:
+        for metric_id in DEFAULT_COMPARE_METRIC_OPTIONS:
+            enabled = "1" if (left_series, right_series) in default_enabled_pairs else "0"
+            out.append(
+                {
+                    "enabled": enabled,
+                    "with_uncertainty": "1",
+                    "without_uncertainty": "0",
+                    "left_series": left_series,
+                    "right_series": right_series,
+                    "metric_id": metric_id,
+                    "show_uncertainty": "on",
+                    "notes": "Auto-added compare catalog row.",
+                }
+            )
+    return out
+
+
+REQUIRED_COMPARE_ROWS: List[Dict[str, str]] = _default_compare_rows()
+
+REQUIRED_MAPPING_KEYS = {"power_kw", "fuel_kgh", "lhv_kj_kg"}
+
+
+@dataclass
+class Pipeline29ConfigBundle:
+    mappings: Dict[str, Dict[str, str]]
+    instruments_df: pd.DataFrame
+    reporting_df: pd.DataFrame
+    plots_df: pd.DataFrame
+    compare_df: pd.DataFrame
+    fuel_properties_df: pd.DataFrame
+    data_quality_cfg: Dict[str, float]
+    defaults_cfg: Dict[str, str]
+    source_kind: str = "text"
+    source_path: Optional[Path] = None
+    text_dir: Optional[Path] = None
+
+
+def default_text_config_dir(base_dir: Path) -> Path:
+    return base_dir / "config" / TEXT_CONFIG_DIR_NAME
+
+
+def default_app_state_dir() -> Path:
+    return Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "nanum_pipeline_29"
+
+
+def default_gui_state_path() -> Path:
+    return default_app_state_dir() / "config_gui_state.json"
+
+
+def default_preset_dir() -> Path:
+    return default_app_state_dir() / "presets"
+
+
+def bundle_required_paths(config_dir: Path) -> Dict[str, Path]:
+    return {
+        "metadata": config_dir / METADATA_FILENAME,
+        "defaults": config_dir / DEFAULTS_FILENAME,
+        "data_quality": config_dir / DATA_QUALITY_FILENAME,
+        "mappings": config_dir / MAPPINGS_FILENAME,
+        "instruments": config_dir / INSTRUMENTS_FILENAME,
+        "reporting": config_dir / REPORTING_FILENAME,
+        "plots": config_dir / PLOTS_FILENAME,
+        "compare": config_dir / COMPARE_FILENAME,
+        "fuel_properties": config_dir / FUEL_PROPERTIES_FILENAME,
+    }
+
+
+def text_config_exists(config_dir: Path) -> bool:
+    paths = bundle_required_paths(config_dir)
+    required_names = {"metadata", "defaults", "data_quality", "mappings", "instruments", "reporting", "plots"}
+    return all(path.exists() for name, path in paths.items() if name in required_names)
+
+
+def _is_blank(value: Any) -> bool:
+    if value is None:
+        return True
+    try:
+        if pd.isna(value):
+            return True
+    except Exception:
+        pass
+    return str(value).replace("\ufeff", "").strip() == ""
+
+
+def _norm_text(value: Any) -> str:
+    if _is_blank(value):
+        return ""
+    return str(value).replace("\ufeff", "").strip()
+
+
+def _norm_key(value: Any) -> str:
+    text = _norm_text(value).lower()
+    text = unicodedata.normalize("NFKD", text)
+    return "".join(ch for ch in text if not unicodedata.combining(ch))
+
+
+def _is_truthy_text(value: Any) -> bool:
+    text = _norm_text(value).lower()
+    return text in {"1", "true", "yes", "on", "y", "checked"}
+
+
+def _is_falsy_text(value: Any) -> bool:
+    text = _norm_text(value).lower()
+    return text in {"0", "false", "no", "off", "n", "unchecked"}
+
+
+def _normalize_plot_uncertainty_columns(df: pd.DataFrame) -> pd.DataFrame:
+    if df is None:
+        return pd.DataFrame(columns=DEFAULT_PLOT_COLUMNS)
+
+    out = df.copy()
+    for column in ("with_uncertainty", "without_uncertainty", "show_uncertainty"):
+        if column not in out.columns:
+            out[column] = ""
+
+    for idx, row in out.iterrows():
+        with_raw = row.get("with_uncertainty", "")
+        without_raw = row.get("without_uncertainty", "")
+        mode = _norm_text(row.get("show_uncertainty", "")).lower()
+
+        with_flag = _is_truthy_text(with_raw)
+        without_flag = _is_truthy_text(without_raw)
+        with_defined = _is_truthy_text(with_raw) or _is_falsy_text(with_raw)
+        without_defined = _is_truthy_text(without_raw) or _is_falsy_text(without_raw)
+
+        if not with_defined and not without_defined:
+            if mode in {"off", "disable", "disabled", "none", "0", "false", "no", "na", "n/a"}:
+                with_flag, without_flag = False, True
+            elif mode in {"both", "all", "dual", "on_off"}:
+                with_flag, without_flag = True, True
+            else:
+                with_flag, without_flag = True, False
+        else:
+            if not with_defined:
+                with_flag = not without_flag
+            if not without_defined:
+                without_flag = False if with_flag else True
+
+        if not with_flag and not without_flag:
+            with_flag = True
+
+        out.at[idx, "with_uncertainty"] = "1" if with_flag else "0"
+        out.at[idx, "without_uncertainty"] = "1" if without_flag else "0"
+        if with_flag and without_flag:
+            out.at[idx, "show_uncertainty"] = "both"
+        elif with_flag:
+            out.at[idx, "show_uncertainty"] = "on"
+        else:
+            out.at[idx, "show_uncertainty"] = "off"
+
+    return out
+
+
+def _normalize_compare_uncertainty_columns(df: pd.DataFrame) -> pd.DataFrame:
+    if df is None:
+        return pd.DataFrame(columns=DEFAULT_COMPARE_COLUMNS)
+
+    out = df.copy()
+    for column in ("with_uncertainty", "without_uncertainty", "show_uncertainty"):
+        if column not in out.columns:
+            out[column] = ""
+
+    for idx, row in out.iterrows():
+        with_raw = row.get("with_uncertainty", "")
+        without_raw = row.get("without_uncertainty", "")
+        mode = _norm_text(row.get("show_uncertainty", "")).lower()
+
+        with_flag = _is_truthy_text(with_raw)
+        without_flag = _is_truthy_text(without_raw)
+        with_defined = _is_truthy_text(with_raw) or _is_falsy_text(with_raw)
+        without_defined = _is_truthy_text(without_raw) or _is_falsy_text(without_raw)
+
+        if not with_defined and not without_defined:
+            if mode in {"off", "disable", "disabled", "none", "0", "false", "no", "na", "n/a"}:
+                with_flag, without_flag = False, True
+            elif mode in {"both", "all", "dual", "on_off"}:
+                with_flag, without_flag = True, True
+            else:
+                with_flag, without_flag = True, False
+        else:
+            if not with_defined:
+                with_flag = not without_flag
+            if not without_defined:
+                without_flag = False if with_flag else True
+
+        if not with_flag and not without_flag:
+            with_flag = True
+
+        out.at[idx, "with_uncertainty"] = "1" if with_flag else "0"
+        out.at[idx, "without_uncertainty"] = "1" if without_flag else "0"
+        if with_flag and without_flag:
+            out.at[idx, "show_uncertainty"] = "both"
+        elif with_flag:
+            out.at[idx, "show_uncertainty"] = "on"
+        else:
+            out.at[idx, "show_uncertainty"] = "off"
+    return out
+
+
+def _to_builtin_scalar(value: Any) -> Any:
+    if _is_blank(value):
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int) and not isinstance(value, bool):
+        return int(value)
+    if isinstance(value, float):
+        return None if not math.isfinite(value) else float(value)
+    if hasattr(value, "item"):
+        try:
+            return _to_builtin_scalar(value.item())
+        except Exception:
+            pass
+    txt = _norm_text(value)
+    if txt == "":
+        return None
+    return txt
+
+
+def _coerce_row_dict(raw: Dict[str, Any], field_order: Iterable[str]) -> Dict[str, Any]:
+    out: Dict[str, Any] = {}
+    for field in field_order:
+        out[field] = raw.get(field, None)
+    for key, value in raw.items():
+        if key not in out:
+            out[key] = value
+    return out
+
+
+def _records_to_dataframe(records: List[Dict[str, Any]], columns: List[str]) -> pd.DataFrame:
+    normalized = [_coerce_row_dict(record, columns) for record in records]
+    df = pd.DataFrame(normalized)
+    for column in columns:
+        if column not in df.columns:
+            df[column] = pd.NA
+    if df.empty:
+        df = pd.DataFrame(columns=columns)
+    return df[columns + [c for c in df.columns if c not in columns]].copy()
+
+
+def _append_missing_required_flow_plots(df: pd.DataFrame) -> pd.DataFrame:
+    out = _records_to_dataframe(
+        [] if df is None else df.to_dict(orient="records"),
+        DEFAULT_PLOT_COLUMNS,
+    )
+    existing_filenames = {
+        _norm_text(value).lower()
+        for value in out.get("filename", pd.Series(dtype="object")).tolist()
+        if _norm_text(value)
+    }
+    missing_records = []
+    for record in REQUIRED_FLOW_PLOTS:
+        filename = _norm_text(record.get("filename", "")).lower()
+        if not filename or filename in existing_filenames:
+            continue
+        missing_records.append(dict(record))
+        existing_filenames.add(filename)
+    if not missing_records:
+        return out
+    add_df = _records_to_dataframe(missing_records, DEFAULT_PLOT_COLUMNS)
+    return pd.concat([out, add_df], ignore_index=True)
+
+
+def _append_missing_required_compare_rows(df: pd.DataFrame) -> pd.DataFrame:
+    out = _records_to_dataframe(df.to_dict(orient="records") if df is not None else [], DEFAULT_COMPARE_COLUMNS)
+    existing_keys = {
+        (
+            _norm_text(row.get("left_series", "")).lower(),
+            _norm_text(row.get("right_series", "")).lower(),
+            _norm_text(row.get("metric_id", "")).lower(),
+        )
+        for row in out.to_dict(orient="records")
+        if _norm_text(row.get("left_series", "")) and _norm_text(row.get("right_series", "")) and _norm_text(row.get("metric_id", ""))
+    }
+    missing_records = []
+    for record in REQUIRED_COMPARE_ROWS:
+        key = (
+            _norm_text(record.get("left_series", "")).lower(),
+            _norm_text(record.get("right_series", "")).lower(),
+            _norm_text(record.get("metric_id", "")).lower(),
+        )
+        if key in existing_keys:
+            continue
+        missing_records.append(dict(record))
+        existing_keys.add(key)
+    if not missing_records:
+        return out
+    add_df = _records_to_dataframe(missing_records, DEFAULT_COMPARE_COLUMNS)
+    return pd.concat([out, add_df], ignore_index=True)
+
+
+def _normalize_bundle_shapes(bundle: Pipeline29ConfigBundle) -> Pipeline29ConfigBundle:
+    inst = _records_to_dataframe(bundle.instruments_df.to_dict(orient="records"), DEFAULT_INSTRUMENT_COLUMNS)
+    rep = _records_to_dataframe(bundle.reporting_df.to_dict(orient="records"), DEFAULT_REPORTING_COLUMNS)
+    plots = _records_to_dataframe(bundle.plots_df.to_dict(orient="records"), DEFAULT_PLOT_COLUMNS)
+    plots = _normalize_plot_uncertainty_columns(plots)
+    plots = _append_missing_required_flow_plots(plots)
+    plots = _normalize_plot_uncertainty_columns(plots)
+    compare = _records_to_dataframe(bundle.compare_df.to_dict(orient="records"), DEFAULT_COMPARE_COLUMNS)
+    compare = _normalize_compare_uncertainty_columns(compare)
+    compare = _append_missing_required_compare_rows(compare)
+    compare = _normalize_compare_uncertainty_columns(compare)
+    fuel_properties = _records_to_dataframe(
+        bundle.fuel_properties_df.to_dict(orient="records"),
+        DEFAULT_FUEL_PROPERTY_COLUMNS,
+    )
+    defaults_cfg = {str(k).strip(): _norm_text(v) for k, v in bundle.defaults_cfg.items() if str(k).strip()}
+    data_quality_cfg = {}
+    for key, value in bundle.data_quality_cfg.items():
+        key_txt = str(key).strip()
+        if not key_txt:
+            continue
+        if _is_blank(value):
+            continue
+        try:
+            data_quality_cfg[key_txt] = float(value)
+        except Exception:
+            continue
+    return Pipeline29ConfigBundle(
+        mappings={str(k).strip(): dict(v or {}) for k, v in bundle.mappings.items() if str(k).strip()},
+        instruments_df=inst,
+        reporting_df=rep,
+        plots_df=plots,
+        compare_df=compare,
+        fuel_properties_df=fuel_properties,
+        data_quality_cfg=data_quality_cfg,
+        defaults_cfg=defaults_cfg,
+        source_kind=bundle.source_kind,
+        source_path=bundle.source_path,
+        text_dir=bundle.text_dir,
+    )
+
+
+def validate_bundle(bundle: Pipeline29ConfigBundle) -> List[str]:
+    errors: List[str] = []
+    mapping_keys_norm = {_norm_key(key) for key in bundle.mappings.keys()}
+    missing_keys = REQUIRED_MAPPING_KEYS - mapping_keys_norm
+    if missing_keys:
+        errors.append(f"Mappings sem chaves obrigatorias: {sorted(missing_keys)}")
+    for column in DEFAULT_INSTRUMENT_COLUMNS:
+        if column not in bundle.instruments_df.columns:
+            errors.append(f"Instruments sem coluna obrigatoria: {column}")
+    for column in DEFAULT_REPORTING_COLUMNS:
+        if column not in bundle.reporting_df.columns:
+            errors.append(f"Reporting_Rounding sem coluna obrigatoria: {column}")
+    for column in DEFAULT_PLOT_COLUMNS:
+        if column not in bundle.plots_df.columns:
+            errors.append(f"Plots sem coluna obrigatoria: {column}")
+    for column in DEFAULT_COMPARE_COLUMNS:
+        if column not in bundle.compare_df.columns:
+            errors.append(f"Compare sem coluna obrigatoria: {column}")
+    for column in DEFAULT_FUEL_PROPERTY_COLUMNS:
+        if column not in bundle.fuel_properties_df.columns:
+            errors.append(f"Fuel Properties sem coluna obrigatoria: {column}")
+    return errors
+
+
+def _toml_scalar(value: Any) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int) and not isinstance(value, bool):
+        return str(value)
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ValueError("NaN/inf nao sao suportados em TOML")
+        text = repr(float(value))
+        if text == "-0.0":
+            return "0.0"
+        return text
+    return json.dumps(str(value), ensure_ascii=False)
+
+
+def _iter_clean_items(record: Dict[str, Any], preferred_order: Iterable[str]) -> List[tuple[str, Any]]:
+    items: List[tuple[str, Any]] = []
+    seen: set[str] = set()
+    for key in preferred_order:
+        if key not in record:
+            continue
+        value = _to_builtin_scalar(record.get(key))
+        if value is None:
+            continue
+        items.append((key, value))
+        seen.add(key)
+    for key, value in record.items():
+        if key in seen:
+            continue
+        clean = _to_builtin_scalar(value)
+        if clean is None:
+            continue
+        items.append((key, clean))
+    return items
+
+
+def _write_toml_table_file(path: Path, table_name: str, values: Dict[str, Any]) -> None:
+    lines = [f"schema_version = {TEXT_CONFIG_SCHEMA_VERSION}", ""]
+    lines.append(f"[{table_name}]")
+    for key, value in _iter_clean_items(values, values.keys()):
+        lines.append(f"{json.dumps(str(key), ensure_ascii=False)} = {_toml_scalar(value)}")
+    lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _write_toml_keyed_tables(path: Path, table_name: str, values: Dict[str, Dict[str, Any]], field_order: List[str]) -> None:
+    lines = [f"schema_version = {TEXT_CONFIG_SCHEMA_VERSION}", ""]
+    for key, row in values.items():
+        row_clean = _iter_clean_items(row, field_order)
+        if not row_clean:
+            continue
+        lines.append(f"[{table_name}.{json.dumps(str(key), ensure_ascii=False)}]")
+        for field, value in row_clean:
+            lines.append(f"{json.dumps(str(field), ensure_ascii=False)} = {_toml_scalar(value)}")
+        lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _write_toml_array_of_tables(path: Path, array_name: str, records: List[Dict[str, Any]], field_order: List[str]) -> None:
+    lines = [f"schema_version = {TEXT_CONFIG_SCHEMA_VERSION}", ""]
+    for record in records:
+        clean_items = _iter_clean_items(record, field_order)
+        if not clean_items:
+            continue
+        lines.append(f"[[{array_name}]]")
+        for key, value in clean_items:
+            lines.append(f"{json.dumps(str(key), ensure_ascii=False)} = {_toml_scalar(value)}")
+        lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _dataframe_records(df: pd.DataFrame, field_order: List[str]) -> List[Dict[str, Any]]:
+    if df is None or df.empty:
+        return []
+    records = df.to_dict(orient="records")
+    return [_coerce_row_dict(record, field_order) for record in records]
+
+
+def save_text_config_bundle(
+    bundle: Pipeline29ConfigBundle,
+    config_dir: Path,
+    *,
+    bootstrapped_from: Optional[Path] = None,
+) -> Pipeline29ConfigBundle:
+    config_dir.mkdir(parents=True, exist_ok=True)
+    normalized = _normalize_bundle_shapes(bundle)
+
+    metadata = {
+        "format": "pipeline29_text",
+        "schema_version": TEXT_CONFIG_SCHEMA_VERSION,
+        "updated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+    }
+    if bootstrapped_from is not None:
+        metadata["bootstrapped_from"] = str(bootstrapped_from)
+    if normalized.source_kind:
+        metadata["source_kind"] = normalized.source_kind
+    if normalized.source_path is not None:
+        metadata["source_path"] = str(normalized.source_path)
+
+    paths = bundle_required_paths(config_dir)
+    _write_toml_table_file(paths["metadata"], "metadata", metadata)
+    _write_toml_table_file(paths["defaults"], "defaults", normalized.defaults_cfg)
+    _write_toml_table_file(paths["data_quality"], "data_quality", normalized.data_quality_cfg)
+    mapping_rows = {
+        key: {
+            "mean": spec.get("mean", ""),
+            "sd": spec.get("sd", ""),
+            "unit": spec.get("unit", ""),
+            "notes": spec.get("notes", ""),
+        }
+        for key, spec in normalized.mappings.items()
+    }
+    _write_toml_keyed_tables(paths["mappings"], "mappings", mapping_rows, ["mean", "sd", "unit", "notes"])
+    _write_toml_array_of_tables(
+        paths["instruments"],
+        "instruments",
+        _dataframe_records(normalized.instruments_df, DEFAULT_INSTRUMENT_COLUMNS),
+        DEFAULT_INSTRUMENT_COLUMNS,
+    )
+    _write_toml_array_of_tables(
+        paths["reporting"],
+        "reporting",
+        _dataframe_records(normalized.reporting_df, DEFAULT_REPORTING_COLUMNS),
+        DEFAULT_REPORTING_COLUMNS,
+    )
+    _write_toml_array_of_tables(
+        paths["plots"],
+        "plots",
+        _dataframe_records(normalized.plots_df, DEFAULT_PLOT_COLUMNS),
+        DEFAULT_PLOT_COLUMNS,
+    )
+    _write_toml_array_of_tables(
+        paths["compare"],
+        "compare",
+        _dataframe_records(normalized.compare_df, DEFAULT_COMPARE_COLUMNS),
+        DEFAULT_COMPARE_COLUMNS,
+    )
+    _write_toml_array_of_tables(
+        paths["fuel_properties"],
+        "fuel_properties",
+        _dataframe_records(normalized.fuel_properties_df, DEFAULT_FUEL_PROPERTY_COLUMNS),
+        DEFAULT_FUEL_PROPERTY_COLUMNS,
+    )
+    normalized.text_dir = config_dir
+    normalized.source_kind = "text"
+    normalized.source_path = config_dir
+    return normalized
+
+
+def _read_toml_file(path: Path) -> Dict[str, Any]:
+    if not path.exists():
+        return {}
+    return tomllib.loads(path.read_text(encoding="utf-8"))
+
+
+def load_text_config_bundle(config_dir: Path) -> Pipeline29ConfigBundle:
+    paths = bundle_required_paths(config_dir)
+    if not text_config_exists(config_dir):
+        missing = [str(path.name) for path in paths.values() if not path.exists()]
+        raise FileNotFoundError(f"Config textual incompleta em {config_dir}: faltam {missing}")
+
+    defaults_doc = _read_toml_file(paths["defaults"])
+    data_quality_doc = _read_toml_file(paths["data_quality"])
+    mappings_doc = _read_toml_file(paths["mappings"])
+    instruments_doc = _read_toml_file(paths["instruments"])
+    reporting_doc = _read_toml_file(paths["reporting"])
+    plots_doc = _read_toml_file(paths["plots"])
+    compare_doc = _read_toml_file(paths["compare"])
+    fuel_properties_doc = _read_toml_file(paths["fuel_properties"])
+
+    defaults_cfg = {str(k): _norm_text(v) for k, v in defaults_doc.get("defaults", {}).items()}
+
+    data_quality_cfg: Dict[str, float] = {}
+    for key, value in data_quality_doc.get("data_quality", {}).items():
+        if _is_blank(value):
+            continue
+        try:
+            data_quality_cfg[str(key)] = float(value)
+        except Exception:
+            continue
+
+    mappings: Dict[str, Dict[str, str]] = {}
+    for key, spec in mappings_doc.get("mappings", {}).items():
+        if not str(key).strip():
+            continue
+        spec = spec or {}
+        mappings[str(key)] = {
+            "mean": _norm_text(spec.get("mean", "")),
+            "sd": _norm_text(spec.get("sd", "")),
+            "unit": _norm_text(spec.get("unit", "")),
+            "notes": _norm_text(spec.get("notes", "")),
+        }
+
+    instruments_df = _records_to_dataframe(instruments_doc.get("instruments", []) or [], DEFAULT_INSTRUMENT_COLUMNS)
+    reporting_df = _records_to_dataframe(reporting_doc.get("reporting", []) or [], DEFAULT_REPORTING_COLUMNS)
+    plots_df = _records_to_dataframe(plots_doc.get("plots", []) or [], DEFAULT_PLOT_COLUMNS)
+    compare_df = _records_to_dataframe(compare_doc.get("compare", []) or [], DEFAULT_COMPARE_COLUMNS)
+    fuel_properties_df = _records_to_dataframe(
+        fuel_properties_doc.get("fuel_properties", []) or [],
+        DEFAULT_FUEL_PROPERTY_COLUMNS,
+    )
+
+    bundle = Pipeline29ConfigBundle(
+        mappings=mappings,
+        instruments_df=instruments_df,
+        reporting_df=reporting_df,
+        plots_df=plots_df,
+        compare_df=compare_df,
+        fuel_properties_df=fuel_properties_df,
+        data_quality_cfg=data_quality_cfg,
+        defaults_cfg=defaults_cfg,
+        source_kind="text",
+        source_path=config_dir,
+        text_dir=config_dir,
+    )
+    return _normalize_bundle_shapes(bundle)
+
+
+def _worksheet_rows(path: Path, sheet_name: str) -> List[Dict[str, Any]]:
+    wb = load_workbook(path, data_only=False)
+    try:
+        ws = None
+        for candidate in wb.sheetnames:
+            if candidate == sheet_name or str(candidate).strip().lower() == str(sheet_name).strip().lower():
+                ws = wb[candidate]
+                break
+        if ws is None:
+            return []
+        rows = list(ws.iter_rows(values_only=True))
+        if not rows:
+            return []
+        header = [_norm_text(value) for value in rows[0]]
+        out: List[Dict[str, Any]] = []
+        for raw_row in rows[1:]:
+            if raw_row is None:
+                continue
+            row = {header[idx]: raw_row[idx] for idx in range(min(len(header), len(raw_row))) if _norm_text(header[idx])}
+            if not any(not _is_blank(value) for value in row.values()):
+                continue
+            out.append(row)
+        return out
+    finally:
+        wb.close()
+
+
+def _format_pct_for_label(value: Any) -> str:
+    try:
+        numeric = float(value)
+    except Exception:
+        return _norm_text(value)
+    if math.isfinite(numeric) and numeric.is_integer():
+        return str(int(numeric))
+    return f"{numeric:g}"
+
+
+def _infer_fuel_label(dies_pct: Any, biod_pct: Any, etoh_pct: Any, h2o_pct: Any) -> str:
+    dies = _to_builtin_scalar(dies_pct)
+    biod = _to_builtin_scalar(biod_pct)
+    etoh = _to_builtin_scalar(etoh_pct)
+    h2o = _to_builtin_scalar(h2o_pct)
+
+    try:
+        dies_num = float(dies) if dies is not None else float("nan")
+        biod_num = float(biod) if biod is not None else float("nan")
+        etoh_num = float(etoh) if etoh is not None else float("nan")
+        h2o_num = float(h2o) if h2o is not None else float("nan")
+    except Exception:
+        return ""
+
+    def _near_zero(value: float) -> bool:
+        return (not math.isfinite(value)) or abs(value) < 1e-9
+
+    if math.isfinite(dies_num) and math.isfinite(biod_num) and _near_zero(etoh_num) and _near_zero(h2o_num):
+        if abs(dies_num) < 1e-9:
+            return f"B{_format_pct_for_label(biod_num)}"
+        if abs(biod_num) < 1e-9:
+            return f"D{_format_pct_for_label(dies_num)}"
+        return f"D{_format_pct_for_label(dies_num)}B{_format_pct_for_label(biod_num)}"
+    if math.isfinite(etoh_num) and math.isfinite(h2o_num) and _near_zero(dies_num) and _near_zero(biod_num):
+        if abs(h2o_num) < 1e-9:
+            return f"E{_format_pct_for_label(etoh_num)}"
+        if abs(etoh_num) < 1e-9:
+            return f"H{_format_pct_for_label(h2o_num)}"
+        return f"E{_format_pct_for_label(etoh_num)}H{_format_pct_for_label(h2o_num)}"
+    if math.isfinite(biod_num) and math.isfinite(etoh_num) and _near_zero(dies_num) and _near_zero(h2o_num):
+        if abs(etoh_num) < 1e-9:
+            return f"B{_format_pct_for_label(biod_num)}"
+        if abs(biod_num) < 1e-9:
+            return f"E{_format_pct_for_label(etoh_num)}"
+        return f"B{_format_pct_for_label(biod_num)}E{_format_pct_for_label(etoh_num)}"
+    if math.isfinite(dies_num) and math.isfinite(etoh_num) and _near_zero(biod_num) and _near_zero(h2o_num):
+        if abs(etoh_num) < 1e-9:
+            return f"D{_format_pct_for_label(dies_num)}"
+        if abs(dies_num) < 1e-9:
+            return f"E{_format_pct_for_label(etoh_num)}"
+        return f"D{_format_pct_for_label(dies_num)}E{_format_pct_for_label(etoh_num)}"
+    return ""
+
+
+def _lookup_default_value(defaults_cfg: Dict[str, str], key_name: str) -> str:
+    wanted = _norm_key(key_name)
+    for key, value in defaults_cfg.items():
+        if _norm_key(key) == wanted:
+            return _norm_text(value)
+    return ""
+
+
+def _legacy_fuel_properties_from_csv(csv_path: Path, defaults_cfg: Dict[str, str]) -> pd.DataFrame:
+    if not csv_path.exists():
+        return pd.DataFrame(columns=DEFAULT_FUEL_PROPERTY_COLUMNS)
+
+    try:
+        df = pd.read_csv(csv_path, sep=None, engine="python", encoding="utf-8-sig")
+    except Exception:
+        return pd.DataFrame(columns=DEFAULT_FUEL_PROPERTY_COLUMNS)
+
+    rename_map: Dict[str, str] = {}
+    for column in df.columns:
+        column_norm = _norm_key(column)
+        if column_norm in {"fuel_label", "label"}:
+            rename_map[column] = "Fuel_Label"
+        elif column_norm in {"dies_pct", "dies", "diesel_pct", "diesel"}:
+            rename_map[column] = "DIES_pct"
+        elif column_norm in {"biod_pct", "biod", "biodiesel_pct", "biodiesel"}:
+            rename_map[column] = "BIOD_pct"
+        elif column_norm in {"etoh_pct", "etoh", "e_pct", "e"}:
+            rename_map[column] = "EtOH_pct"
+        elif column_norm in {"h2o_pct", "h2o", "h20_pct", "h20", "h_pct", "h"}:
+            rename_map[column] = "H2O_pct"
+        elif column_norm in {"lhv_kj_kg", "lhv", "pci_kj_kg", "pci"}:
+            rename_map[column] = "LHV_kJ_kg"
+        elif column_norm in {"fuel_density_kg_m3", "density_kg_m3", "density"}:
+            rename_map[column] = "Fuel_Density_kg_m3"
+        elif column_norm in {"fuel_cost_r_l", "cost_r_l", "cost"}:
+            rename_map[column] = "Fuel_Cost_R_L"
+        elif column_norm in {"reference", "source"}:
+            rename_map[column] = "reference"
+        elif column_norm in {"notes", "note"}:
+            rename_map[column] = "notes"
+    df = df.rename(columns=rename_map)
+
+    records: List[Dict[str, Any]] = []
+    for raw_row in df.to_dict(orient="records"):
+        row = _coerce_row_dict(raw_row, DEFAULT_FUEL_PROPERTY_COLUMNS)
+        label = _norm_text(row.get("Fuel_Label", ""))
+        if not label:
+            label = _infer_fuel_label(
+                row.get("DIES_pct", ""),
+                row.get("BIOD_pct", ""),
+                row.get("EtOH_pct", ""),
+                row.get("H2O_pct", ""),
+            )
+        if not label:
+            continue
+
+        density = _norm_text(row.get("Fuel_Density_kg_m3", ""))
+        cost = _norm_text(row.get("Fuel_Cost_R_L", ""))
+        if not density:
+            density = _lookup_default_value(defaults_cfg, f"FUEL_DENSITY_KG_M3_{label}")
+        if not cost:
+            cost = _lookup_default_value(defaults_cfg, f"FUEL_COST_R_L_{label}")
+
+        records.append(
+            {
+                "Fuel_Label": label,
+                "DIES_pct": row.get("DIES_pct", ""),
+                "BIOD_pct": row.get("BIOD_pct", ""),
+                "EtOH_pct": row.get("EtOH_pct", ""),
+                "H2O_pct": row.get("H2O_pct", ""),
+                "LHV_kJ_kg": row.get("LHV_kJ_kg", ""),
+                "Fuel_Density_kg_m3": density,
+                "Fuel_Cost_R_L": cost,
+                "reference": _norm_text(row.get("reference", "")) or f"Imported from {csv_path.name}",
+                "notes": _norm_text(row.get("notes", "")),
+            }
+        )
+
+    return _records_to_dataframe(records, DEFAULT_FUEL_PROPERTY_COLUMNS)
+
+
+def _excel_rows_to_bundle(excel_path: Path) -> Pipeline29ConfigBundle:
+    mapping_rows = _worksheet_rows(excel_path, "Mappings")
+    mappings: Dict[str, Dict[str, str]] = {}
+    for row in mapping_rows:
+        key = _norm_text(row.get("key", ""))
+        col_mean = _norm_text(row.get("col_mean", ""))
+        if not key or "logical variable identifier" in key.lower():
+            continue
+        if "exact dataframe column name" in col_mean.lower():
+            continue
+        mappings[key] = {
+            "mean": col_mean,
+            "sd": _norm_text(row.get("col_sd", "")),
+            "unit": _norm_text(row.get("unit", "")),
+            "notes": _norm_text(row.get("notes", "")),
+        }
+
+    instruments_rows = _worksheet_rows(excel_path, "Instruments")
+    reporting_rows = _worksheet_rows(excel_path, "Reporting_Rounding")
+    if not reporting_rows:
+        reporting_rows = _worksheet_rows(excel_path, "UPD_Rounding")
+    defaults_rows = _worksheet_rows(excel_path, "Defaults")
+    plots_rows = _worksheet_rows(excel_path, "Plots")
+    data_quality_rows = _worksheet_rows(excel_path, "data quality assessment")
+
+    defaults_cfg: Dict[str, str] = {}
+    for row in defaults_rows:
+        param = _norm_text(row.get("param", ""))
+        if not param or "global parameter name" in param.lower():
+            continue
+        defaults_cfg[param] = _norm_text(row.get("value", ""))
+
+    data_quality_cfg: Dict[str, float] = {}
+    for row in data_quality_rows:
+        param = _norm_text(row.get("param", ""))
+        if not param:
+            continue
+        value = row.get("value", None)
+        if _is_blank(value):
+            continue
+        try:
+            data_quality_cfg[param] = float(value)
+        except Exception:
+            continue
+
+    fuel_properties_df = _legacy_fuel_properties_from_csv(excel_path.parent / "lhv.csv", defaults_cfg)
+    instruments_df = _records_to_dataframe(instruments_rows, DEFAULT_INSTRUMENT_COLUMNS)
+    reporting_df = _records_to_dataframe(reporting_rows, DEFAULT_REPORTING_COLUMNS)
+    plots_df = _records_to_dataframe(plots_rows, DEFAULT_PLOT_COLUMNS)
+    if not plots_df.empty and "show_uncertainty" in plots_df.columns:
+        for idx, row in plots_df.iterrows():
+            yerr = _norm_text(row.get("yerr_col", ""))
+            if _norm_text(row.get("show_uncertainty", "")):
+                continue
+            if yerr.lower() in {"off", "none", "disabled", "disable", "0", "na", "n/a"}:
+                plots_df.at[idx, "show_uncertainty"] = "off"
+            else:
+                plots_df.at[idx, "show_uncertainty"] = "auto"
+
+    bundle = Pipeline29ConfigBundle(
+        mappings=mappings,
+        instruments_df=instruments_df,
+        reporting_df=reporting_df,
+        plots_df=plots_df,
+        compare_df=pd.DataFrame(columns=DEFAULT_COMPARE_COLUMNS),
+        fuel_properties_df=fuel_properties_df,
+        data_quality_cfg=data_quality_cfg,
+        defaults_cfg=defaults_cfg,
+        source_kind="excel",
+        source_path=excel_path,
+        text_dir=None,
+    )
+    return _normalize_bundle_shapes(bundle)
+
+
+def bootstrap_text_config_from_excel(excel_path: Path, config_dir: Path) -> Pipeline29ConfigBundle:
+    bundle = _excel_rows_to_bundle(excel_path)
+    return save_text_config_bundle(bundle, config_dir, bootstrapped_from=excel_path)
+
+
+def load_excel_config_bundle(excel_path: Path) -> Pipeline29ConfigBundle:
+    return _excel_rows_to_bundle(excel_path)
+
+
+def bundle_to_preset_payload(bundle: Pipeline29ConfigBundle) -> Dict[str, Any]:
+    normalized = _normalize_bundle_shapes(bundle)
+    return {
+        "schema_version": TEXT_CONFIG_SCHEMA_VERSION,
+        "mappings": normalized.mappings,
+        "instruments": _dataframe_records(normalized.instruments_df, DEFAULT_INSTRUMENT_COLUMNS),
+        "reporting": _dataframe_records(normalized.reporting_df, DEFAULT_REPORTING_COLUMNS),
+        "plots": _dataframe_records(normalized.plots_df, DEFAULT_PLOT_COLUMNS),
+        "compare": _dataframe_records(normalized.compare_df, DEFAULT_COMPARE_COLUMNS),
+        "fuel_properties": _dataframe_records(normalized.fuel_properties_df, DEFAULT_FUEL_PROPERTY_COLUMNS),
+        "data_quality": normalized.data_quality_cfg,
+        "defaults": normalized.defaults_cfg,
+    }
+
+
+def bundle_from_preset_payload(payload: Dict[str, Any]) -> Pipeline29ConfigBundle:
+    return _normalize_bundle_shapes(
+        Pipeline29ConfigBundle(
+            mappings=dict(payload.get("mappings", {}) or {}),
+            instruments_df=_records_to_dataframe(payload.get("instruments", []) or [], DEFAULT_INSTRUMENT_COLUMNS),
+            reporting_df=_records_to_dataframe(payload.get("reporting", []) or [], DEFAULT_REPORTING_COLUMNS),
+            plots_df=_records_to_dataframe(payload.get("plots", []) or [], DEFAULT_PLOT_COLUMNS),
+            compare_df=_records_to_dataframe(payload.get("compare", []) or [], DEFAULT_COMPARE_COLUMNS),
+            fuel_properties_df=_records_to_dataframe(
+                payload.get("fuel_properties", []) or [],
+                DEFAULT_FUEL_PROPERTY_COLUMNS,
+            ),
+            data_quality_cfg=dict(payload.get("data_quality", {}) or {}),
+            defaults_cfg=dict(payload.get("defaults", {}) or {}),
+            source_kind="preset",
+            source_path=None,
+            text_dir=None,
+        )
+    )
+
+
+def save_bundle_preset(bundle: Pipeline29ConfigBundle, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = bundle_to_preset_payload(bundle)
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def load_bundle_preset(path: Path) -> Pipeline29ConfigBundle:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return bundle_from_preset_payload(payload)
+
+
+def save_gui_state(payload: Dict[str, Any], path: Optional[Path] = None) -> None:
+    target = path or default_gui_state_path()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def load_gui_state(path: Optional[Path] = None) -> Dict[str, Any]:
+    target = path or default_gui_state_path()
+    if not target.exists():
+        return {}
+    try:
+        return json.loads(target.read_text(encoding="utf-8"))
+    except Exception:
+        return {}

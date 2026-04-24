@@ -1,0 +1,661 @@
+schema_version = 1
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_media"
+"metric_id" = "consumo"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_media"
+"metric_id" = "co2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_media"
+"metric_id" = "co"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_media"
+"metric_id" = "o2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_media"
+"metric_id" = "nox"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_media"
+"metric_id" = "thc"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_subida"
+"metric_id" = "consumo"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_subida"
+"metric_id" = "co2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_subida"
+"metric_id" = "co"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_subida"
+"metric_id" = "o2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_subida"
+"metric_id" = "nox"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_subida"
+"metric_id" = "thc"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_descida"
+"metric_id" = "consumo"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_descida"
+"metric_id" = "co2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_descida"
+"metric_id" = "co"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_descida"
+"metric_id" = "o2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_descida"
+"metric_id" = "nox"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_descida"
+"metric_id" = "thc"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "baseline_descida"
+"metric_id" = "consumo"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "baseline_descida"
+"metric_id" = "co2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "baseline_descida"
+"metric_id" = "co"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "baseline_descida"
+"metric_id" = "o2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "baseline_descida"
+"metric_id" = "nox"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "baseline_descida"
+"metric_id" = "thc"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "aditivado_subida"
+"right_series" = "aditivado_descida"
+"metric_id" = "consumo"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "aditivado_subida"
+"right_series" = "aditivado_descida"
+"metric_id" = "co2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "aditivado_subida"
+"right_series" = "aditivado_descida"
+"metric_id" = "co"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "aditivado_subida"
+"right_series" = "aditivado_descida"
+"metric_id" = "o2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "aditivado_subida"
+"right_series" = "aditivado_descida"
+"metric_id" = "nox"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "aditivado_subida"
+"right_series" = "aditivado_descida"
+"metric_id" = "thc"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_descida"
+"metric_id" = "consumo"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_descida"
+"metric_id" = "co2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_descida"
+"metric_id" = "co"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_descida"
+"metric_id" = "o2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_descida"
+"metric_id" = "nox"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "1"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_descida"
+"metric_id" = "thc"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_subida"
+"metric_id" = "consumo"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_subida"
+"metric_id" = "co2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_subida"
+"metric_id" = "co"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_subida"
+"metric_id" = "o2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_subida"
+"metric_id" = "nox"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_subida"
+"metric_id" = "thc"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_descida"
+"metric_id" = "consumo"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_descida"
+"metric_id" = "co2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_descida"
+"metric_id" = "co"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_descida"
+"metric_id" = "o2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_descida"
+"metric_id" = "nox"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_media"
+"right_series" = "aditivado_descida"
+"metric_id" = "thc"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_media"
+"metric_id" = "consumo"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_media"
+"metric_id" = "co2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_media"
+"metric_id" = "co"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_media"
+"metric_id" = "o2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_media"
+"metric_id" = "nox"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_media"
+"metric_id" = "thc"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_media"
+"metric_id" = "consumo"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_media"
+"metric_id" = "co2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_media"
+"metric_id" = "co"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_media"
+"metric_id" = "o2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_media"
+"metric_id" = "nox"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_descida"
+"right_series" = "aditivado_media"
+"metric_id" = "thc"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_descida"
+"metric_id" = "consumo"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_descida"
+"metric_id" = "co2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_descida"
+"metric_id" = "co"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_descida"
+"metric_id" = "o2"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_descida"
+"metric_id" = "nox"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
+
+[[compare]]
+"enabled" = "0"
+"with_uncertainty" = "1"
+"without_uncertainty" = "0"
+"left_series" = "baseline_subida"
+"right_series" = "aditivado_descida"
+"metric_id" = "thc"
+"show_uncertainty" = "on"
+"notes" = "GUI quick compare selection."
