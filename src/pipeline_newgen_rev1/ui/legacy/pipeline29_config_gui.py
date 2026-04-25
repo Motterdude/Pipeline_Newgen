@@ -2611,8 +2611,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             project_root=base_dir,
             config_source="text",
             text_config_dir=config_dir,
-            use_preflight=True,
-            prompt_runtime_dirs=True,
+            use_preflight=False,
+            prompt_runtime_dirs=False,
             prompt_plot_filter=True,
         )
         print(json.dumps(result.summary, indent=2, sort_keys=True))

@@ -357,9 +357,23 @@ def _derive_title_for_expansion(template: str, x_col: str, y_col: str) -> str:
     return t
 
 
-# ── x-axis resolution (simplified, no mestrado mode) ───────────────
+# ── x-axis resolution (sweep-aware) ────────────────────────────────
 
-def _resolve_plot_x_request(x_col_req: str) -> Tuple[str, bool]:
+def _resolve_plot_x_request(
+    x_col_req: str,
+    *,
+    sweep_active: bool = False,
+    sweep_x_col: str = "",
+    sweep_effective_x_col: str = "",
+) -> Tuple[str, bool]:
+    if sweep_active:
+        from ..sweep_axis import resolve_plot_x_for_sweep
+        return resolve_plot_x_for_sweep(
+            x_col_req,
+            sweep_active=sweep_active,
+            sweep_x_col=sweep_x_col,
+            sweep_effective_x_col=sweep_effective_x_col,
+        )
     req = _to_str_or_empty(x_col_req)
     return (req if req else "Load_kW"), False
 
@@ -369,7 +383,23 @@ def _runtime_plot_x_label(
     x_col_base: str,
     x_col_resolved: str,
     mestrado_override: bool,
+    *,
+    sweep_active: bool = False,
+    sweep_x_col: str = "",
+    sweep_effective_x_col: str = "",
+    sweep_axis_label: str = "",
 ) -> str:
+    if sweep_active:
+        from ..sweep_axis import resolve_plot_x_label_for_sweep
+        return resolve_plot_x_label_for_sweep(
+            x_label,
+            x_col_base,
+            x_col_resolved,
+            sweep_active=sweep_active,
+            sweep_x_col=sweep_x_col,
+            sweep_effective_x_col=sweep_effective_x_col,
+            sweep_axis_label=sweep_axis_label,
+        )
     label = _to_str_or_empty(x_label)
     return label if label else x_col_resolved
 

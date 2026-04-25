@@ -21,12 +21,13 @@ class OrchestratorTests(unittest.TestCase):
         self.assertTrue(by_key["apply_sweep_binning"].enabled)
         self.assertTrue(by_key["rewrite_plot_axis_to_sweep"].enabled)
         self.assertFalse(by_key["run_compare_plots"].enabled)
-        self.assertFalse(by_key["run_compare_iteracoes"].enabled)
+        self.assertFalse(by_key["compute_compare_iteracoes"].enabled)
+        self.assertFalse(by_key["plot_compare_iteracoes"].enabled)
         self.assertFalse(by_key["run_special_load_plots"].enabled)
 
     def test_summary_counts_enabled_and_disabled_steps(self) -> None:
         summary = summarize_plan(build_load_sweep_plan("load"))
-        self.assertEqual(summary["total_steps"], 18)
+        self.assertEqual(summary["total_steps"], 20)
         self.assertGreater(summary["enabled_steps"], 0)
         self.assertGreater(summary["disabled_steps"], 0)
         self.assertIn("plotting", summary["enabled_stage_counts"])

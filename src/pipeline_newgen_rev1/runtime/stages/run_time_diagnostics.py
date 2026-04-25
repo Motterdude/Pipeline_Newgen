@@ -1,12 +1,9 @@
-"""Stage: native time-diagnostics.
+"""Stage: native time-diagnostics (processing phase only).
 
 Consome `ctx.labview_frames` (preenchido por `_discover_and_read_inputs` no
 runner), gera a tabela por amostra e o sumário por arquivo, escreve os 2
-xlsx em `ctx.output_dir` e os PNGs em `ctx.output_dir/plots/`.
-
-Este é o primeiro stage **nativo** pós-config — i.e. não depende do galpão
-antigo. Os 19 PNGs em `time_delta_by_file/` + 1 `time_delta_to_next_all_samples.png`
-que antes eram gerados só pelo legado passam a ser produzidos pelo newgen.
+xlsx em `ctx.output_dir`.  PNGs são gerados à parte por ``PlotTimeDiagnosticsStage``
+na fase de plotting.
 """
 from __future__ import annotations
 
@@ -17,8 +14,6 @@ import pandas as pd
 from ..context import RuntimeContext
 from ..time_diagnostics import (
     build_time_diagnostics,
-    plot_time_delta_all_samples,
-    plot_time_delta_by_file,
     summarize_time_diagnostics,
 )
 
@@ -58,15 +53,3 @@ class RunTimeDiagnosticsStage:
             print(f"[OK] run_time_diagnostics | wrote {summary_xlsx.name} ({len(summary_df)} rows)")
         except Exception as exc:
             print(f"[WARN] run_time_diagnostics | xlsx write failed: {type(exc).__name__}: {exc}")
-
-        plot_dir = out_dir / "plots"
-        plot_dir.mkdir(parents=True, exist_ok=True)
-        try:
-            all_samples_png = plot_time_delta_all_samples(time_df, plot_dir=plot_dir)
-            per_file_count = plot_time_delta_by_file(time_df, plot_dir=plot_dir)
-            print(
-                f"[OK] run_time_diagnostics | plots: all_samples={'1' if all_samples_png else '0'}, "
-                f"per_file={per_file_count}"
-            )
-        except Exception as exc:
-            print(f"[WARN] run_time_diagnostics | plot generation failed: {type(exc).__name__}: {exc}")

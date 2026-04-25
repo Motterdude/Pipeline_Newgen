@@ -30,11 +30,17 @@ class RunUnitaryPlotsStage:
         plots_df = pd.DataFrame(plots_list) if plots_list else pd.DataFrame()
         mappings = ctx.bundle.mappings if ctx.bundle is not None else {}
 
+        sel = ctx.normalized_state.selection if ctx.normalized_state else None
         ctx.unitary_plot_summary = make_plots_from_config_with_summary(
             ctx.final_table,
             plots_df,
             mappings,
             plot_dir=plot_dir,
+            sweep_active=ctx.sweep_active,
+            sweep_x_col=sel.sweep_x_col if sel else "",
+            sweep_effective_x_col=ctx.sweep_effective_x_col,
+            sweep_axis_label=ctx.sweep_axis_label,
+            sweep_axis_token=ctx.sweep_axis_token,
         )
         summary = ctx.unitary_plot_summary or {}
         generated = summary.get("generated", 0)

@@ -32,6 +32,8 @@ class RuntimeContext:
     prompt_plot_filter: bool = False
     runtime_dirs_prompt_func: Optional[PromptRuntimeDirsFunc] = None
     plot_filter_prompt_func: Optional[Callable[..., Any]] = None
+    plot_scope: str = "all"
+    compare_iter_pairs_override: Optional[str] = None
 
     # --- Populated by stages ---
     bundle: Optional[ConfigBundle] = None
@@ -77,6 +79,19 @@ class RuntimeContext:
     time_diagnostics: Optional[pd.DataFrame] = None
     time_diagnostics_summary: Optional[pd.DataFrame] = None
 
+    # --- Populated by sweep stages ---
+    sweep_active: bool = False
+    sweep_effective_x_col: str = ""
+    sweep_axis_label: str = ""
+    sweep_axis_token: str = ""
+    sweep_selected_basenames: Optional[Set[str]] = None
+    sweep_dup_prompt_func: Optional[Callable[..., Any]] = None
+
+    # --- Populated by compute_compare_iteracoes ---
+    compare_iteracoes_table: Optional[pd.DataFrame] = None
+    compare_iteracoes_series: Optional[Dict[str, Dict[str, Any]]] = None
+    compare_iteracoes_requests: Optional[List[Dict[str, Any]]] = None
+
     @classmethod
     def from_kwargs(
         cls,
@@ -93,6 +108,7 @@ class RuntimeContext:
         prompt_plot_filter: bool = False,
         runtime_dirs_prompt_func: Optional[PromptRuntimeDirsFunc] = None,
         plot_filter_prompt_func: Optional[Callable[..., Any]] = None,
+        sweep_dup_prompt_func: Optional[Callable[..., Any]] = None,
     ) -> "RuntimeContext":
         return cls(
             project_root=Path(project_root).expanduser().resolve(),
@@ -107,4 +123,5 @@ class RuntimeContext:
             prompt_plot_filter=prompt_plot_filter,
             runtime_dirs_prompt_func=runtime_dirs_prompt_func,
             plot_filter_prompt_func=plot_filter_prompt_func,
+            sweep_dup_prompt_func=sweep_dup_prompt_func,
         )

@@ -484,6 +484,11 @@ class TestRunUnitaryPlotsStage(unittest.TestCase):
                 "with_uncertainty": "", "without_uncertainty": "",
             }]
             ctx.bundle.mappings = {}
+            ctx.sweep_active = False
+            ctx.sweep_effective_x_col = ""
+            ctx.sweep_axis_label = ""
+            ctx.sweep_axis_token = ""
+            ctx.normalized_state = None
             stage = RunUnitaryPlotsStage()
             stage.run(ctx)
             self.assertIsNotNone(ctx.unitary_plot_summary)

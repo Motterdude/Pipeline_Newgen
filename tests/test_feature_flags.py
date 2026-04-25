@@ -19,7 +19,9 @@ class FeatureFlagsTests(unittest.TestCase):
         self.assertFalse(selection["prompt_sweep_duplicate_selector"])
         self.assertFalse(selection["rewrite_plot_axis_to_sweep"])
         self.assertTrue(selection["run_compare_plots"])
-        self.assertTrue(selection["run_compare_iteracoes"])
+        self.assertTrue(selection["compute_compare_iteracoes"])
+        self.assertTrue(selection["plot_compare_iteracoes"])
+        self.assertTrue(selection["plot_time_diagnostics"])
 
     def test_sweep_defaults_enable_sweep_runtime(self) -> None:
         selection = default_feature_selection("sweep")
@@ -29,7 +31,8 @@ class FeatureFlagsTests(unittest.TestCase):
         self.assertTrue(selection["prompt_sweep_duplicate_selector"])
         self.assertTrue(selection["rewrite_plot_axis_to_sweep"])
         self.assertFalse(selection["run_compare_plots"])
-        self.assertFalse(selection["run_compare_iteracoes"])
+        self.assertFalse(selection["compute_compare_iteracoes"])
+        self.assertFalse(selection["plot_compare_iteracoes"])
 
     def test_merge_ignores_unknown_keys(self) -> None:
         selection = merge_feature_selection("load", {"apply_sweep_binning": True, "unknown_flag": True})

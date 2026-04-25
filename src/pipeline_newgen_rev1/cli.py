@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -81,6 +82,14 @@ def _parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     run_load.add_argument("--use-preflight", action="store_true", help="Run the migrated preflight before execution.")
     run_load.add_argument("--prompt-runtime-dirs", action="store_true", help="Force the runtime folder chooser before execution.")
     run_load.add_argument("--prompt-plot-filter", action="store_true", help="Force the plot point filter in load mode.")
+    run_load.add_argument("--plot-scope", choices=["all", "unitary", "compare", "none"], default="",
+                          help="Which plot families to generate. Env var: PIPELINE29_PLOT_SCOPE. Default: all.")
+    run_load.add_argument("--compare-iter-pairs", default="",
+                          help="JSON array of compare_iteracoes pair overrides. Env var: PIPELINE29_COMPARE_ITER_PAIRS.")
+    run_load.add_argument("--aggregation-mode", choices=["load", "sweep"], default="",
+                          help="Force load or sweep mode without preflight prompt.")
+    run_load.add_argument("--sweep-bin-tol", type=float, default=0.0,
+                          help="Override sweep bin tolerance (default: 0.015).")
     run_load.add_argument("--json", action="store_true", help="Print the execution summary as JSON.")
 
     convert_open = sub.add_parser("convert-open", help="Convert KiBox .open files to CSV using the migrated OpenToCSV adapter.")
@@ -183,8 +192,8 @@ def main(argv: Optional[List[str]] = None) -> int:
                 project_root=root,
                 config_source="text",
                 text_config_dir=config_dir,
-                use_preflight=True,
-                prompt_runtime_dirs=True,
+                use_preflight=False,
+                prompt_runtime_dirs=False,
                 prompt_plot_filter=True,
             )
             print(json.dumps(result.summary, indent=2, sort_keys=True))
@@ -192,6 +201,20 @@ def main(argv: Optional[List[str]] = None) -> int:
         return exit_code
     if args.command == "run-load-sweep":
         root = Path(args.base_dir).expanduser().resolve() if args.base_dir else Path(__file__).resolve().parents[2]
+        plot_scope = (
+            args.plot_scope
+            or os.environ.get("PIPELINE29_PLOT_SCOPE", "").strip().lower()
+            or "all"
+        )
+        compare_iter_pairs = (
+            args.compare_iter_pairs
+            or os.environ.get("PIPELINE29_COMPARE_ITER_PAIRS", "").strip()
+            or None
+        )
+        use_default_dirs_env = os.environ.get("PIPELINE29_USE_DEFAULT_RUNTIME_DIRS", "").strip().lower()
+        prompt_runtime_dirs = bool(args.prompt_runtime_dirs) and use_default_dirs_env not in ("1", "true", "yes")
+        aggregation_mode = args.aggregation_mode or None
+        sweep_bin_tol = args.sweep_bin_tol if args.sweep_bin_tol > 0 else None
         result = run_load_sweep(
             project_root=root,
             config_source=args.config_source,
@@ -201,8 +224,12 @@ def main(argv: Optional[List[str]] = None) -> int:
             process_dir=Path(args.process_dir).expanduser().resolve() if args.process_dir else None,
             out_dir=Path(args.out_dir).expanduser().resolve() if args.out_dir else None,
             use_preflight=bool(args.use_preflight),
-            prompt_runtime_dirs=bool(args.prompt_runtime_dirs),
+            prompt_runtime_dirs=prompt_runtime_dirs,
             prompt_plot_filter=bool(args.prompt_plot_filter),
+            plot_scope=plot_scope,
+            compare_iter_pairs=compare_iter_pairs,
+            aggregation_mode_override=aggregation_mode,
+            sweep_bin_tol_override=sweep_bin_tol,
         )
         print(json.dumps(result.summary, indent=2, sort_keys=True))
         return 0

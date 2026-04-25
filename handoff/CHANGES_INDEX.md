@@ -4,6 +4,9 @@ Ordem cronológica inversa. Uma linha por sessão. Detalhe completo em `handoff/
 
 ## 2026-04
 
+- **2026-04-25** — [sweep-mode-port](changes/2026-04-25-sweep-mode-port.md) — Port completo do sweep mode: 4 stages nativas + 3 módulos core + integração com dispatch de plots. `LEGACY_PIPELINE30_ANCHORS` vazio — zero bridges restantes. 382 testes OK (+59).
+- **2026-04-25** — [load-mode-completion](changes/2026-04-25-load-mode-completion.md) — Load mode completo: port `run_compare_plots` + `run_special_load_plots`, CLI `--plot-scope`/`--compare-iter-pairs`, env vars, limpeza de 4 bridges mortas. 323 testes OK (+28).
+- **2026-04-25** — [three-phase-pipeline-compare-port](changes/2026-04-25-three-phase-pipeline-compare-port.md) — Reestruturação em 3 fases (config→processing→plotting) + port nativo de compute/plot_compare_iteracoes. Split de run_time_diagnostics. Runner com feature-flag gating. 295 testes OK (+35).
 - **2026-04-24** — [port-unitary-plots](changes/2026-04-24-port-unitary-plots.md) — Port nativo de `run_unitary_plots`: subpacote `runtime/unitary_plots/` com 5 módulos (~900 linhas) cobrindo fuel grouping, config parsing, 3 renderers matplotlib, dispatch loop. Stage nativa substitui bridge. 260 testes OK (+41). `run_unitary_plots` 🟡 → 🟢.
 - **2026-04-24** — [port-export-excel](changes/2026-04-24-port-export-excel.md) — Port nativo de `export_excel`: stage trivial substitui bridge. `df.to_excel()` com fallback de PermissionError. 219 testes OK.
 - **2026-04-24** — [port-build-final-table](changes/2026-04-24-port-build-final-table.md) — Port nativo de `build_final_table`: subpacote `runtime/final_table/` com 15 módulos (2.217 linhas) cobrindo merges, incertezas GUM, airflow, emissões g/kWh, economia vs diesel, cenários de máquinas, ETA_V, reporting. Stage nativa substitui bridge no registry. 136 testes OK.

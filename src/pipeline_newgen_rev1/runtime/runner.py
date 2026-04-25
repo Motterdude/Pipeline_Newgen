@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
@@ -33,10 +33,23 @@ from .plot_point_filter import (
     prompt_plot_point_filter_from_metas,
 )
 from .runtime_dirs import PromptRuntimeDirsFunc
-from .stages import CONFIG_STAGE_ORDER, PROCESSING_STAGE_ORDER, STAGE_PIPELINE_ORDER, STAGE_REGISTRY
+from .stages import (
+    CONFIG_STAGE_ORDER,
+    PLOTTING_STAGE_ORDER,
+    PROCESSING_STAGE_ORDER,
+    STAGE_PIPELINE_ORDER,
+    STAGE_REGISTRY,
+)
 
 
 RUNTIME_OUTPUT_DIRNAME = "pipeline_newgen_runtime"
+
+_PLOT_SCOPE_INCLUDE: Dict[str, Optional[set]] = {
+    "all": None,
+    "unitary": {"run_unitary_plots", "plot_time_diagnostics"},
+    "compare": {"run_compare_plots", "plot_compare_iteracoes", "plot_time_diagnostics"},
+    "none": set(),
+}
 SUMMARY_JSON_NAME = "newgen_runtime_summary.json"
 SUMMARY_XLSX_NAME = "newgen_runtime_summary.xlsx"
 
@@ -268,6 +281,11 @@ def run_load_sweep(
     prompt_plot_filter: bool = False,
     _runtime_dirs_prompt_func: Optional[PromptRuntimeDirsFunc] = None,
     _plot_filter_prompt_func: Optional[Any] = None,
+    _sweep_dup_prompt_func: Optional[Any] = None,
+    plot_scope: str = "all",
+    compare_iter_pairs: Optional[str] = None,
+    aggregation_mode_override: Optional[str] = None,
+    sweep_bin_tol_override: Optional[float] = None,
 ) -> RuntimeExecutionResult:
     ctx = RuntimeContext.from_kwargs(
         project_root=project_root,
@@ -282,26 +300,55 @@ def run_load_sweep(
         prompt_plot_filter=prompt_plot_filter,
         runtime_dirs_prompt_func=_runtime_dirs_prompt_func,
         plot_filter_prompt_func=_plot_filter_prompt_func,
+        sweep_dup_prompt_func=_sweep_dup_prompt_func,
     )
 
+    ctx.plot_scope = plot_scope if plot_scope in _PLOT_SCOPE_INCLUDE else "all"
+    ctx.compare_iter_pairs_override = compare_iter_pairs or None
+
     # Phase 1: config stages — resolve bundle, runtime dirs, optional preflight.
+    # Config stages always run (they set up ctx.enabled_features for downstream gating).
     for feature_key in CONFIG_STAGE_ORDER:
         stage = STAGE_REGISTRY.get(feature_key)
         if stage is None:
             continue
         stage.run(ctx)
 
+    if aggregation_mode_override and ctx.selection is not None:
+        overrides: dict = {"aggregation_mode": aggregation_mode_override}
+        if sweep_bin_tol_override is not None and sweep_bin_tol_override > 0:
+            overrides["sweep_bin_tol"] = sweep_bin_tol_override
+        ctx.selection = replace(ctx.selection, **overrides)
+
     _finalize_runtime_state(ctx)
     _discover_and_read_inputs(ctx)
 
-    # Phase 2: processing stages — can consume ctx.labview_frames now.
+    # Phase 2: processing — data computation + export only. Feature-flag gated.
     for feature_key in PROCESSING_STAGE_ORDER:
+        if ctx.enabled_features and feature_key not in ctx.enabled_features:
+            print(f"[SKIP] {feature_key} | disabled by feature flags")
+            continue
         stage = STAGE_REGISTRY.get(feature_key)
         if stage is None:
             continue
         stage.run(ctx)
 
     _apply_plot_filter(ctx)
+
+    # Phase 3: plotting — visualization only. Feature-flag + plot-scope gated.
+    scope_allowed = _PLOT_SCOPE_INCLUDE.get(ctx.plot_scope)
+    for feature_key in PLOTTING_STAGE_ORDER:
+        if ctx.enabled_features and feature_key not in ctx.enabled_features:
+            print(f"[SKIP] {feature_key} | disabled by feature flags")
+            continue
+        if scope_allowed is not None and feature_key not in scope_allowed:
+            print(f"[SKIP] {feature_key} | excluded by --plot-scope={ctx.plot_scope}")
+            continue
+        stage = STAGE_REGISTRY.get(feature_key)
+        if stage is None:
+            continue
+        stage.run(ctx)
+
     _write_summary_artifacts(ctx)
 
     assert ctx.summary_json_path is not None and ctx.summary_xlsx_path is not None

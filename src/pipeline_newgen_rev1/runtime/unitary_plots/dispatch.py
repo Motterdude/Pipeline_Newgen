@@ -36,6 +36,10 @@ from .renderers import (
     plot_all_fuels_with_value_labels,
     plot_all_fuels_xy,
 )
+from ..sweep_axis import (
+    resolve_plot_fixed_x_for_sweep,
+    rewrite_plot_filename_title,
+)
 
 
 def _new_plot_run_summary() -> Dict[str, object]:
@@ -55,6 +59,12 @@ def make_plots_from_config_with_summary(
     mappings: dict,
     plot_dir: Optional[Path] = None,
     series_col: Optional[str] = None,
+    *,
+    sweep_active: bool = False,
+    sweep_x_col: str = "",
+    sweep_effective_x_col: str = "",
+    sweep_axis_label: str = "",
+    sweep_axis_token: str = "",
 ) -> Dict[str, object]:
     summary = _new_plot_run_summary()
     target_dir = Path(plot_dir) if plot_dir is not None else Path("plots")
@@ -131,6 +141,14 @@ def make_plots_from_config_with_summary(
         label_variant = _to_str_or_empty(r.get("label_variant", "box")).lower() or "box"
         pt = plot_type.lower().strip()
 
+        sweep_kw = dict(
+            sweep_active=sweep_active,
+            sweep_x_col=sweep_x_col,
+            sweep_effective_x_col=sweep_effective_x_col,
+            sweep_axis_label=sweep_axis_label,
+            sweep_axis_token=sweep_axis_token,
+        )
+
         # ── kibox_all ───────────────────────────────────────────────
         if pt in {"kibox_all", "all_kibox"}:
             _dispatch_kibox_all(
@@ -138,7 +156,7 @@ def make_plots_from_config_with_summary(
                 x_col_req, x_label, y_label,
                 fixed_x, fixed_y, fixed_y_limits, y_tick_step,
                 y_tol_plus, y_tol_minus, fuels_override, series_col,
-                plot_dir, mark_generated, mark_skipped,
+                plot_dir, mark_generated, mark_skipped, sweep_kw,
             )
             continue
 
@@ -149,7 +167,7 @@ def make_plots_from_config_with_summary(
                 x_col_req, y_col_req, x_label, y_label,
                 fixed_x, fixed_y, fixed_y_limits, y_tick_step,
                 y_tol_plus, y_tol_minus, fuels_override, series_col,
-                plot_dir, mark_generated, mark_skipped,
+                plot_dir, mark_generated, mark_skipped, sweep_kw,
             )
             continue
 
@@ -160,7 +178,7 @@ def make_plots_from_config_with_summary(
                 x_col_req, y_col_req, x_label, y_label,
                 fixed_x, fixed_y, fixed_y_limits, y_tick_step,
                 y_tol_plus, y_tol_minus, fuels_override, series_col,
-                plot_dir, mark_generated, mark_skipped,
+                plot_dir, mark_generated, mark_skipped, sweep_kw,
             )
             continue
 
@@ -171,7 +189,7 @@ def make_plots_from_config_with_summary(
                 x_col_req, y_col_req, x_label, y_label, label_variant,
                 fixed_x, fixed_y, fixed_y_limits, y_tick_step,
                 y_tol_plus, y_tol_minus, fuels_override, series_col,
-                plot_dir, mark_generated, mark_skipped,
+                plot_dir, mark_generated, mark_skipped, sweep_kw,
             )
             continue
 
@@ -193,7 +211,7 @@ def _dispatch_kibox_all(
     x_col_req, x_label, y_label,
     fixed_x, fixed_y, fixed_y_limits, y_tick_step,
     y_tol_plus, y_tol_minus, fuels_override, series_col,
-    plot_dir, mark_generated, mark_skipped,
+    plot_dir, mark_generated, mark_skipped, sweep_kw,
 ):
     kibox_cols = [c for c in out_df.columns if str(c).startswith("KIBOX_") and c != "KIBOX_N_files"]
     if not kibox_cols:
@@ -201,7 +219,11 @@ def _dispatch_kibox_all(
         mark_skipped(plot_label, "sem colunas KIBOX_* no output")
         return
 
-    x_col_base, mestrado_x_override = _resolve_plot_x_request(x_col_req)
+    sw = sweep_kw or {}
+    x_resolve_kw = {k: sw.get(k, "") for k in ("sweep_active", "sweep_x_col", "sweep_effective_x_col")}
+    x_label_kw = {k: sw.get(k, "") for k in ("sweep_active", "sweep_x_col", "sweep_effective_x_col", "sweep_axis_label")}
+
+    x_col_base, mestrado_x_override = _resolve_plot_x_request(x_col_req, **x_resolve_kw)
     try:
         x_col = resolve_col(out_df, x_col_base)
     except Exception as e:
@@ -209,7 +231,13 @@ def _dispatch_kibox_all(
         mark_skipped(plot_label, f"x_col ausente: {x_col_base}")
         return
 
-    xlab = _runtime_plot_x_label(x_label, x_col_base, x_col, mestrado_x_override)
+    xlab = _runtime_plot_x_label(x_label, x_col_base, x_col, mestrado_x_override, **x_label_kw)
+    eff_fixed_x = resolve_plot_fixed_x_for_sweep(
+        x_col_req, fixed_x,
+        sweep_active=sw.get("sweep_active", False),
+        sweep_x_col=sw.get("sweep_x_col", ""),
+    ) if sw.get("sweep_active") else fixed_x
+
     seen_filenames: set = set()
     for yc in sorted(kibox_cols):
         fn = _derive_filename_for_expansion(filename, yc)
@@ -221,11 +249,19 @@ def _dispatch_kibox_all(
             continue
         seen_filenames.add(fn_key)
         tt = _derive_title_for_expansion(title, x_col=x_col, y_col=yc)
+        if sw.get("sweep_active"):
+            fn, tt = rewrite_plot_filename_title(
+                fn, tt, x_col_req=x_col_req, x_col_resolved=x_col,
+                sweep_active=True, sweep_x_col=sw.get("sweep_x_col", ""),
+                sweep_effective_x_col=sw.get("sweep_effective_x_col", ""),
+                sweep_axis_token=sw.get("sweep_axis_token", ""),
+                sweep_axis_label=sw.get("sweep_axis_label", ""),
+            )
         ylab = y_label if y_label else yc
         ok = plot_all_fuels(
             out_df, y_col=yc, yerr_col=None, title=tt, filename=fn,
             y_label=ylab, fixed_y=fixed_y, fixed_y_limits=fixed_y_limits,
-            y_tick_step=y_tick_step, fixed_x=fixed_x, x_col=x_col,
+            y_tick_step=y_tick_step, fixed_x=eff_fixed_x, x_col=x_col,
             x_label=xlab, fuels_override=fuels_override,
             series_col=series_col, plot_dir=plot_dir,
             y_tol_plus=y_tol_plus, y_tol_minus=y_tol_minus,
@@ -241,9 +277,13 @@ def _dispatch_all_fuels(
     x_col_req, y_col_req, x_label, y_label,
     fixed_x, fixed_y, fixed_y_limits, y_tick_step,
     y_tol_plus, y_tol_minus, fuels_override, series_col,
-    plot_dir, mark_generated, mark_skipped,
+    plot_dir, mark_generated, mark_skipped, sweep_kw,
 ):
-    x_col_base, mestrado_x_override = _resolve_plot_x_request(x_col_req)
+    sw = sweep_kw or {}
+    x_resolve_kw = {k: sw.get(k, "") for k in ("sweep_active", "sweep_x_col", "sweep_effective_x_col")}
+    x_label_kw = {k: sw.get(k, "") for k in ("sweep_active", "sweep_x_col", "sweep_effective_x_col", "sweep_axis_label")}
+
+    x_col_base, mestrado_x_override = _resolve_plot_x_request(x_col_req, **x_resolve_kw)
     try:
         x_col = resolve_col(out_df, x_col_base)
     except Exception as e:
@@ -261,13 +301,27 @@ def _dispatch_all_fuels(
         mark_skipped(plot_label, f"y_col ausente: {y_col_req}")
         return
 
-    x_label = _runtime_plot_x_label(x_label, x_col_base, x_col, mestrado_x_override)
+    x_label = _runtime_plot_x_label(x_label, x_col_base, x_col, mestrado_x_override, **x_label_kw)
     if not y_label:
         y_label = y_col
     if not title:
         title = f"{y_col} vs {x_col} (all fuels)"
     if not filename:
         filename = f"{_safe_name(y_col)}_vs_{_safe_name(x_col)}_all.png"
+
+    if sw.get("sweep_active"):
+        filename, title = rewrite_plot_filename_title(
+            filename, title, x_col_req=x_col_req, x_col_resolved=x_col,
+            sweep_active=True, sweep_x_col=sw.get("sweep_x_col", ""),
+            sweep_effective_x_col=sw.get("sweep_effective_x_col", ""),
+            sweep_axis_token=sw.get("sweep_axis_token", ""),
+            sweep_axis_label=sw.get("sweep_axis_label", ""),
+        )
+    eff_fixed_x = resolve_plot_fixed_x_for_sweep(
+        x_col_req, fixed_x,
+        sweep_active=sw.get("sweep_active", False),
+        sweep_x_col=sw.get("sweep_x_col", ""),
+    ) if sw.get("sweep_active") else fixed_x
 
     variant_specs: List[Tuple[str, str, Optional[str], str]] = []
     for variant_key, uncertainty_mode, dual_variant in _plot_uncertainty_variants(r):
@@ -299,7 +353,7 @@ def _dispatch_all_fuels(
             out_df, y_col=y_col, yerr_col=yerr_col, title=variant_title,
             filename=variant_filename, y_label=y_label, fixed_y=fixed_y,
             fixed_y_limits=variant_fixed_y_limits, y_tick_step=y_tick_step,
-            fixed_x=fixed_x, x_col=x_col, x_label=x_label,
+            fixed_x=eff_fixed_x, x_col=x_col, x_label=x_label,
             fuels_override=fuels_override, series_col=series_col,
             plot_dir=plot_dir, y_tol_plus=y_tol_plus, y_tol_minus=y_tol_minus,
         )
@@ -314,13 +368,18 @@ def _dispatch_all_fuels_xy(
     x_col_req, y_col_req, x_label, y_label,
     fixed_x, fixed_y, fixed_y_limits, y_tick_step,
     y_tol_plus, y_tol_minus, fuels_override, series_col,
-    plot_dir, mark_generated, mark_skipped,
+    plot_dir, mark_generated, mark_skipped, sweep_kw,
 ):
     if not y_col_req:
         print(f"[ERROR] Plot '{filename or title}': y_col vazio (plot_type=all_fuels_xy). Pulei.")
         mark_skipped(plot_label, "y_col vazio")
         return
-    x_col_base, mestrado_x_override = _resolve_plot_x_request(x_col_req)
+
+    sw = sweep_kw or {}
+    x_resolve_kw = {k: sw.get(k, "") for k in ("sweep_active", "sweep_x_col", "sweep_effective_x_col")}
+    x_label_kw = {k: sw.get(k, "") for k in ("sweep_active", "sweep_x_col", "sweep_effective_x_col", "sweep_axis_label")}
+
+    x_col_base, mestrado_x_override = _resolve_plot_x_request(x_col_req, **x_resolve_kw)
     try:
         x_col = resolve_col(out_df, x_col_base)
     except Exception as e:
@@ -334,13 +393,27 @@ def _dispatch_all_fuels_xy(
         mark_skipped(plot_label, f"y_col ausente: {y_col_req}")
         return
 
-    x_label = _runtime_plot_x_label(x_label, x_col_base, x_col, mestrado_x_override)
+    x_label = _runtime_plot_x_label(x_label, x_col_base, x_col, mestrado_x_override, **x_label_kw)
     if not y_label:
         y_label = y_col
     if not title:
         title = f"{y_col} vs {x_col} (all fuels)"
     if not filename:
         filename = f"{_safe_name(y_col)}_vs_{_safe_name(x_col)}_all.png"
+
+    if sw.get("sweep_active"):
+        filename, title = rewrite_plot_filename_title(
+            filename, title, x_col_req=x_col_req, x_col_resolved=x_col,
+            sweep_active=True, sweep_x_col=sw.get("sweep_x_col", ""),
+            sweep_effective_x_col=sw.get("sweep_effective_x_col", ""),
+            sweep_axis_token=sw.get("sweep_axis_token", ""),
+            sweep_axis_label=sw.get("sweep_axis_label", ""),
+        )
+    eff_fixed_x = resolve_plot_fixed_x_for_sweep(
+        x_col_req, fixed_x,
+        sweep_active=sw.get("sweep_active", False),
+        sweep_x_col=sw.get("sweep_x_col", ""),
+    ) if sw.get("sweep_active") else fixed_x
 
     variant_specs: List[Tuple[str, str, Optional[str], str]] = []
     for variant_key, uncertainty_mode, dual_variant in _plot_uncertainty_variants(r):
@@ -373,7 +446,7 @@ def _dispatch_all_fuels_xy(
             title=variant_title, filename=variant_filename,
             x_label=x_label, y_label=y_label, fixed_y=fixed_y,
             fixed_y_limits=variant_fixed_y_limits, y_tick_step=y_tick_step,
-            fixed_x=fixed_x, fuels_override=fuels_override,
+            fixed_x=eff_fixed_x, fuels_override=fuels_override,
             series_col=series_col, plot_dir=plot_dir,
             y_tol_plus=y_tol_plus, y_tol_minus=y_tol_minus,
         )
@@ -388,9 +461,13 @@ def _dispatch_labels(
     x_col_req, y_col_req, x_label, y_label, label_variant,
     fixed_x, fixed_y, fixed_y_limits, y_tick_step,
     y_tol_plus, y_tol_minus, fuels_override, series_col,
-    plot_dir, mark_generated, mark_skipped,
+    plot_dir, mark_generated, mark_skipped, sweep_kw,
 ):
-    x_col_base, mestrado_x_override = _resolve_plot_x_request(x_col_req)
+    sw = sweep_kw or {}
+    x_resolve_kw = {k: sw.get(k, "") for k in ("sweep_active", "sweep_x_col", "sweep_effective_x_col")}
+    x_label_kw = {k: sw.get(k, "") for k in ("sweep_active", "sweep_x_col", "sweep_effective_x_col", "sweep_axis_label")}
+
+    x_col_base, mestrado_x_override = _resolve_plot_x_request(x_col_req, **x_resolve_kw)
     try:
         x_col = resolve_col(out_df, x_col_base)
     except Exception as e:
@@ -408,7 +485,7 @@ def _dispatch_labels(
         mark_skipped(plot_label, f"y_col ausente: {y_col_req}")
         return
 
-    x_label = _runtime_plot_x_label(x_label, x_col_base, x_col, mestrado_x_override)
+    x_label = _runtime_plot_x_label(x_label, x_col_base, x_col, mestrado_x_override, **x_label_kw)
     if not y_label:
         y_label = y_col
     if not title:
@@ -416,11 +493,25 @@ def _dispatch_labels(
     if not filename:
         filename = f"{_safe_name(y_col)}_vs_{_safe_name(x_col)}_labels.png"
 
+    if sw.get("sweep_active"):
+        filename, title = rewrite_plot_filename_title(
+            filename, title, x_col_req=x_col_req, x_col_resolved=x_col,
+            sweep_active=True, sweep_x_col=sw.get("sweep_x_col", ""),
+            sweep_effective_x_col=sw.get("sweep_effective_x_col", ""),
+            sweep_axis_token=sw.get("sweep_axis_token", ""),
+            sweep_axis_label=sw.get("sweep_axis_label", ""),
+        )
+    eff_fixed_x = resolve_plot_fixed_x_for_sweep(
+        x_col_req, fixed_x,
+        sweep_active=sw.get("sweep_active", False),
+        sweep_x_col=sw.get("sweep_x_col", ""),
+    ) if sw.get("sweep_active") else fixed_x
+
     ok = plot_all_fuels_with_value_labels(
         out_df, y_col=y_col, title=title, filename=filename,
         y_label=y_label, label_variant=label_variant,
         fixed_y=fixed_y, fixed_y_limits=fixed_y_limits,
-        y_tick_step=y_tick_step, fixed_x=fixed_x,
+        y_tick_step=y_tick_step, fixed_x=eff_fixed_x,
         x_col=x_col, x_label=x_label,
         fuels_override=fuels_override, series_col=series_col,
         plot_dir=plot_dir, y_tol_plus=y_tol_plus, y_tol_minus=y_tol_minus,
