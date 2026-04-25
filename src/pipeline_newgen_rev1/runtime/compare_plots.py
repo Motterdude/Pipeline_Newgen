@@ -114,28 +114,30 @@ def iter_compare_plot_groups(
             for x in d["_COMPARE_DIRECTION"].dropna().tolist()
             if str(x).strip()
         )
-        if "subindo" not in dirs or "descendo" not in dirs:
+        has_direction_pair = "subindo" in dirs and "descendo" in dirs
+
+        uniq_series = sorted(set(
+            str(v).strip()
+            for v in d["_COMPARE_SERIES"].dropna().tolist()
+            if str(v).strip()
+        ))
+        if not has_direction_pair and len(uniq_series) < 2:
             continue
 
-        subida_vals = sorted(set(
-            str(v).strip()
-            for v in d.loc[d["_COMPARE_DIRECTION"].eq("subindo"), "_COMPARE_SERIES"].dropna().tolist()
-            if str(v).strip()
-        ))
-        descida_vals = sorted(set(
-            str(v).strip()
-            for v in d.loc[d["_COMPARE_DIRECTION"].eq("descendo"), "_COMPARE_SERIES"].dropna().tolist()
-            if str(v).strip()
-        ))
-        if subida_vals and descida_vals:
-            compare_name = f"{subida_vals[0]} vs {descida_vals[0]}"
-        else:
-            uniq = sorted(set(
+        if has_direction_pair:
+            subida_vals = sorted(set(
                 str(v).strip()
-                for v in d["_COMPARE_SERIES"].dropna().tolist()
+                for v in d.loc[d["_COMPARE_DIRECTION"].eq("subindo"), "_COMPARE_SERIES"].dropna().tolist()
                 if str(v).strip()
             ))
-            compare_name = " vs ".join(uniq[:2]) if uniq else gk
+            descida_vals = sorted(set(
+                str(v).strip()
+                for v in d.loc[d["_COMPARE_DIRECTION"].eq("descendo"), "_COMPARE_SERIES"].dropna().tolist()
+                if str(v).strip()
+            ))
+            compare_name = f"{subida_vals[0]} vs {descida_vals[0]}" if subida_vals and descida_vals else gk
+        else:
+            compare_name = " vs ".join(uniq_series[:2]) if uniq_series else gk
 
         plot_dir = base_root / _safe_folder_name(compare_name)
         groups.append((gk, plot_dir, d.copy()))
