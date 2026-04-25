@@ -1,12 +1,18 @@
-"""Build the 6 series frames (baseline/aditivado x subida/descida/media)
-from an aggregated DataFrame."""
+"""Build series frames from aggregated data.
+
+Direction mode: 6 frames (baseline/aditivado x subida/descida/media).
+Fuel mode: 1 frame per fuel label (no direction split).
+"""
 from __future__ import annotations
 
-from typing import Dict
+from typing import TYPE_CHECKING, Dict, Optional
 
 import pandas as pd
 
 from .aggregate import mean_subida_descida
+
+if TYPE_CHECKING:
+    from ..campaign_scan import CampaignCatalog
 
 
 def build_series_frames(agg: pd.DataFrame, *, value_name: str) -> Dict[str, pd.DataFrame]:
@@ -21,3 +27,19 @@ def build_series_frames(agg: pd.DataFrame, *, value_name: str) -> Dict[str, pd.D
         "aditivado_descida": descida[descida["_campaign_bl_adtv"].eq("aditivado")].copy(),
         "aditivado_media": media_sd[media_sd["_campaign_bl_adtv"].eq("aditivado")].copy(),
     }
+
+
+def build_series_frames_dynamic(
+    agg: pd.DataFrame,
+    *,
+    value_name: str,
+    catalog: Optional[CampaignCatalog] = None,
+) -> Dict[str, pd.DataFrame]:
+    if catalog is None or catalog.iteration_mode == "direction":
+        return build_series_frames(agg, value_name=value_name)
+    frames: Dict[str, pd.DataFrame] = {}
+    for group_id in agg["_campaign_bl_adtv"].unique():
+        if not group_id:
+            continue
+        frames[str(group_id)] = agg[agg["_campaign_bl_adtv"].eq(group_id)].copy()
+    return frames

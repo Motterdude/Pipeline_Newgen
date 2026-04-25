@@ -1,7 +1,10 @@
 """Constants and metadata for the compare_iteracoes pipeline."""
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from ..campaign_scan import CampaignCatalog
 
 K_COVERAGE = 2.0
 
@@ -13,6 +16,15 @@ COMPARE_ITER_SERIES_META: Dict[str, Dict[str, str]] = {
     "aditivado_subida": {"label": "Aditivado subida", "slug": "aditivado_subida"},
     "aditivado_descida": {"label": "Aditivado descida", "slug": "aditivado_descida"},
 }
+
+
+def build_series_meta_from_catalog(catalog: Optional[CampaignCatalog]) -> Dict[str, Dict[str, str]]:
+    if catalog is None or catalog.iteration_mode == "direction":
+        return COMPARE_ITER_SERIES_META
+    meta: Dict[str, Dict[str, str]] = {}
+    for fuel in catalog.fuel_labels:
+        meta[fuel] = {"label": fuel, "slug": fuel}
+    return meta
 
 COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
     {
@@ -116,9 +128,14 @@ def metric_spec_for_id(metric_id: str) -> Optional[Dict[str, str]]:
     return COMPARE_ITER_METRIC_SPECS_BY_ID.get(str(metric_id).strip().lower())
 
 
-def compare_iter_pair_context(left_id: str, right_id: str) -> Dict[str, str]:
-    left_meta = COMPARE_ITER_SERIES_META[left_id]
-    right_meta = COMPARE_ITER_SERIES_META[right_id]
+def compare_iter_pair_context(
+    left_id: str,
+    right_id: str,
+    series_meta: Optional[Dict[str, Dict[str, str]]] = None,
+) -> Dict[str, str]:
+    meta = series_meta or COMPARE_ITER_SERIES_META
+    left_meta = meta.get(left_id, {"label": left_id, "slug": left_id})
+    right_meta = meta.get(right_id, {"label": right_id, "slug": right_id})
     return {
         "left_label": left_meta["label"],
         "right_label": right_meta["label"],

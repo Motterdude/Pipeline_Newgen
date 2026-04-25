@@ -7,19 +7,23 @@ consolidated result for downstream export and plotting.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
 from .aggregate import aggregate_by_load_point
 from .delta import build_delta_table
 from .prepare import prepare_compare_points, prepare_consumo_points
-from .series import build_series_frames
+from .series import build_series_frames, build_series_frames_dynamic
 from .specs import (
     COMPARE_ITER_METRIC_SPECS_BY_ID,
     COMPARE_ITER_SERIES_META,
+    build_series_meta_from_catalog,
     compare_iter_pair_context,
 )
+
+if TYPE_CHECKING:
+    from ..campaign_scan import CampaignCatalog
 
 
 @dataclass
@@ -94,7 +98,10 @@ def _uncertainty_variants(row: dict) -> List[Tuple[str, str, bool]]:
     return variants
 
 
-def _default_compare_pairs() -> List[Tuple[str, str]]:
+def _default_compare_pairs(catalog: Optional[CampaignCatalog] = None) -> List[Tuple[str, str]]:
+    if catalog is not None and catalog.iteration_mode == "fuel":
+        from ..campaign_scan import default_comparison_pairs
+        return default_comparison_pairs(catalog)
     return [
         ("baseline_media", "aditivado_media"),
         ("baseline_subida", "aditivado_subida"),
@@ -122,11 +129,13 @@ def resolve_requests(
     compare_df: Optional[pd.DataFrame],
     *,
     fallback_pairs: Optional[List[Tuple[str, str]]] = None,
+    catalog: Optional[CampaignCatalog] = None,
 ) -> Tuple[List[Dict[str, Any]], str]:
-    pairs = fallback_pairs or _default_compare_pairs()
+    pairs = fallback_pairs or _default_compare_pairs(catalog)
     if compare_df is None or compare_df.empty:
         return _build_default_requests(pairs), "fallback_pairs"
 
+    series_meta = build_series_meta_from_catalog(catalog)
     rows = compare_df.to_dict(orient="records")
     enabled_rows = [r for r in rows if _row_enabled((r or {}).get("enabled", ""))]
     if not enabled_rows:
@@ -139,7 +148,7 @@ def resolve_requests(
         right_id = _to_str(row.get("right_series", "")).lower()
         metric_id = _to_str(row.get("metric_id", "")).lower()
 
-        if left_id not in COMPARE_ITER_SERIES_META or right_id not in COMPARE_ITER_SERIES_META:
+        if left_id not in series_meta or right_id not in series_meta:
             print(f"[WARN] compare_iteracoes: linha {row_idx} series invalidas ('{left_id}' vs '{right_id}').")
             continue
         if left_id == right_id:
@@ -175,14 +184,22 @@ def compute_compare_iteracoes(
     mappings: dict,
     *,
     pairs_override: Optional[List[Dict[str, Any]]] = None,
+    catalog: Optional[CampaignCatalog] = None,
 ) -> CompareResult:
     if pairs_override:
         requests, source = pairs_override, "cli_override"
     else:
-        requests, source = resolve_requests(compare_df)
+        requests, source = resolve_requests(compare_df, catalog=catalog)
     if not requests:
         print(f"[INFO] compute_compare_iteracoes | no requests (source={source}).")
         return CompareResult(delta_table=pd.DataFrame(), series_by_metric={}, requests=[])
+
+    series_meta = build_series_meta_from_catalog(catalog)
+    is_fuel_mode = catalog is not None and catalog.iteration_mode == "fuel"
+    group_cols = (
+        ["_campaign_bl_adtv", "Load_kW"] if is_fuel_mode
+        else ["_campaign_bl_adtv", "_sentido_plot", "Load_kW"]
+    )
 
     series_by_metric: Dict[str, Dict[str, pd.DataFrame]] = {}
     delta_rows: List[pd.DataFrame] = []
@@ -198,19 +215,21 @@ def compute_compare_iteracoes(
             value_name = spec["value_name"]
 
             if metric_col == "__consumo__":
-                prepared = prepare_consumo_points(final_table)
+                prepared = prepare_consumo_points(final_table, catalog=catalog)
             else:
-                prepared = prepare_compare_points(final_table, metric_col=metric_col, mappings=mappings)
+                prepared = prepare_compare_points(
+                    final_table, metric_col=metric_col, mappings=mappings, catalog=catalog,
+                )
 
             if prepared.empty:
                 print(f"[WARN] compute_compare_iteracoes | no data for {metric_id}.")
                 continue
 
-            agg = aggregate_by_load_point(prepared, value_name=value_name)
+            agg = aggregate_by_load_point(prepared, value_name=value_name, group_cols=group_cols)
             if agg.empty:
                 continue
 
-            frames = build_series_frames(agg, value_name=value_name)
+            frames = build_series_frames_dynamic(agg, value_name=value_name, catalog=catalog)
             series_by_metric[metric_id] = frames
 
         if metric_id not in series_by_metric:
@@ -227,7 +246,7 @@ def compute_compare_iteracoes(
         if left_df is None or right_df is None or left_df.empty or right_df.empty:
             continue
 
-        pair_ctx = compare_iter_pair_context(left_id, right_id)
+        pair_ctx = compare_iter_pair_context(left_id, right_id, series_meta=series_meta)
         variant_key = req.get("variant_key", "with_uncertainty")
 
         delta = build_delta_table(

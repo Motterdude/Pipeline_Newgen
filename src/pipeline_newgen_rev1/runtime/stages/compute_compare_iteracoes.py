@@ -38,7 +38,9 @@ class ComputeCompareIteracoesStage:
                 print(f"[WARN] compute_compare_iteracoes | invalid --compare-iter-pairs JSON: {exc}")
 
         result = compute_compare_iteracoes(
-            ctx.final_table, compare_df, mappings, pairs_override=pairs_override,
+            ctx.final_table, compare_df, mappings,
+            pairs_override=pairs_override,
+            catalog=ctx.campaign_catalog,
         )
         ctx.compare_iteracoes_table = result.delta_table
         ctx.compare_iteracoes_series = result.series_by_metric

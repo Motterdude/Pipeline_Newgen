@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from typing import Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
 import pandas as pd
+
+if TYPE_CHECKING:
+    from ..campaign_scan import CampaignCatalog
 
 
 def _canon_name(x: object) -> str:
@@ -40,6 +43,30 @@ def sentido_from_row(row: pd.Series) -> str:
     if "descendo" in base or "descida" in base:
         return "descida"
     return ""
+
+
+def fuel_label_from_row(row: pd.Series) -> str:
+    from ..fuel_properties import _fuel_label_from_components
+    return _fuel_label_from_components(
+        row.get("DIES_pct"), row.get("BIOD_pct"),
+        row.get("EtOH_pct"), row.get("H2O_pct"),
+    )
+
+
+def _assign_group_and_filter(
+    df: pd.DataFrame,
+    catalog: Optional[CampaignCatalog],
+) -> pd.DataFrame:
+    if catalog is not None and catalog.iteration_mode == "fuel":
+        df["_campaign_bl_adtv"] = df.apply(fuel_label_from_row, axis=1)
+        df["_sentido_plot"] = ""
+        return df[df["_campaign_bl_adtv"].ne("")].copy()
+    df["_campaign_bl_adtv"] = df["BaseName"].map(campaign_from_basename)
+    df["_sentido_plot"] = df.apply(sentido_from_row, axis=1)
+    return df[
+        df["_campaign_bl_adtv"].isin(["baseline", "aditivado"])
+        & df["_sentido_plot"].isin(["subida", "descida"])
+    ].copy()
 
 
 def find_consumo_col(df: pd.DataFrame) -> Optional[str]:
@@ -123,6 +150,7 @@ def prepare_compare_points(
     *,
     metric_col: str,
     mappings: dict,
+    catalog: Optional[CampaignCatalog] = None,
 ) -> pd.DataFrame:
     if df is None or df.empty:
         return pd.DataFrame()
@@ -134,8 +162,6 @@ def prepare_compare_points(
         return pd.DataFrame()
 
     out = df.copy()
-    out["_campaign_bl_adtv"] = out["BaseName"].map(campaign_from_basename)
-    out["_sentido_plot"] = out.apply(sentido_from_row, axis=1)
     out = _apply_diesel_filter(out)
 
     uA_col, uB_col, uc_col, U_col = metric_uncertainty_cols(out, metric_col, mappings)
@@ -146,15 +172,15 @@ def prepare_compare_points(
     out["_uc"] = pd.to_numeric(out.get(uc_col, pd.NA), errors="coerce")
     out["_U"] = pd.to_numeric(out.get(U_col, pd.NA), errors="coerce")
 
-    out = out[
-        out["_campaign_bl_adtv"].isin(["baseline", "aditivado"])
-        & out["_sentido_plot"].isin(["subida", "descida"])
-    ].copy()
+    out = _assign_group_and_filter(out, catalog)
     out = out.dropna(subset=["Load_kW", "_metric"]).copy()
     return out
 
 
-def prepare_consumo_points(df: pd.DataFrame) -> pd.DataFrame:
+def prepare_consumo_points(
+    df: pd.DataFrame,
+    catalog: Optional[CampaignCatalog] = None,
+) -> pd.DataFrame:
     if df is None or df.empty:
         return pd.DataFrame()
     if "BaseName" not in df.columns:
@@ -167,8 +193,6 @@ def prepare_consumo_points(df: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
 
     out = df.copy()
-    out["_campaign_bl_adtv"] = out["BaseName"].map(campaign_from_basename)
-    out["_sentido_plot"] = out.apply(sentido_from_row, axis=1)
     out = _apply_diesel_filter(out)
 
     out["Load_kW"] = pd.to_numeric(out.get("Load_kW", pd.NA), errors="coerce")
@@ -178,9 +202,6 @@ def prepare_consumo_points(df: pd.DataFrame) -> pd.DataFrame:
     out["_uc"] = pd.to_numeric(out.get("uc_Consumo_kg_h", pd.NA), errors="coerce")
     out["_U"] = pd.to_numeric(out.get("U_Consumo_kg_h", pd.NA), errors="coerce")
 
-    out = out[
-        out["_campaign_bl_adtv"].isin(["baseline", "aditivado"])
-        & out["_sentido_plot"].isin(["subida", "descida"])
-    ].copy()
+    out = _assign_group_and_filter(out, catalog)
     out = out.dropna(subset=["Load_kW", "_metric"]).copy()
     return out

@@ -392,6 +392,165 @@ class TestComputeCompareIteracoes(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# fuel-based mode (via CampaignCatalog)
+# ---------------------------------------------------------------------------
+
+class TestFuelModePrepare(unittest.TestCase):
+    """Test prepare functions with fuel-based CampaignCatalog."""
+
+    def _make_fuel_catalog(self):
+        from pipeline_newgen_rev1.runtime.campaign_scan import CampaignCatalog
+        return CampaignCatalog(
+            fuel_labels=["E65H35", "E75H25", "E94H6"],
+            load_points=[10.0, 20.0],
+            directions=[],
+            campaigns=[],
+            iteration_mode="fuel",
+            file_count_by_fuel={"E65H35": 2, "E75H25": 2, "E94H6": 2},
+            file_count_by_campaign={},
+            file_count_by_direction={},
+            total_files=6,
+        )
+
+    def test_prepare_compare_points_fuel_mode(self) -> None:
+        catalog = self._make_fuel_catalog()
+        df = pd.DataFrame({
+            "BaseName": ["50KW_E94H6", "50KW_E75H25"],
+            "Load_kW": [50.0, 50.0],
+            "CO2_mean_of_windows": [5.0, 6.0],
+            "EtOH_pct": [94.0, 75.0],
+            "H2O_pct": [6.0, 25.0],
+        })
+        out = prepare_compare_points(df, metric_col="CO2_mean_of_windows", mappings={}, catalog=catalog)
+        self.assertEqual(len(out), 2)
+        groups = set(out["_campaign_bl_adtv"].unique())
+        self.assertEqual(groups, {"E94H6", "E75H25"})
+
+    def test_prepare_consumo_points_fuel_mode(self) -> None:
+        catalog = self._make_fuel_catalog()
+        df = pd.DataFrame({
+            "BaseName": ["50KW_E94H6", "50KW_E75H25"],
+            "Load_kW": [50.0, 50.0],
+            "Consumo_kg_h": [2.0, 2.5],
+            "EtOH_pct": [94.0, 75.0],
+            "H2O_pct": [6.0, 25.0],
+            "DIES_pct": [0, 0],
+        })
+        out = prepare_consumo_points(df, catalog=catalog)
+        self.assertEqual(len(out), 2)
+
+
+class TestFuelModeSpecs(unittest.TestCase):
+    def test_build_series_meta_from_catalog_fuel(self) -> None:
+        from pipeline_newgen_rev1.runtime.compare_iteracoes.specs import build_series_meta_from_catalog
+        from pipeline_newgen_rev1.runtime.campaign_scan import CampaignCatalog
+        catalog = CampaignCatalog(
+            fuel_labels=["E94H6", "E75H25"],
+            load_points=[], directions=[], campaigns=[],
+            iteration_mode="fuel",
+            file_count_by_fuel={}, file_count_by_campaign={}, file_count_by_direction={},
+        )
+        meta = build_series_meta_from_catalog(catalog)
+        self.assertIn("E94H6", meta)
+        self.assertIn("E75H25", meta)
+        self.assertNotIn("baseline_media", meta)
+
+    def test_build_series_meta_none_catalog(self) -> None:
+        from pipeline_newgen_rev1.runtime.compare_iteracoes.specs import build_series_meta_from_catalog
+        meta = build_series_meta_from_catalog(None)
+        self.assertIn("baseline_media", meta)
+
+    def test_pair_context_with_custom_meta(self) -> None:
+        meta = {"E94H6": {"label": "E94H6", "slug": "E94H6"}, "E75H25": {"label": "E75H25", "slug": "E75H25"}}
+        ctx = compare_iter_pair_context("E94H6", "E75H25", series_meta=meta)
+        self.assertEqual(ctx["pair_slug"], "E94H6_vs_E75H25")
+        self.assertIn("E75H25", ctx["pair_title"])
+
+
+class TestFuelModeSeries(unittest.TestCase):
+    def test_build_series_frames_dynamic_fuel(self) -> None:
+        from pipeline_newgen_rev1.runtime.compare_iteracoes.series import build_series_frames_dynamic
+        from pipeline_newgen_rev1.runtime.campaign_scan import CampaignCatalog
+        catalog = CampaignCatalog(
+            fuel_labels=["E94H6", "E75H25"],
+            load_points=[10.0], directions=[], campaigns=[],
+            iteration_mode="fuel",
+            file_count_by_fuel={}, file_count_by_campaign={}, file_count_by_direction={},
+        )
+        agg = pd.DataFrame({
+            "_campaign_bl_adtv": ["E94H6", "E75H25"],
+            "Load_kW": [10.0, 10.0],
+            "m": [5.0, 6.0],
+            "uA_m": [0.1, 0.1],
+            "uB_m": [0.2, 0.2],
+            "uc_m": [0.22, 0.22],
+            "U_m": [0.44, 0.44],
+            "n_points": [2, 2],
+        })
+        frames = build_series_frames_dynamic(agg, value_name="m", catalog=catalog)
+        self.assertIn("E94H6", frames)
+        self.assertIn("E75H25", frames)
+        self.assertNotIn("baseline_media", frames)
+
+    def test_build_series_frames_dynamic_direction_fallback(self) -> None:
+        from pipeline_newgen_rev1.runtime.compare_iteracoes.series import build_series_frames_dynamic
+        df = _make_prepared_df(n_per_group=1)
+        agg = aggregate_by_load_point(df, value_name="m")
+        frames = build_series_frames_dynamic(agg, value_name="m", catalog=None)
+        self.assertIn("baseline_media", frames)
+
+
+class TestFuelModeEndToEnd(unittest.TestCase):
+    def _make_fuel_final_table(self) -> pd.DataFrame:
+        rows = []
+        for fuel, etoh, h2o in [("E94H6", 94.0, 6.0), ("E75H25", 75.0, 25.0), ("E65H35", 65.0, 35.0)]:
+            for load in [10.0, 20.0, 30.0]:
+                rows.append({
+                    "BaseName": f"{int(load)}KW_{fuel}",
+                    "Load_kW": load,
+                    "CO2_mean_of_windows": 5.0 + load * 0.1 + (0.3 if fuel == "E75H25" else 0.0),
+                    "EtOH_pct": etoh,
+                    "H2O_pct": h2o,
+                    "DIES_pct": 0,
+                    "BIOD_pct": 0,
+                    "Consumo_kg_h": 2.0 + load * 0.05,
+                })
+        return pd.DataFrame(rows)
+
+    def _make_fuel_catalog(self):
+        from pipeline_newgen_rev1.runtime.campaign_scan import CampaignCatalog
+        return CampaignCatalog(
+            fuel_labels=["E65H35", "E75H25", "E94H6"],
+            load_points=[10.0, 20.0, 30.0],
+            directions=[],
+            campaigns=[],
+            iteration_mode="fuel",
+            file_count_by_fuel={"E65H35": 3, "E75H25": 3, "E94H6": 3},
+            file_count_by_campaign={},
+            file_count_by_direction={},
+            total_files=9,
+        )
+
+    def test_end_to_end_fuel_mode(self) -> None:
+        ft = self._make_fuel_final_table()
+        catalog = self._make_fuel_catalog()
+        result = compute_compare_iteracoes(ft, None, {}, catalog=catalog)
+        self.assertIsInstance(result, CompareResult)
+        self.assertFalse(result.delta_table.empty)
+        self.assertIn("co2", result.series_by_metric)
+        pairs = result.delta_table[["label_left", "label_right"]].drop_duplicates()
+        self.assertGreater(len(pairs), 0)
+
+    def test_fuel_mode_series_are_fuel_labels(self) -> None:
+        ft = self._make_fuel_final_table()
+        catalog = self._make_fuel_catalog()
+        result = compute_compare_iteracoes(ft, None, {}, catalog=catalog)
+        for metric_id, frames in result.series_by_metric.items():
+            for key in frames:
+                self.assertIn(key, ["E65H35", "E75H25", "E94H6"])
+
+
+# ---------------------------------------------------------------------------
 # stage integration
 # ---------------------------------------------------------------------------
 

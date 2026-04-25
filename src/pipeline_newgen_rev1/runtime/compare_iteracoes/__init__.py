@@ -15,6 +15,7 @@ from .specs import (
     COMPARE_ITER_METRIC_SPECS_BY_ID,
     COMPARE_ITER_SERIES_META,
     K_COVERAGE,
+    build_series_meta_from_catalog,
     compare_iter_pair_context,
 )
 
@@ -24,6 +25,7 @@ __all__ = [
     "COMPARE_ITER_METRIC_SPECS_BY_ID",
     "COMPARE_ITER_SERIES_META",
     "K_COVERAGE",
+    "build_series_meta_from_catalog",
     "compare_iter_pair_context",
     "compute_compare_iteracoes",
     "plot_compare_absolute",
