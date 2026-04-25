@@ -71,6 +71,7 @@ from ...adapters.open_to_csv import (
     find_open_to_csv_path as find_opentocsv_exe,
 )
 from ...config import RuntimeState, default_runtime_state_path, save_runtime_state
+from ..campaign_planner_tab import CampaignPlannerTab
 from ...ui.runtime_preflight.models import RuntimeSelection
 
 
@@ -1882,28 +1883,15 @@ class Pipeline29ConfigEditor(QMainWindow):
             status_callback=self._show_status,
             add_row_dialog_factory=lambda initial=None: self._open_row_helper("Plots", DEFAULT_PLOT_COLUMNS, initial),
         )
-        self.compare_tab = QWidget(self)
-        compare_layout = QVBoxLayout(self.compare_tab)
-        compare_layout.setContentsMargins(12, 12, 12, 12)
-        compare_layout.setSpacing(10)
-        compare_layout.addWidget(
-            QLabel(
-                "Selecione quais familias de plot gerar nesta execucao. "
-                "Essas 4 opcoes substituem a selecao via PowerShell para o compare principal."
-            )
+        self.campaign_planner = CampaignPlannerTab(
+            get_raw_input_dir=self._current_pipeline30_raw_input_dir,
+            status_callback=self._show_status,
+            parent=self,
         )
-        self.compare_chk_unitary = QCheckBox("Plot unitario (finais por pasta)", self.compare_tab)
-        self.compare_chk_up = QCheckBox("Compare subida: aditivado vs baseline", self.compare_tab)
-        self.compare_chk_down = QCheckBox("Compare descida: aditivado vs baseline", self.compare_tab)
-        self.compare_chk_mean = QCheckBox(
-            "Compare media (subida+descida): aditivado vs baseline",
-            self.compare_tab,
-        )
-        compare_layout.addWidget(self.compare_chk_unitary)
-        compare_layout.addWidget(self.compare_chk_up)
-        compare_layout.addWidget(self.compare_chk_down)
-        compare_layout.addWidget(self.compare_chk_mean)
-        compare_layout.addStretch(1)
+        self.compare_chk_unitary = self.campaign_planner.chk_unitary
+        self.compare_chk_up = self.campaign_planner.chk_delta
+        self.compare_chk_down = self.campaign_planner.chk_absolute
+        self.compare_chk_mean = self.campaign_planner.chk_delta
 
         self.tabs.addTab(self.sweep_helper_tab, PIPELINE30_SWEEP_TAB_TITLE)
         self.tabs.addTab(self.defaults_table, "Defaults")
@@ -1913,7 +1901,7 @@ class Pipeline29ConfigEditor(QMainWindow):
         self.tabs.addTab(self.reporting_table, "Reporting")
         self.tabs.addTab(self.fuel_properties_table, "Fuel Properties")
         self.tabs.addTab(self.plots_table, "Plots")
-        self.tabs.addTab(self.compare_tab, "Compare")
+        self.tabs.addTab(self.campaign_planner, "Campanha")
         self.tabs.setCurrentWidget(self.defaults_table)
 
         self.status = QStatusBar(self)
