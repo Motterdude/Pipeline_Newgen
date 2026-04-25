@@ -87,6 +87,9 @@ class RuntimeContext:
     sweep_selected_basenames: Optional[Set[str]] = None
     sweep_dup_prompt_func: Optional[Callable[..., Any]] = None
 
+    # --- Populated by scan_campaign_structure ---
+    campaign_catalog: Any = None
+
     # --- Populated by compute_compare_iteracoes ---
     compare_iteracoes_table: Optional[pd.DataFrame] = None
     compare_iteracoes_series: Optional[Dict[str, Dict[str, Any]]] = None

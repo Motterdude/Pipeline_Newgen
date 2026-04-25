@@ -125,6 +125,14 @@ LOAD_SWEEP_FEATURE_SPECS: tuple[FeatureSpec, ...] = (
         notes="Native-only. No legacy counterpart — produces audit columns on top of what build_final_table wrote.",
     ),
     FeatureSpec(
+        key="scan_campaign_structure",
+        label="Scan campaign structure",
+        description="Detect experimental structure (fuel groups, directions, campaigns) from discovered input files.",
+        stage="processing",
+        default_by_mode={"load": True, "sweep": True},
+        legacy_anchor="",
+    ),
+    FeatureSpec(
         key="export_excel",
         label="Export Excel",
         description="Write the final KPI workbook after aggregation.",

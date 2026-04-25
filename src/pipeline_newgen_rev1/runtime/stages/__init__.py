@@ -30,6 +30,7 @@ from .run_time_diagnostics import RunTimeDiagnosticsStage
 from .run_compare_plots import RunComparePlotsStage
 from .run_special_load_plots import RunSpecialLoadPlotsStage
 from .run_unitary_plots import RunUnitaryPlotsStage
+from .scan_campaign_structure import ScanCampaignStructureStage
 from .show_runtime_preflight import ShowRuntimePreflightStage
 from .sync_runtime_dirs import SyncRuntimeDirsStage
 
@@ -47,6 +48,7 @@ STAGE_REGISTRY: Dict[str, Stage] = {
     "apply_sweep_binning": ApplySweepBinningStage(),
     "prompt_sweep_duplicate_selector": PromptSweepDuplicateSelectorStage(),
     "export_excel": ExportExcelStage(),
+    "scan_campaign_structure": ScanCampaignStructureStage(),
     "compute_compare_iteracoes": ComputeCompareIteracoesStage(),
     "rewrite_plot_axis_to_sweep": RewritePlotAxisToSweepStage(),
     "plot_time_diagnostics": PlotTimeDiagnosticsStage(),
@@ -75,6 +77,7 @@ PROCESSING_STAGE_ORDER: Tuple[str, ...] = (
     "apply_sweep_binning",
     "prompt_sweep_duplicate_selector",
     "export_excel",
+    "scan_campaign_structure",
     "compute_compare_iteracoes",
     "rewrite_plot_axis_to_sweep",
 )
