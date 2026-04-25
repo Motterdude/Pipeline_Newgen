@@ -4,6 +4,7 @@ Ordem cronológica inversa. Uma linha por sessão. Detalhe completo em `handoff/
 
 ## 2026-04
 
+- **2026-04-25** — [campaign-planner](changes/2026-04-25-campaign-planner.md) — Campaign Planner: scanner automático de estrutura, generalização compare_iteracoes para fuel mode, nova aba GUI Campanha, compare_plots flexibilizado. 21 arquivos, +1197 linhas, 425 testes OK (+43).
 - **2026-04-25** — [sweep-mode-port](changes/2026-04-25-sweep-mode-port.md) — Port completo do sweep mode: 4 stages nativas + 3 módulos core + integração com dispatch de plots. `LEGACY_PIPELINE30_ANCHORS` vazio — zero bridges restantes. 382 testes OK (+59).
 - **2026-04-25** — [load-mode-completion](changes/2026-04-25-load-mode-completion.md) — Load mode completo: port `run_compare_plots` + `run_special_load_plots`, CLI `--plot-scope`/`--compare-iter-pairs`, env vars, limpeza de 4 bridges mortas. 323 testes OK (+28).
 - **2026-04-25** — [three-phase-pipeline-compare-port](changes/2026-04-25-three-phase-pipeline-compare-port.md) — Reestruturação em 3 fases (config→processing→plotting) + port nativo de compute/plot_compare_iteracoes. Split de run_time_diagnostics. Runner com feature-flag gating. 295 testes OK (+35).

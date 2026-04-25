@@ -1,6 +1,6 @@
 # Painel de estações
 
-Estado atual: 2026-04-25 (atualizado após sweep mode port — 19 stages, 0 bridges pendentes).
+Estado atual: 2026-04-25 (atualizado após campaign planner — 20 stages, 0 bridges pendentes).
 
 Legenda:
 - 🟢 **Portada** — estação implementada dentro do pacote novo, sem dependência do galpão antigo.
@@ -14,7 +14,7 @@ Legenda:
 |---|---|---|---|
 | `RuntimeContext` (esteira) | 🟢 | `src/pipeline_newgen_rev1/runtime/context.py` | 2026-04-24 — Passo 1 esteira. |
 | Plano da linha (`orchestrator`) | 🟢 | `src/pipeline_newgen_rev1/workflows/load_sweep/orchestrator.py` | 2026-04-24 — agora é consultado pelo `SyncRuntimeDirsStage` via `merge_feature_selection`. |
-| Stages registry | 🟢 | `src/pipeline_newgen_rev1/runtime/stages/__init__.py` | 2026-04-25 — 3 tuplas (CONFIG/PROCESSING/PLOTTING) + 19 stages (4 sweep). |
+| Stages registry | 🟢 | `src/pipeline_newgen_rev1/runtime/stages/__init__.py` | 2026-04-25 — 3 tuplas (CONFIG/PROCESSING/PLOTTING) + 20 stages (4 sweep + scan_campaign). |
 | Runner (loop da linha) | 🟢 | `src/pipeline_newgen_rev1/runtime/runner.py` | 2026-04-25 — 3 loops + feature-flag gating + plot-scope gating. |
 | Tabela de âncoras legado | ⚪ vazio | `src/pipeline_newgen_rev1/bridges/legacy_pipeline30.py` | 2026-04-25 — `LEGACY_PIPELINE30_ANCHORS` vazio (todas portadas). |
 | Cópia dos monolitos | 🟢 | `src/pipeline_newgen_rev1/legacy_monoliths/` | 2026-04-24 — 4 arquivos legados (29, 30, kibox_open_to_csv, pipeline29_config_backend). |
@@ -52,6 +52,7 @@ Legenda:
 | Audit layer de incerteza (uB_res, uB_acc, %uA_contrib) | `enrich_final_table_audit` | 🟢 | `runtime/uncertainty_audit/` + `runtime/stages/enrich_final_table_audit.py` | — (nativa) | 2026-04-25 — Passo 3b.1 |
 | Sweep binning | `apply_sweep_binning` | 🟢 | `runtime/sweep_binning.py` + `runtime/stages/apply_sweep_binning.py` | `nanum_pipeline_30.py::_apply_runtime_sweep_binning` + `_cluster_sweep_bin_centers` | 2026-04-25 — port sweep mode |
 | Seletor de duplicatas de sweep | `prompt_sweep_duplicate_selector` | 🟢 | `runtime/sweep_duplicate_selector.py` + `runtime/stages/prompt_sweep_duplicate_selector.py` | `nanum_pipeline_30.py::prompt_sweep_duplicate_filter` + `_apply_sweep_duplicate_filter` | 2026-04-25 — port sweep mode |
+| Scanner de estrutura de campanha | `scan_campaign_structure` | 🟢 | `runtime/campaign_scan.py` + `runtime/stages/scan_campaign_structure.py` | — (nativa) | 2026-04-25 — Campaign Planner |
 | Filtro de pontos para plot (load mode) | — | 🟢 | `runtime/plot_point_filter.py` | `nanum_pipeline_29.py::prompt_plot_point_filter` | 2026-04-23 |
 
 ## Fase 3 — Plots
@@ -61,7 +62,7 @@ Legenda:
 | Dispatcher de plots | — | 🟢 | `runtime/unitary_plots/dispatch.py` | `nanum_pipeline_29.py::make_plots_from_config_with_summary` | 2026-04-24 — port nativo |
 | Plots unitários | `run_unitary_plots` | 🟢 | `runtime/unitary_plots/` + `runtime/stages/run_unitary_plots.py` | `nanum_pipeline_29.py::make_plots_from_config_with_summary` | 2026-04-24 — port nativo (subpacote 5 módulos) |
 | Plots compare (subida × descida) | `run_compare_plots` | 🟢 | `runtime/compare_plots.py` + `runtime/stages/run_compare_plots.py` | `nanum_pipeline_29.py::iter_compare_plot_groups` | 2026-04-25 — port nativo |
-| Compute compare_iteracoes (deltas + incertezas + xlsx) | `compute_compare_iteracoes` | 🟢 | `runtime/compare_iteracoes/` + `runtime/stages/compute_compare_iteracoes.py` | `nanum_pipeline_29.py::_plot_compare_iteracoes_bl_vs_adtv` (parte dados) | 2026-04-25 — port nativo (3 fases) |
+| Compute compare_iteracoes (deltas + incertezas + xlsx) | `compute_compare_iteracoes` | 🟢 | `runtime/compare_iteracoes/` + `runtime/stages/compute_compare_iteracoes.py` | `nanum_pipeline_29.py::_plot_compare_iteracoes_bl_vs_adtv` (parte dados) | 2026-04-25 — generalizado para fuel mode via CampaignCatalog |
 | Plot compare_iteracoes (PNGs absolutos + delta) | `plot_compare_iteracoes` | 🟢 | `runtime/compare_iteracoes/plot_*.py` + `runtime/stages/plot_compare_iteracoes.py` | `nanum_pipeline_29.py::_plot_compare_iteracoes_bl_vs_adtv` (parte plot) | 2026-04-25 — port nativo (3 fases) |
 | Plots especiais de load (ethanol_equivalent, máquinas) | `run_special_load_plots` | 🟢 | `runtime/special_load_plots/` + `runtime/stages/run_special_load_plots.py` | `nanum_pipeline_30.py::_plot_ethanol_equivalent_*` + `_plot_machine_scenario_suite` | 2026-04-25 — port nativo |
 | Plot_scope gating (`all`/`unitary`/`compare`/`none`) | — | 🟢 | `runner.py` (`_PLOT_SCOPE_INCLUDE`) + `cli.py` (`--plot-scope`) | `nanum_pipeline_29.py::main` — `--plot-scope` | 2026-04-25 — CLI + runner |
@@ -78,7 +79,7 @@ Legenda:
 
 | Estação | Estado | newgen | Âncora legado | Última mudança |
 |---|---|---|---|---|
-| GUI de configuração (PySide6, abas Defaults/Data Quality/Mappings/Instruments/Reporting/Plots/Compare/Fuel Properties/Variable Source/Sweep-Load) | 🟢 cópia preservada | `ui/legacy/pipeline29_config_gui.py` + `pipeline29_config_backend.py` | `pipeline29_config_gui.py` + `pipeline29_config_backend.py` | 2026-04-23 |
+| GUI de configuração (PySide6, abas Defaults/Data Quality/Mappings/Instruments/Reporting/Plots/Campanha/Fuel Properties/Variable Source/Sweep-Load) | 🟢 evoluindo | `ui/legacy/pipeline29_config_gui.py` + `ui/campaign_planner_tab.py` | `pipeline29_config_gui.py` + `pipeline29_config_backend.py` | 2026-04-25 — aba Compare → Campanha |
 | Save & Run → executor migrado | 🟢 | ligação feita | exit code 1001 + `load_gui_state` | 2026-04-23 |
 | CLI (`show-plan`, `discover-inputs`, `inspect-*`, `run-load-sweep`, `launch-config-gui`, `convert-open`, `scan-preflight`, `show-runtime-state`, `inspect-config`) | 🟢 básico | `cli.py` | — | 2026-04-23 |
 | CLI flag `--plot-scope` | 🟢 | `cli.py` + `runner.py` | `nanum_pipeline_29.py` argparse | 2026-04-25 |
