@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import pandas as pd
+
 from ..context import RuntimeContext
 
 
@@ -20,10 +22,11 @@ class RunComparePlotsStage:
         from ..compare_plots import iter_compare_plot_groups
         from ..unitary_plots import make_plots_from_config_with_summary
 
-        plots_df = ctx.bundle.plots if ctx.bundle else None
+        plots_list = ctx.bundle.plots if ctx.bundle else []
+        plots_df = pd.DataFrame(plots_list) if plots_list else pd.DataFrame()
         mappings = ctx.bundle.mappings if ctx.bundle else {}
 
-        if plots_df is None or (hasattr(plots_df, "empty") and plots_df.empty):
+        if plots_df.empty:
             print("[INFO] run_compare_plots | no plot config; skipping.")
             return
 

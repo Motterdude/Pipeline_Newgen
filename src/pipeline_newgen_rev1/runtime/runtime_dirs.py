@@ -123,6 +123,13 @@ def _prompt_runtime_dirs_via_tk_dialog(initial_input_dir: Path, initial_out_dir:
     input_entry = ttk.Entry(root, textvariable=input_var, width=90)
     input_entry.grid(row=1, column=1, sticky="ew", padx=(0, 8), pady=6)
 
+    def _relift() -> None:
+        try:
+            root.lift()
+            root.focus_force()
+        except Exception:
+            pass
+
     def browse_input() -> None:
         selected = filedialog.askdirectory(
             parent=root,
@@ -131,6 +138,7 @@ def _prompt_runtime_dirs_via_tk_dialog(initial_input_dir: Path, initial_out_dir:
         )
         if selected:
             input_var.set(selected)
+        _relift()
 
     ttk.Button(root, text="Browse...", command=browse_input).grid(row=1, column=2, sticky="e", padx=(0, 12), pady=6)
 
@@ -146,6 +154,7 @@ def _prompt_runtime_dirs_via_tk_dialog(initial_input_dir: Path, initial_out_dir:
         )
         if selected:
             out_var.set(selected)
+        _relift()
 
     ttk.Button(root, text="Browse...", command=browse_output).grid(row=2, column=2, sticky="e", padx=(0, 12), pady=6)
 
@@ -213,7 +222,6 @@ def _prompt_runtime_dirs_via_tk_dialog(initial_input_dir: Path, initial_out_dir:
         root.focus_force()
     except Exception:
         pass
-    root.after(400, lambda: root.attributes("-topmost", False))
     root.mainloop()
 
     input_dir = result.get("input_dir")
@@ -234,6 +242,12 @@ def _prompt_runtime_dirs_via_cli(initial_input_dir: Path, initial_out_dir: Path)
 
 
 def prompt_runtime_dirs(initial_input_dir: Path, initial_out_dir: Path) -> Tuple[Path, Path]:
+    try:
+        return _prompt_runtime_dirs_via_tk_dialog(initial_input_dir, initial_out_dir)
+    except SystemExit:
+        raise
+    except Exception as exc:
+        print(f"[WARN] Popup Tkinter falhou: {exc}")
     if os.name == "nt":
         try:
             return _prompt_runtime_dirs_via_windows_dialog(initial_input_dir, initial_out_dir)
@@ -241,12 +255,6 @@ def prompt_runtime_dirs(initial_input_dir: Path, initial_out_dir: Path) -> Tuple
             raise
         except Exception as exc:
             print(f"[WARN] Seletor nativo do Windows falhou: {exc}")
-    try:
-        return _prompt_runtime_dirs_via_tk_dialog(initial_input_dir, initial_out_dir)
-    except SystemExit:
-        raise
-    except Exception as exc:
-        print(f"[WARN] Popup Tkinter falhou: {exc}")
     return _prompt_runtime_dirs_via_cli(initial_input_dir, initial_out_dir)
 
 
