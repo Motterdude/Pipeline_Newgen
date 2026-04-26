@@ -2384,11 +2384,6 @@ schema_version = 1
 "setting_param" = "nan"
 "setting_value" = "nan"
 
-# ------------------------------------------------------------------
-# Bancada de emissoes (Moreira_R13 Tabela C1, p.152-153).
-# Padrao: acc_pct = repetibilidade (fracao de leitura); resolution em unidade de engenharia.
-# ------------------------------------------------------------------
-
 [[instruments]]
 "key" = "CO_pct"
 "component" = "CAL_Model_30_NDIR_CO"

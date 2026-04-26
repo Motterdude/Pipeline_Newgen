@@ -3,6 +3,6 @@ schema_version = 1
 [metadata]
 "format" = "pipeline29_text"
 "schema_version" = 1
-"updated_at_utc" = "2026-04-22T20:07:42+00:00"
+"updated_at_utc" = "2026-04-26T01:16:48+00:00"
 "source_kind" = "text"
-"source_path" = "C:\\Users\\sc61730\\OneDrive - Stellantis\\Documentos\\LATAM\\GSE_T3\\Partida_Mascada_T3_BSG\\Tool\\downloads\\nanum-pipeline-28\\nanum-pipeline-28-main\\config\\pipeline29_text"
+"source_path" = "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\config\\pipeline29_text"
