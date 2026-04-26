@@ -153,8 +153,14 @@ def read_kibox_csv(path: Path, *, process_root: Optional[Path] = None, meta: Opt
     )
 
 
-def aggregate_kibox_mean(path: Path, *, process_root: Optional[Path] = None, meta: Optional[InputFileMeta] = None) -> KiboxAggregateResult:
-    read_result = read_kibox_csv(path, process_root=process_root, meta=meta)
+def aggregate_kibox_mean(
+    path: Path,
+    *,
+    process_root: Optional[Path] = None,
+    meta: Optional[InputFileMeta] = None,
+    preloaded: Optional[KiboxReadResult] = None,
+) -> KiboxAggregateResult:
+    read_result = preloaded if preloaded is not None else read_kibox_csv(path, process_root=process_root, meta=meta)
     numeric_columns = [column for column in read_result.columns if column not in {
         "BaseName",
         "Load_kW",

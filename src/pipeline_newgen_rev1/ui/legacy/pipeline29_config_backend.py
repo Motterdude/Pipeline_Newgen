@@ -22,6 +22,7 @@ from ...config.adapter import (
     DEFAULT_COMPARE_COLUMNS,
     DEFAULT_FUEL_PROPERTY_COLUMNS,
     DEFAULT_INSTRUMENT_COLUMNS,
+    DEFAULT_KNOCK_THRESHOLD_COLUMNS,
     DEFAULT_PLOT_COLUMNS,
     DEFAULT_REPORTING_COLUMNS,
 )
@@ -49,6 +50,7 @@ class Pipeline29ConfigBundle:
     fuel_properties_df: pd.DataFrame
     data_quality_cfg: Dict[str, float]
     defaults_cfg: Dict[str, str]
+    knock_thresholds_df: pd.DataFrame = None  # type: ignore[assignment]
     source_kind: str = "text"
     source_path: Optional[Path] = None
     text_dir: Optional[Path] = None
@@ -111,6 +113,8 @@ def _dataframe_records(frame: pd.DataFrame, columns: List[str]) -> List[Dict[str
 
 
 def _legacy_to_modern(bundle: Pipeline29ConfigBundle) -> ConfigBundle:
+    kt_df = bundle.knock_thresholds_df
+    kt_records = _dataframe_records(kt_df, DEFAULT_KNOCK_THRESHOLD_COLUMNS) if kt_df is not None else []
     return ConfigBundle(
         mappings=dict(bundle.mappings),
         instruments=_dataframe_records(bundle.instruments_df, DEFAULT_INSTRUMENT_COLUMNS),
@@ -119,6 +123,7 @@ def _legacy_to_modern(bundle: Pipeline29ConfigBundle) -> ConfigBundle:
         compare=_dataframe_records(bundle.compare_df, DEFAULT_COMPARE_COLUMNS),
         fuel_properties=_dataframe_records(bundle.fuel_properties_df, DEFAULT_FUEL_PROPERTY_COLUMNS),
         data_quality=dict(bundle.data_quality_cfg),
+        knock_thresholds=kt_records,
         defaults=dict(bundle.defaults_cfg),
         source_kind=bundle.source_kind,
         source_path=bundle.source_path,
@@ -136,6 +141,7 @@ def _modern_to_legacy(bundle: ConfigBundle) -> Pipeline29ConfigBundle:
         fuel_properties_df=_records_to_dataframe(bundle.fuel_properties, DEFAULT_FUEL_PROPERTY_COLUMNS),
         data_quality_cfg=dict(bundle.data_quality),
         defaults_cfg=dict(bundle.defaults),
+        knock_thresholds_df=_records_to_dataframe(bundle.knock_thresholds, DEFAULT_KNOCK_THRESHOLD_COLUMNS),
         source_kind=bundle.source_kind,
         source_path=bundle.source_path,
         text_dir=bundle.text_dir,
@@ -170,6 +176,7 @@ def bundle_to_preset_payload(bundle: Pipeline29ConfigBundle) -> Dict[str, Any]:
         "compare": modern.compare,
         "fuel_properties": modern.fuel_properties,
         "data_quality": modern.data_quality,
+        "knock_thresholds": modern.knock_thresholds,
         "defaults": modern.defaults,
     }
 
@@ -184,6 +191,7 @@ def bundle_from_preset_payload(payload: Mapping[str, Any]) -> Pipeline29ConfigBu
             compare=list(payload.get("compare", []) or []),
             fuel_properties=list(payload.get("fuel_properties", []) or []),
             data_quality=dict(payload.get("data_quality", {}) or {}),
+            knock_thresholds=list(payload.get("knock_thresholds", []) or []),
             defaults=dict(payload.get("defaults", {}) or {}),
             source_kind="preset",
             source_path=None,

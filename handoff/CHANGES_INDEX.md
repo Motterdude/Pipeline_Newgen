@@ -4,6 +4,7 @@ Ordem cronológica inversa. Uma linha por sessão. Detalhe completo em `handoff/
 
 ## 2026-04
 
+- **2026-04-26** — [fuel-colors-knock-features](changes/2026-04-26-fuel-colors-knock-features.md) — Cores fixas por combustivel (GUI color picker + preset), knock CCDF exceedance distribution (3 escalas + per-load), eficiencia termica indicada (IMEPH), otimizacao de performance (double-read + fragmentacao). 21 stages, testes OK.
 - **2026-04-26** — [ignition-delay-e65h35-analysis](changes/2026-04-26-ignition-delay-e65h35-analysis.md) — Análise investigativa do pico de Ignition Delay no E65H35 ~24 kW: driver é avanço de ignição 17.5° BTDC (ECU em mapa de carga baixa por split H2/etanol anômalo). Dado real, não erro de pipeline.
 - **2026-04-25** — [delta-mode-and-delta-vs-ref](changes/2026-04-25-delta-mode-and-delta-vs-ref.md) — Fix MoTeC dtype + compare vazio em fuel mode; delta_mode diff/ratio em compare_iteracoes; delta-vs-D85B15 em final_table com GUM; novo plot type all_fuels_delta_ref com eixo duplo. 435 testes OK (+10).
 - **2026-04-25** — [campaign-planner](changes/2026-04-25-campaign-planner.md) — Campaign Planner: scanner automático de estrutura, generalização compare_iteracoes para fuel mode, nova aba GUI Campanha, compare_plots flexibilizado. 21 arquivos, +1197 linhas, 425 testes OK (+43).

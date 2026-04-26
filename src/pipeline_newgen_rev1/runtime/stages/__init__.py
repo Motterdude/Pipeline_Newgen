@@ -22,6 +22,7 @@ from .export_excel import ExportExcelStage
 from .load_text_config import LoadTextConfigStage
 from .parse_sweep_metadata import ParseSweepMetadataStage
 from .plot_compare_iteracoes import PlotCompareIteracoesStage
+from .plot_knock_histogram import PlotKnockHistogramStage
 from .plot_time_diagnostics import PlotTimeDiagnosticsStage
 from .prepare_upstream_frames import PrepareUpstreamFramesStage
 from .prompt_sweep_duplicate_selector import PromptSweepDuplicateSelectorStage
@@ -55,6 +56,7 @@ STAGE_REGISTRY: Dict[str, Stage] = {
     "run_unitary_plots": RunUnitaryPlotsStage(),
     "run_compare_plots": RunComparePlotsStage(),
     "plot_compare_iteracoes": PlotCompareIteracoesStage(),
+    "plot_knock_histogram": PlotKnockHistogramStage(),
     "run_special_load_plots": RunSpecialLoadPlotsStage(),
 }
 
@@ -88,6 +90,7 @@ PLOTTING_STAGE_ORDER: Tuple[str, ...] = (
     "run_unitary_plots",
     "run_compare_plots",
     "plot_compare_iteracoes",
+    "plot_knock_histogram",
     "run_special_load_plots",
 )
 

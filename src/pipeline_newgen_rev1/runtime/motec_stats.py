@@ -42,12 +42,12 @@ def compute_motec_trechos_stats(motec_raw: pd.DataFrame) -> pd.DataFrame:
     mot_valid = mot.merge(valid_groups, on=MOTEC_GROUP_COLS_TRECHOS, how="inner")
     gv = mot_valid.groupby(MOTEC_GROUP_COLS_TRECHOS, dropna=False, sort=True)
 
-    means = gv[candidate_cols].mean(numeric_only=True).add_suffix("_mean").copy()
+    means = gv[candidate_cols].mean(numeric_only=True).add_suffix("_mean")
     n2 = gv.size().rename("Motec_N_samples")
 
-    out = pd.concat([means, n2], axis=1).reset_index().copy()
+    out = pd.concat([means, n2], axis=1).reset_index()
     keep = MOTEC_GROUP_COLS_TRECHOS + [c for c in out.columns if c.endswith("_mean")] + ["Motec_N_samples"]
-    return out[keep].copy()
+    return out[keep]
 
 
 def compute_motec_ponto_stats(motec_trechos: pd.DataFrame) -> pd.DataFrame:
@@ -67,13 +67,13 @@ def compute_motec_ponto_stats(motec_trechos: pd.DataFrame) -> pd.DataFrame:
         mot[value_cols] = mot[value_cols].apply(pd.to_numeric, errors="coerce")
 
     g = mot.groupby(MOTEC_GROUP_COLS_PONTO, dropna=False, sort=True)
-    mean_of_windows = g[value_cols].mean(numeric_only=True).add_suffix("_mean_of_windows").copy()
-    sd_of_windows = g[value_cols].std(ddof=1, numeric_only=True).add_suffix("_sd_of_windows").copy()
+    mean_of_windows = g[value_cols].mean(numeric_only=True).add_suffix("_mean_of_windows")
+    sd_of_windows = g[value_cols].std(ddof=1, numeric_only=True).add_suffix("_sd_of_windows")
     mean_of_windows.columns = [normalize_repeated_stat_tokens(c) for c in mean_of_windows.columns]
     sd_of_windows.columns = [normalize_repeated_stat_tokens(c) for c in sd_of_windows.columns]
     n_trechos = g.size().rename("Motec_N_trechos_validos")
     n_files = g["BaseName"].nunique().rename("Motec_N_files")
     mean_samples = g["Motec_N_samples"].mean().rename("Motec_N_samples_mean_of_windows")
 
-    out = pd.concat([mean_of_windows, sd_of_windows, n_trechos, n_files, mean_samples], axis=1).reset_index().copy()
+    out = pd.concat([mean_of_windows, sd_of_windows, n_trechos, n_files, mean_samples], axis=1).reset_index()
     return out

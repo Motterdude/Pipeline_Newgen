@@ -124,9 +124,9 @@ class TestPromptSweepDuplicateSelectorStage(unittest.TestCase):
 
 
 class TestStageRegistryWithSweep(unittest.TestCase):
-    def test_twenty_stages_total(self):
+    def test_twentyone_stages_total(self):
         from pipeline_newgen_rev1.runtime.stages import STAGE_REGISTRY
-        self.assertEqual(len(STAGE_REGISTRY), 20)
+        self.assertEqual(len(STAGE_REGISTRY), 21)
 
     def test_sweep_stages_in_registry(self):
         from pipeline_newgen_rev1.runtime.stages import STAGE_REGISTRY

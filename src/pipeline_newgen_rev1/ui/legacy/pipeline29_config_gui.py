@@ -13,15 +13,18 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 from PySide6.QtCore import QTimer, Qt
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
     QCheckBox,
+    QColorDialog,
     QComboBox,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
     QFormLayout,
+    QGroupBox,
     QHeaderView,
     QHBoxLayout,
     QInputDialog,
@@ -47,6 +50,7 @@ from .pipeline29_config_backend import (
     DEFAULT_COMPARE_SERIES_OPTIONS,
     DEFAULT_FUEL_PROPERTY_COLUMNS,
     DEFAULT_INSTRUMENT_COLUMNS,
+    DEFAULT_KNOCK_THRESHOLD_COLUMNS,
     DEFAULT_MAPPING_COLUMNS,
     DEFAULT_PLOT_COLUMNS,
     DEFAULT_REPORTING_COLUMNS,
@@ -97,6 +101,15 @@ GUI_COMPARE_ENABLE_UNITARY_KEY = "GUI_COMPARE_ENABLE_UNITARY"
 GUI_COMPARE_ENABLE_UP_KEY = "GUI_COMPARE_ENABLE_UP"
 GUI_COMPARE_ENABLE_DOWN_KEY = "GUI_COMPARE_ENABLE_DOWN"
 GUI_COMPARE_ENABLE_MEAN_KEY = "GUI_COMPARE_ENABLE_MEAN"
+GUI_KNOCK_EXCEEDANCE_ENABLED_KEY = "GUI_KNOCK_EXCEEDANCE_ENABLED"
+GUI_KNOCK_HISTOGRAM_ENABLED_KEY = "GUI_KNOCK_HISTOGRAM_ENABLED"
+FUEL_COLOR_LABELS = ["D85B15", "E94H6", "E75H25", "E65H35"]
+FUEL_COLOR_DEFAULTS = {
+    "D85B15": "#1f77b4",
+    "E94H6":  "#ff7f0e",
+    "E75H25": "#2ca02c",
+    "E65H35": "#d62728",
+}
 COMPARE_GUI_PAIR_ROWS: List[Tuple[str, str]] = [
     ("baseline_media", "aditivado_media"),
     ("baseline_subida", "aditivado_subida"),
@@ -187,6 +200,11 @@ DEFAULT_FIELD_SPECS_BY_SECTION: Dict[str, List[Dict[str, Any]]] = {
         {"name": "Fuel_Density_kg_m3", "kind": "text"},
         {"name": "Fuel_Cost_R_L", "kind": "text"},
         {"name": "reference", "kind": "text"},
+        {"name": "notes", "kind": "text"},
+    ],
+    "Knock Thresholds": [
+        {"name": "threshold_bar", "kind": "text"},
+        {"name": "enabled", "kind": "combo", "options": ["1", "0"]},
         {"name": "notes", "kind": "text"},
     ],
 }
@@ -1893,6 +1911,42 @@ class Pipeline29ConfigEditor(QMainWindow):
         self.compare_chk_down = self.campaign_planner.chk_absolute
         self.compare_chk_mean = self.campaign_planner.chk_delta
 
+        knock_widget = QWidget()
+        knock_layout = QVBoxLayout(knock_widget)
+        self.chk_knock_exceedance = QCheckBox("Enable knock exceedance analysis")
+        self.chk_knock_exceedance.setChecked(True)
+        knock_layout.addWidget(self.chk_knock_exceedance)
+        self.chk_knock_histogram = QCheckBox("Enable knock histogram (KPEAK distribution)")
+        self.chk_knock_histogram.setChecked(True)
+        knock_layout.addWidget(self.chk_knock_histogram)
+        self.knock_thresholds_table = EditableTableSection(
+            "Knock Thresholds",
+            DEFAULT_KNOCK_THRESHOLD_COLUMNS,
+            status_callback=self._show_status,
+        )
+        knock_layout.addWidget(self.knock_thresholds_table)
+
+        fuel_colors_group = QGroupBox("Fuel Colors")
+        fuel_colors_layout = QFormLayout(fuel_colors_group)
+        self._fuel_color_buttons: Dict[str, QPushButton] = {}
+        self._fuel_color_edits: Dict[str, QLineEdit] = {}
+        for fuel_label in FUEL_COLOR_LABELS:
+            row = QHBoxLayout()
+            btn = QPushButton()
+            btn.setFixedSize(32, 24)
+            default_hex = FUEL_COLOR_DEFAULTS.get(fuel_label, "#888888")
+            btn.setStyleSheet(f"background-color: {default_hex};")
+            edit = QLineEdit(default_hex)
+            edit.setMaximumWidth(90)
+            btn.clicked.connect(lambda checked=False, fl=fuel_label: self._pick_fuel_color(fl))
+            edit.editingFinished.connect(lambda fl=fuel_label: self._sync_fuel_color_from_edit(fl))
+            row.addWidget(btn)
+            row.addWidget(edit)
+            fuel_colors_layout.addRow(fuel_label, row)
+            self._fuel_color_buttons[fuel_label] = btn
+            self._fuel_color_edits[fuel_label] = edit
+        knock_layout.addWidget(fuel_colors_group)
+
         self.tabs.addTab(self.sweep_helper_tab, PIPELINE30_SWEEP_TAB_TITLE)
         self.tabs.addTab(self.defaults_table, "Defaults")
         self.tabs.addTab(self.data_quality_table, "Data Quality")
@@ -1901,6 +1955,7 @@ class Pipeline29ConfigEditor(QMainWindow):
         self.tabs.addTab(self.reporting_table, "Reporting")
         self.tabs.addTab(self.fuel_properties_table, "Fuel Properties")
         self.tabs.addTab(self.plots_table, "Plots")
+        self.tabs.addTab(knock_widget, "Knock Thresholds")
         self.tabs.addTab(self.campaign_planner, "Campanha")
         self.tabs.setCurrentWidget(self.defaults_table)
 
@@ -2131,6 +2186,7 @@ class Pipeline29ConfigEditor(QMainWindow):
             fuel_properties_df=pd.DataFrame(columns=DEFAULT_FUEL_PROPERTY_COLUMNS),
             data_quality_cfg={},
             defaults_cfg={},
+            knock_thresholds_df=pd.DataFrame(columns=DEFAULT_KNOCK_THRESHOLD_COLUMNS),
             source_kind="text",
             source_path=self._current_config_dir(),
             text_dir=self._current_config_dir(),
@@ -2167,6 +2223,28 @@ class Pipeline29ConfigEditor(QMainWindow):
         self.compare_chk_up.setChecked(up_enabled if any_enabled else True)
         self.compare_chk_down.setChecked(down_enabled if any_enabled else True)
         self.compare_chk_mean.setChecked(mean_enabled if any_enabled else True)
+
+        self.chk_knock_exceedance.setChecked(
+            _cfg_flag_from_defaults(bundle.defaults_cfg, GUI_KNOCK_EXCEEDANCE_ENABLED_KEY, default=True)
+        )
+        self.chk_knock_histogram.setChecked(
+            _cfg_flag_from_defaults(bundle.defaults_cfg, GUI_KNOCK_HISTOGRAM_ENABLED_KEY, default=True)
+        )
+        kt_df = bundle.knock_thresholds_df
+        if kt_df is not None and not kt_df.empty:
+            self.knock_thresholds_table.load_records(kt_df.to_dict(orient="records"))
+        else:
+            self.knock_thresholds_table.load_records([])
+
+        for fuel_label in FUEL_COLOR_LABELS:
+            key = f"FUEL_COLOR_{fuel_label}"
+            hex_val = bundle.defaults_cfg.get(key, "").strip()
+            if not hex_val:
+                hex_val = FUEL_COLOR_DEFAULTS.get(fuel_label, "#888888")
+            if fuel_label in self._fuel_color_edits:
+                self._fuel_color_edits[fuel_label].setText(hex_val)
+            if fuel_label in self._fuel_color_buttons and QColor(hex_val).isValid():
+                self._fuel_color_buttons[fuel_label].setStyleSheet(f"background-color: {hex_val};")
 
     def _available_variable_catalog(self) -> List[str]:
         names = {name for name in self.variable_catalog if str(name).strip()}
@@ -2344,6 +2422,12 @@ class Pipeline29ConfigEditor(QMainWindow):
         defaults_cfg[GUI_COMPARE_ENABLE_UP_KEY] = "1" if compare_enable_up else "0"
         defaults_cfg[GUI_COMPARE_ENABLE_DOWN_KEY] = "1" if compare_enable_down else "0"
         defaults_cfg[GUI_COMPARE_ENABLE_MEAN_KEY] = "1" if compare_enable_mean else "0"
+        defaults_cfg[GUI_KNOCK_EXCEEDANCE_ENABLED_KEY] = "1" if self.chk_knock_exceedance.isChecked() else "0"
+        defaults_cfg[GUI_KNOCK_HISTOGRAM_ENABLED_KEY] = "1" if self.chk_knock_histogram.isChecked() else "0"
+        for fuel_label in FUEL_COLOR_LABELS:
+            hex_val = self._fuel_color_edits[fuel_label].text().strip()
+            if hex_val:
+                defaults_cfg[f"FUEL_COLOR_{fuel_label}"] = hex_val
         compare_records = _compare_records_from_quick_flags(
             enable_up=compare_enable_up,
             enable_down=compare_enable_down,
@@ -2365,12 +2449,30 @@ class Pipeline29ConfigEditor(QMainWindow):
             ),
             data_quality_cfg=data_quality_cfg,
             defaults_cfg=defaults_cfg,
+            knock_thresholds_df=pd.DataFrame(
+                self.knock_thresholds_table.records(),
+                columns=DEFAULT_KNOCK_THRESHOLD_COLUMNS,
+            ),
             source_kind="text",
             source_path=self._current_config_dir(),
             text_dir=self._current_config_dir(),
         )
         errors.extend(validate_bundle(bundle))
         return bundle, errors
+
+    def _pick_fuel_color(self, fuel_label: str) -> None:
+        current_hex = self._fuel_color_edits[fuel_label].text().strip()
+        initial = QColor(current_hex) if QColor(current_hex).isValid() else QColor("#888888")
+        color = QColorDialog.getColor(initial, self, f"Color for {fuel_label}")
+        if color.isValid():
+            hex_val = color.name()
+            self._fuel_color_buttons[fuel_label].setStyleSheet(f"background-color: {hex_val};")
+            self._fuel_color_edits[fuel_label].setText(hex_val)
+
+    def _sync_fuel_color_from_edit(self, fuel_label: str) -> None:
+        hex_val = self._fuel_color_edits[fuel_label].text().strip()
+        if QColor(hex_val).isValid():
+            self._fuel_color_buttons[fuel_label].setStyleSheet(f"background-color: {hex_val};")
 
     def _show_status(self, message: str) -> None:
         self.status.showMessage(message, 12000)

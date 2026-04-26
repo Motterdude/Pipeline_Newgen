@@ -176,6 +176,15 @@ LOAD_SWEEP_FEATURE_SPECS: tuple[FeatureSpec, ...] = (
         notes="Plotting half of the former run_compare_iteracoes. Requires compute_compare_iteracoes to run first.",
     ),
     FeatureSpec(
+        key="plot_knock_histogram",
+        label="Plot knock histogram",
+        description="Generate KPEAK intensity distribution histogram from raw KiBox cycle data.",
+        stage="plotting",
+        default_by_mode={"load": True, "sweep": True},
+        legacy_anchor="",
+        notes="Gated by GUI_KNOCK_HISTOGRAM_ENABLED in defaults. Collects raw KPEAK values during file reading.",
+    ),
+    FeatureSpec(
         key="run_special_load_plots",
         label="Run special load plots",
         description="Run load-only overlays and special plots such as ethanol equivalent and machine scenario suites.",

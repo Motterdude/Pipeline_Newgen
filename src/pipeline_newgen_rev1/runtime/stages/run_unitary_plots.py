@@ -31,6 +31,7 @@ class RunUnitaryPlotsStage:
         mappings = ctx.bundle.mappings if ctx.bundle is not None else {}
 
         sel = ctx.normalized_state.selection if ctx.normalized_state else None
+        defaults = ctx.bundle.defaults if ctx.bundle is not None else {}
         ctx.unitary_plot_summary = make_plots_from_config_with_summary(
             ctx.final_table,
             plots_df,
@@ -41,6 +42,7 @@ class RunUnitaryPlotsStage:
             sweep_effective_x_col=ctx.sweep_effective_x_col,
             sweep_axis_label=ctx.sweep_axis_label,
             sweep_axis_token=ctx.sweep_axis_token,
+            defaults=defaults,
         )
         summary = ctx.unitary_plot_summary or {}
         generated = summary.get("generated", 0)

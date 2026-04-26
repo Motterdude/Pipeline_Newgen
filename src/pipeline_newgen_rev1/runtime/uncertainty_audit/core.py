@@ -144,4 +144,5 @@ def enrich_final_table_with_audit(
                 _process_derived(df, spec)
         except Exception as exc:
             print(f"[WARN] uncertainty_audit | '{spec.key}' falhou: {type(exc).__name__}: {exc}")
+    df = df.copy()
     return df

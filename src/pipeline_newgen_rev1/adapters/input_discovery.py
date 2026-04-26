@@ -212,14 +212,18 @@ def discover_input_file(path: Path, *, roots: Sequence[Path] = ()) -> InputFileM
     )
 
 
+_DISCOVERY_EXTENSIONS = frozenset({".xlsx", ".csv", ".open"})
+
+
 def discover_runtime_inputs(process_dir: Path) -> DiscoveredRuntimeInputs:
     root = Path(process_dir).expanduser().resolve()
-    files = [
-        discover_input_file(path, roots=(root,))
-        for pattern in ("*.xlsx", "*.csv", "*.open")
-        for path in sorted(root.rglob(pattern))
-        if path.is_file() and not path.name.startswith("~$")
+    paths = [
+        p for p in root.rglob("*")
+        if p.suffix.lower() in _DISCOVERY_EXTENSIONS
+        and p.is_file()
+        and not p.name.startswith("~$")
     ]
+    files = [discover_input_file(p, roots=(root,)) for p in paths]
     files.sort(key=lambda item: (str(item.path.parent).lower(), item.path.name.lower()))
     return DiscoveredRuntimeInputs(process_dir=root, files=files)
 

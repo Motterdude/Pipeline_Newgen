@@ -6,7 +6,7 @@ delegates to the appropriate renderer.  Port of legacy L8789-9142.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -37,10 +37,18 @@ from .renderers import (
     plot_all_fuels_with_value_labels,
     plot_all_fuels_xy,
 )
+from ..fuel_colors import fuel_color_map
 from ..sweep_axis import (
     resolve_plot_fixed_x_for_sweep,
     rewrite_plot_filename_title,
 )
+
+
+def _collect_fuel_labels(df: pd.DataFrame) -> List[str]:
+    col = df.get("Fuel_Label")
+    if col is None:
+        return []
+    return [str(v) for v in col.dropna().unique() if str(v).strip()]
 
 
 def _new_plot_run_summary() -> Dict[str, object]:
@@ -66,9 +74,14 @@ def make_plots_from_config_with_summary(
     sweep_effective_x_col: str = "",
     sweep_axis_label: str = "",
     sweep_axis_token: str = "",
+    defaults: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, object]:
     summary = _new_plot_run_summary()
     target_dir = Path(plot_dir) if plot_dir is not None else Path("plots")
+    _fuel_colors = fuel_color_map(
+        _collect_fuel_labels(out_df),
+        defaults=defaults,
+    )
 
     def mark_generated(label: str, filename_value: str) -> None:
         summary["generated"] = int(summary.get("generated", 0)) + 1
@@ -158,6 +171,7 @@ def make_plots_from_config_with_summary(
                 fixed_x, fixed_y, fixed_y_limits, y_tick_step,
                 y_tol_plus, y_tol_minus, fuels_override, series_col,
                 plot_dir, mark_generated, mark_skipped, sweep_kw,
+                _fuel_colors,
             )
             continue
 
@@ -169,6 +183,7 @@ def make_plots_from_config_with_summary(
                 fixed_x, fixed_y, fixed_y_limits, y_tick_step,
                 y_tol_plus, y_tol_minus, fuels_override, series_col,
                 plot_dir, mark_generated, mark_skipped, sweep_kw,
+                _fuel_colors,
             )
             continue
 
@@ -180,6 +195,7 @@ def make_plots_from_config_with_summary(
                 fixed_x, fixed_y, fixed_y_limits, y_tick_step,
                 y_tol_plus, y_tol_minus, fuels_override, series_col,
                 plot_dir, mark_generated, mark_skipped, sweep_kw,
+                _fuel_colors,
             )
             continue
 
@@ -191,6 +207,7 @@ def make_plots_from_config_with_summary(
                 fixed_x, fixed_y, fixed_y_limits, y_tick_step,
                 y_tol_plus, y_tol_minus, fuels_override, series_col,
                 plot_dir, mark_generated, mark_skipped, sweep_kw,
+                _fuel_colors,
             )
             continue
 
@@ -202,6 +219,7 @@ def make_plots_from_config_with_summary(
                 fixed_x, fixed_y, fixed_y_limits, y_tick_step,
                 y_tol_plus, y_tol_minus, fuels_override, series_col,
                 plot_dir, mark_generated, mark_skipped, sweep_kw,
+                _fuel_colors,
             )
             continue
 
@@ -224,6 +242,7 @@ def _dispatch_kibox_all(
     fixed_x, fixed_y, fixed_y_limits, y_tick_step,
     y_tol_plus, y_tol_minus, fuels_override, series_col,
     plot_dir, mark_generated, mark_skipped, sweep_kw,
+    fuel_colors,
 ):
     kibox_cols = [c for c in out_df.columns if str(c).startswith("KIBOX_") and c != "KIBOX_N_files"]
     if not kibox_cols:
@@ -277,6 +296,7 @@ def _dispatch_kibox_all(
             x_label=xlab, fuels_override=fuels_override,
             series_col=series_col, plot_dir=plot_dir,
             y_tol_plus=y_tol_plus, y_tol_minus=y_tol_minus,
+            fuel_colors=fuel_colors,
         )
         if ok:
             mark_generated(item_label, fn)
@@ -290,6 +310,7 @@ def _dispatch_all_fuels(
     fixed_x, fixed_y, fixed_y_limits, y_tick_step,
     y_tol_plus, y_tol_minus, fuels_override, series_col,
     plot_dir, mark_generated, mark_skipped, sweep_kw,
+    fuel_colors,
 ):
     sw = sweep_kw or {}
     x_resolve_kw = {k: sw.get(k, "") for k in ("sweep_active", "sweep_x_col", "sweep_effective_x_col")}
@@ -368,6 +389,7 @@ def _dispatch_all_fuels(
             fixed_x=eff_fixed_x, x_col=x_col, x_label=x_label,
             fuels_override=fuels_override, series_col=series_col,
             plot_dir=plot_dir, y_tol_plus=y_tol_plus, y_tol_minus=y_tol_minus,
+            fuel_colors=fuel_colors,
         )
         if ok:
             mark_generated(item_label, variant_filename)
@@ -381,6 +403,7 @@ def _dispatch_all_fuels_xy(
     fixed_x, fixed_y, fixed_y_limits, y_tick_step,
     y_tol_plus, y_tol_minus, fuels_override, series_col,
     plot_dir, mark_generated, mark_skipped, sweep_kw,
+    fuel_colors,
 ):
     if not y_col_req:
         print(f"[ERROR] Plot '{filename or title}': y_col vazio (plot_type=all_fuels_xy). Pulei.")
@@ -461,6 +484,7 @@ def _dispatch_all_fuels_xy(
             fixed_x=eff_fixed_x, fuels_override=fuels_override,
             series_col=series_col, plot_dir=plot_dir,
             y_tol_plus=y_tol_plus, y_tol_minus=y_tol_minus,
+            fuel_colors=fuel_colors,
         )
         if ok:
             mark_generated(item_label, variant_filename)
@@ -474,6 +498,7 @@ def _dispatch_labels(
     fixed_x, fixed_y, fixed_y_limits, y_tick_step,
     y_tol_plus, y_tol_minus, fuels_override, series_col,
     plot_dir, mark_generated, mark_skipped, sweep_kw,
+    fuel_colors,
 ):
     sw = sweep_kw or {}
     x_resolve_kw = {k: sw.get(k, "") for k in ("sweep_active", "sweep_x_col", "sweep_effective_x_col")}
@@ -527,6 +552,7 @@ def _dispatch_labels(
         x_col=x_col, x_label=x_label,
         fuels_override=fuels_override, series_col=series_col,
         plot_dir=plot_dir, y_tol_plus=y_tol_plus, y_tol_minus=y_tol_minus,
+        fuel_colors=fuel_colors,
     )
     if ok:
         mark_generated(filename or plot_label, filename)
@@ -540,6 +566,7 @@ def _dispatch_delta_ref(
     fixed_x, fixed_y, fixed_y_limits, y_tick_step,
     y_tol_plus, y_tol_minus, fuels_override, series_col,
     plot_dir, mark_generated, mark_skipped, sweep_kw,
+    fuel_colors,
 ):
     sw = sweep_kw or {}
     x_resolve_kw = {k: sw.get(k, "") for k in ("sweep_active", "sweep_x_col", "sweep_effective_x_col")}
@@ -618,6 +645,7 @@ def _dispatch_delta_ref(
             x_col=x_col, x_label=x_label,
             fuels_override=fuels_override, series_col=series_col,
             plot_dir=plot_dir, y_tol_plus=y_tol_plus, y_tol_minus=y_tol_minus,
+            fuel_colors=fuel_colors,
         )
         if ok:
             mark_generated(item_label, variant_filename)

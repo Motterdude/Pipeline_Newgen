@@ -29,6 +29,7 @@ REPORTING_FILENAME = "reporting_rounding.toml"
 PLOTS_FILENAME = "plots.toml"
 COMPARE_FILENAME = "compare.toml"
 FUEL_PROPERTIES_FILENAME = "fuel_properties.toml"
+KNOCK_THRESHOLDS_FILENAME = "knock_thresholds.toml"
 
 DEFAULT_INSTRUMENT_COLUMNS = [
     "key",
@@ -94,6 +95,7 @@ DEFAULT_FUEL_PROPERTY_COLUMNS = [
     "reference",
     "notes",
 ]
+DEFAULT_KNOCK_THRESHOLD_COLUMNS = ["threshold_bar", "enabled", "notes"]
 REQUIRED_MAPPING_KEYS = {"power_kw", "fuel_kgh", "lhv_kj_kg"}
 
 
@@ -106,7 +108,8 @@ class ConfigBundle:
     compare: List[Dict[str, Any]]
     fuel_properties: List[Dict[str, Any]]
     data_quality: Dict[str, float]
-    defaults: Dict[str, str]
+    knock_thresholds: List[Dict[str, Any]] = field(default_factory=list)
+    defaults: Dict[str, str] = field(default_factory=dict)
     source_kind: str = "text"
     source_path: Optional[Path] = None
     text_dir: Optional[Path] = None
@@ -154,6 +157,7 @@ def bundle_required_paths(config_dir: Path) -> Dict[str, Path]:
         "plots": config_dir / PLOTS_FILENAME,
         "compare": config_dir / COMPARE_FILENAME,
         "fuel_properties": config_dir / FUEL_PROPERTIES_FILENAME,
+        "knock_thresholds": config_dir / KNOCK_THRESHOLDS_FILENAME,
     }
 
 
@@ -335,6 +339,12 @@ def save_text_config_bundle(
         bundle.fuel_properties,
         DEFAULT_FUEL_PROPERTY_COLUMNS,
     )
+    _write_toml_array_of_tables(
+        paths["knock_thresholds"],
+        "knock_thresholds",
+        bundle.knock_thresholds,
+        DEFAULT_KNOCK_THRESHOLD_COLUMNS,
+    )
     return replace(
         bundle,
         source_kind="text",
@@ -360,6 +370,7 @@ def load_text_config_bundle(config_dir: Path) -> ConfigBundle:
     plots_doc = _read_toml_file(paths["plots"])
     compare_doc = _read_toml_file(paths["compare"])
     fuel_properties_doc = _read_toml_file(paths["fuel_properties"])
+    knock_thresholds_doc = _read_toml_file(paths["knock_thresholds"])
 
     metadata = dict(metadata_doc.get("metadata", {}) or {})
     if "schema_version" not in metadata:
@@ -396,6 +407,10 @@ def load_text_config_bundle(config_dir: Path) -> ConfigBundle:
         fuel_properties=_normalize_rows(
             fuel_properties_doc.get("fuel_properties", []) or [],
             DEFAULT_FUEL_PROPERTY_COLUMNS,
+        ),
+        knock_thresholds=_normalize_rows(
+            knock_thresholds_doc.get("knock_thresholds", []) or [],
+            DEFAULT_KNOCK_THRESHOLD_COLUMNS,
         ),
         data_quality=data_quality,
         defaults=defaults,

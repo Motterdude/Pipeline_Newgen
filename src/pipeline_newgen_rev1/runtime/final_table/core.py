@@ -5,10 +5,13 @@ delegating to the subpackage modules for each logical block.
 """
 from __future__ import annotations
 
+import warnings
 from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
+
+warnings.filterwarnings("ignore", category=pd.errors.PerformanceWarning)
 
 from ._airflow import (
     _resolve_airflow_lambda_col,
@@ -174,10 +177,42 @@ def build_final_table(
     df["uc_n_th_pct"] = df["uc_n_th"] * 100.0
     df["U_n_th_pct"] = df["U_n_th"] * 100.0
 
+    # --- 5a-bis. Indicated thermal efficiency (from KiBox IMEPH) ---
+    displacement_l = _to_float(defaults.get(norm_key("ENGINE_DISPLACEMENT_L"), ""), default=3.992)
+    displacement_m3 = displacement_l / 1000.0
+
+    rpm_col_name = defaults.get(norm_key("VOL_EFF_RPM_COL"), "") or "Rotação_mean_of_windows"
+    rpm_col = _resolve_existing_column(df, rpm_col_name, ["rotação", "rotacao", "rpm"])
+    RPM = pd.to_numeric(df[rpm_col], errors="coerce") if rpm_col else _nan_series(df)
+
+    imeph_col = None
+    for cand in ["KIBOX_IMEPH_AVG_1", "KIBOX_IMEPH_1"]:
+        if cand in df.columns:
+            imeph_col = cand
+            break
+
+    if imeph_col:
+        imeph_bar = pd.to_numeric(df[imeph_col], errors="coerce")
+        p_ind_kw = imeph_bar * 1e5 * displacement_m3 * RPM / 120_000.0
+        n_th_ind = p_ind_kw / (mdot * LHVv)
+        n_mech = PkW / p_ind_kw
+        ind_cols = {
+            "P_ind_kW": p_ind_kw,
+            "n_th_ind": n_th_ind.where((p_ind_kw > 0) & (mdot > 0) & (LHVv > 0), pd.NA),
+            "n_th_ind_pct": (n_th_ind * 100.0).where((p_ind_kw > 0) & (mdot > 0) & (LHVv > 0), pd.NA),
+            "n_mech": n_mech.where((PkW > 0) & (p_ind_kw > 0), pd.NA),
+            "n_mech_pct": (n_mech * 100.0).where((PkW > 0) & (p_ind_kw > 0), pd.NA),
+        }
+        df = df.assign(**ind_cols)
+        print(f"[INFO] n_th_ind: IMEPH='{imeph_col}', RPM='{rpm_col}', V_d={displacement_l}L")
+    else:
+        df = df.assign(**{c: pd.NA for c in ("P_ind_kW", "n_th_ind", "n_th_ind_pct", "n_mech", "n_mech_pct")})
+        print("[WARN] IMEPH nao encontrado no KiBox; n_th_ind ficara vazio.")
+
     # --- 5b. Consumo L/h ---
     volume_factor = 1000.0 / fuel_density
     valid_volumetric = Fkgh.notna() & fuel_density.gt(0)
-    df["Consumo_L_h"] = (Fkgh * volume_factor).where(valid_volumetric, pd.NA)
+    new_vol = {"Consumo_L_h": (Fkgh * volume_factor).where(valid_volumetric, pd.NA)}
     for src_col, dst_col in [
         ("uA_Consumo_kg_h", "uA_Consumo_L_h"),
         ("uB_Consumo_kg_h", "uB_Consumo_L_h"),
@@ -185,12 +220,13 @@ def build_final_table(
         ("U_Consumo_kg_h", "U_Consumo_L_h"),
     ]:
         src = pd.to_numeric(df.get(src_col, pd.NA), errors="coerce")
-        df[dst_col] = (src * volume_factor).where(valid_volumetric, pd.NA)
+        new_vol[dst_col] = (src * volume_factor).where(valid_volumetric, pd.NA)
+    df = df.assign(**new_vol)
 
     # --- 5c. Custo R/h ---
     consumo_l_h = pd.to_numeric(df["Consumo_L_h"], errors="coerce")
     valid_cost = consumo_l_h.notna() & fuel_cost.gt(0)
-    df["Custo_R_h"] = (consumo_l_h * fuel_cost).where(valid_cost, pd.NA)
+    new_cost = {"Custo_R_h": (consumo_l_h * fuel_cost).where(valid_cost, pd.NA)}
     for src_col, dst_col in [
         ("uA_Consumo_L_h", "uA_Custo_R_h"),
         ("uB_Consumo_L_h", "uB_Custo_R_h"),
@@ -198,7 +234,8 @@ def build_final_table(
         ("U_Consumo_L_h", "U_Custo_R_h"),
     ]:
         src = pd.to_numeric(df.get(src_col, pd.NA), errors="coerce")
-        df[dst_col] = (src * fuel_cost).where(valid_cost, pd.NA)
+        new_cost[dst_col] = (src * fuel_cost).where(valid_cost, pd.NA)
+    df = df.assign(**new_cost)
 
     # --- 5d. Diesel cost delta + machine scenarios ---
     df = _attach_diesel_cost_delta_metrics(df)
@@ -301,14 +338,15 @@ def build_final_table(
         ("NOx_g_kWh", "NOX_mean_of_windows", "NOx_ppm"),
         ("THC_g_kWh", "THC_mean_of_windows", "THC_ppm"),
     ]
+    new_emis: dict[str, pd.Series] = {}
+    safe_P = PkW.where(PkW.gt(0), pd.NA)
+    safe_F = Fkgh.where(Fkgh.gt(0), pd.NA)
     for value_col, conc_col, conc_prefix in emission_uncertainty_specs:
         value = _series_or_na(value_col)
         conc = _series_or_na(conc_col)
         uA_conc = _series_or_na(f"uA_{conc_prefix}")
         uB_conc = _series_or_na(f"uB_{conc_prefix}")
         safe_conc = conc.where(conc.abs().gt(0), pd.NA)
-        safe_P = PkW.where(PkW.gt(0), pd.NA)
-        safe_F = Fkgh.where(Fkgh.gt(0), pd.NA)
         rel_uA = ((uA_conc / safe_conc) ** 2 + (uA_P / safe_P) ** 2 + (uA_F / safe_F) ** 2) ** 0.5
         rel_uB = ((uB_conc / safe_conc) ** 2 + (uB_P / safe_P) ** 2 + (uB_F / safe_F) ** 2) ** 0.5
         abs_value = value.abs()
@@ -317,10 +355,10 @@ def build_final_table(
         uc_value = (uA_value ** 2 + uB_value ** 2) ** 0.5
         U_value = K_COVERAGE * uc_value
         valid = value.notna()
-        df[f"uA_{value_col}"] = uA_value.where(valid, pd.NA)
-        df[f"uB_{value_col}"] = uB_value.where(valid, pd.NA)
-        df[f"uc_{value_col}"] = uc_value.where(valid, pd.NA)
-        df[f"U_{value_col}"] = U_value.where(valid, pd.NA)
+        new_emis[f"uA_{value_col}"] = uA_value.where(valid, pd.NA)
+        new_emis[f"uB_{value_col}"] = uB_value.where(valid, pd.NA)
+        new_emis[f"uc_{value_col}"] = uc_value.where(valid, pd.NA)
+        new_emis[f"U_{value_col}"] = U_value.where(valid, pd.NA)
 
     for nox_variant in ("NOx_g_kWh_as_NO", "NOx_g_kWh_as_NO2", "NOx_as_NO_g_kWh", "NOx_as_NO2_g_kWh"):
         if nox_variant not in df.columns:
@@ -330,7 +368,8 @@ def build_final_table(
         ratio = (base_value / base_nox).where(base_nox.abs().gt(0), pd.NA)
         for suffix in ("uA", "uB", "uc", "U"):
             src = _series_or_na(f"{suffix}_NOx_g_kWh")
-            df[f"{suffix}_{nox_variant}"] = (src * ratio).where(base_value.notna(), pd.NA)
+            new_emis[f"{suffix}_{nox_variant}"] = (src * ratio).where(base_value.notna(), pd.NA)
+    df = df.assign(**new_emis)
 
     # --- 9. E94H6 equivalent flow thermal efficiency ---
     F_eq_kgh = pd.to_numeric(df.get("Fuel_E94H6_eq_kg_h", pd.NA), errors="coerce")
@@ -385,9 +424,14 @@ def build_final_table(
             target_prefix="DT_ADMISSAO_TO_T_E_CIL_AVG_C",
         )
     else:
-        df["DT_ADMISSAO_TO_T_E_CIL_AVG_C"] = pd.NA
-        for suffix in ("uA", "uB", "uc", "U"):
-            df[f"{suffix}_DT_ADMISSAO_TO_T_E_CIL_AVG_C"] = pd.NA
+        dt_na = {
+            "DT_ADMISSAO_TO_T_E_CIL_AVG_C": pd.NA,
+            "uA_DT_ADMISSAO_TO_T_E_CIL_AVG_C": pd.NA,
+            "uB_DT_ADMISSAO_TO_T_E_CIL_AVG_C": pd.NA,
+            "uc_DT_ADMISSAO_TO_T_E_CIL_AVG_C": pd.NA,
+            "U_DT_ADMISSAO_TO_T_E_CIL_AVG_C": pd.NA,
+        }
+        df = df.assign(**dt_na)
 
     if "Air_kg_h" in df.columns and t_adm_col and "T_E_CIL_AVG_mean_of_windows" in df.columns:
         mdot_air = pd.to_numeric(df["Air_kg_h"], errors="coerce") / 3600.0

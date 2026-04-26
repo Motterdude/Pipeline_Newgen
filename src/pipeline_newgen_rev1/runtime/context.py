@@ -87,6 +87,10 @@ class RuntimeContext:
     sweep_selected_basenames: Optional[Set[str]] = None
     sweep_dup_prompt_func: Optional[Callable[..., Any]] = None
 
+    # --- Populated by knock histogram collection (runner.py) ---
+    knock_histogram_raw: Dict[str, List[float]] = field(default_factory=dict)
+    knock_histogram_by_load: Dict[float, Dict[str, List[float]]] = field(default_factory=dict)
+
     # --- Populated by scan_campaign_structure ---
     campaign_catalog: Any = None
 

@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import warnings
 from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
 import pandas as pd
+
+warnings.filterwarnings("ignore", category=pd.errors.PerformanceWarning)
 
 from ..adapters import (
     InputFileMeta,
@@ -21,6 +24,8 @@ from ..adapters import (
     summarize_labview_read,
     summarize_motec_read,
 )
+from .fuel_properties import _fuel_label_from_components
+from .knock_exceedance import count_kpeak_exceedances, parse_enabled_thresholds, _extract_kpeak_values
 from ..config import (
     RuntimeState,
     save_runtime_state,
@@ -149,6 +154,20 @@ def _discover_and_read_inputs(ctx: RuntimeContext) -> None:
     elif ctx.normalized_state.selection.aggregation_mode == "sweep":
         print("[INFO] Modo sweep ativo: pulando o filtro de pontos Fuel x Load do fluxo convencional.")
 
+    knock_enabled = (
+        ctx.bundle is not None
+        and str(ctx.bundle.defaults.get("GUI_KNOCK_EXCEEDANCE_ENABLED", "0")).strip() == "1"
+    )
+    knock_thresholds = (
+        parse_enabled_thresholds(ctx.bundle.knock_thresholds)
+        if knock_enabled and ctx.bundle is not None
+        else []
+    )
+    histogram_enabled = (
+        ctx.bundle is not None
+        and str(ctx.bundle.defaults.get("GUI_KNOCK_HISTOGRAM_ENABLED", "0")).strip() == "1"
+    )
+
     for file_meta in ctx.discovery.files:
         try:
             if file_meta.source_type == "LABVIEW" and file_meta.path.suffix.lower() == ".xlsx":
@@ -162,11 +181,24 @@ def _discover_and_read_inputs(ctx: RuntimeContext) -> None:
             elif file_meta.source_type == "KIBOX" and file_meta.path.suffix.lower() == ".csv":
                 kibox_read = read_kibox_csv(file_meta.path, process_root=ctx.input_dir, meta=file_meta)
                 ctx.kibox_rows.append(summarize_kibox_read(kibox_read))
-                ctx.kibox_aggregate_rows.append(
-                    summarize_kibox_aggregate(
-                        aggregate_kibox_mean(file_meta.path, process_root=ctx.input_dir, meta=file_meta)
+                agg_result = aggregate_kibox_mean(file_meta.path, process_root=ctx.input_dir, meta=file_meta, preloaded=kibox_read)
+                agg_summary = summarize_kibox_aggregate(agg_result)
+                if knock_thresholds:
+                    agg_summary["aggregate_row"].update(
+                        count_kpeak_exceedances(kibox_read, knock_thresholds)
                     )
-                )
+                if histogram_enabled:
+                    fuel_label = _fuel_label_from_components(
+                        file_meta.dies_pct, file_meta.biod_pct,
+                        file_meta.etoh_pct, file_meta.h2o_pct,
+                    ) or "unknown"
+                    kpeak_vals = _extract_kpeak_values(kibox_read)
+                    if kpeak_vals:
+                        ctx.knock_histogram_raw.setdefault(fuel_label, []).extend(kpeak_vals)
+                        if file_meta.load_kw is not None:
+                            bucket = ctx.knock_histogram_by_load.setdefault(file_meta.load_kw, {})
+                            bucket.setdefault(fuel_label, []).extend(kpeak_vals)
+                ctx.kibox_aggregate_rows.append(agg_summary)
         except Exception as exc:
             ctx.errors.append(f"{file_meta.path.name}: {exc}")
 

@@ -124,9 +124,9 @@ class TestStageRegistry(unittest.TestCase):
         self.assertIn("run_special_load_plots", STAGE_REGISTRY)
         self.assertIn("run_special_load_plots", PLOTTING_STAGE_ORDER)
 
-    def test_twenty_stages_total(self) -> None:
+    def test_twentyone_stages_total(self) -> None:
         from pipeline_newgen_rev1.runtime.stages import STAGE_REGISTRY
-        self.assertEqual(len(STAGE_REGISTRY), 20)
+        self.assertEqual(len(STAGE_REGISTRY), 21)
 
 
 if __name__ == "__main__":

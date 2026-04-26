@@ -5,7 +5,7 @@ Three renderers + visual helpers.  Port of legacy L5944-7900.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import matplotlib
 matplotlib.use("Agg")
@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 
 from ..final_table._helpers import _to_float
+from ..fuel_colors import fuel_color_map
 from .fuel_groups import series_fuel_plot_groups
 
 
@@ -173,16 +174,21 @@ def plot_all_fuels(
     plot_dir: Optional[Path] = None,
     y_tol_plus: object = 0.0,
     y_tol_minus: object = 0.0,
+    fuel_colors: Optional[Dict[str, str]] = None,
 ) -> bool:
     target_dir = Path(plot_dir) if plot_dir is not None else Path("plots")
     target_dir.mkdir(parents=True, exist_ok=True)
+
+    groups = series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col)
+    colors = fuel_colors or fuel_color_map([g[0] or "" for g in groups])
 
     plt.figure()
     any_curve = False
     legend_entries = 0
     table_rows: List[Tuple[str, object, object]] = []
 
-    for label, d in series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col):
+    for label, d in groups:
+        color = colors.get(label or "")
         d[x_col] = pd.to_numeric(d[x_col], errors="coerce")
         d[y_col] = pd.to_numeric(d[y_col], errors="coerce")
         if yerr_col:
@@ -197,16 +203,16 @@ def plot_all_fuels(
         any_curve = True
         if yerr_col:
             if label:
-                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, label=label)
+                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color, label=label)
                 legend_entries += 1
             else:
-                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3)
+                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color)
         else:
             if label:
-                plt.plot(d[x_col], d[y_col], "o-", label=label)
+                plt.plot(d[x_col], d[y_col], "o-", color=color, label=label)
                 legend_entries += 1
             else:
-                plt.plot(d[x_col], d[y_col], "o-")
+                plt.plot(d[x_col], d[y_col], "o-", color=color)
 
     if not any_curve:
         plt.close()
@@ -254,16 +260,21 @@ def plot_all_fuels_xy(
     plot_dir: Optional[Path] = None,
     y_tol_plus: object = 0.0,
     y_tol_minus: object = 0.0,
+    fuel_colors: Optional[Dict[str, str]] = None,
 ) -> bool:
     target_dir = Path(plot_dir) if plot_dir is not None else Path("plots")
     target_dir.mkdir(parents=True, exist_ok=True)
+
+    groups = series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col)
+    colors = fuel_colors or fuel_color_map([g[0] or "" for g in groups])
 
     plt.figure()
     any_curve = False
     legend_entries = 0
     table_rows: List[Tuple[str, object, object]] = []
 
-    for label, d in series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col):
+    for label, d in groups:
+        color = colors.get(label or "")
         d[x_col] = pd.to_numeric(d[x_col], errors="coerce")
         d[y_col] = pd.to_numeric(d[y_col], errors="coerce")
         if yerr_col:
@@ -278,16 +289,16 @@ def plot_all_fuels_xy(
         any_curve = True
         if yerr_col:
             if label:
-                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, label=label)
+                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color, label=label)
                 legend_entries += 1
             else:
-                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3)
+                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color)
         else:
             if label:
-                plt.plot(d[x_col], d[y_col], "o-", label=label)
+                plt.plot(d[x_col], d[y_col], "o-", color=color, label=label)
                 legend_entries += 1
             else:
-                plt.plot(d[x_col], d[y_col], "o-")
+                plt.plot(d[x_col], d[y_col], "o-", color=color)
 
     if not any_curve:
         plt.close()
@@ -335,16 +346,21 @@ def plot_all_fuels_with_value_labels(
     plot_dir: Optional[Path] = None,
     y_tol_plus: object = 0.0,
     y_tol_minus: object = 0.0,
+    fuel_colors: Optional[Dict[str, str]] = None,
 ) -> bool:
     target_dir = Path(plot_dir) if plot_dir is not None else Path("plots")
     target_dir.mkdir(parents=True, exist_ok=True)
+
+    groups = series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col)
+    colors = fuel_colors or fuel_color_map([g[0] or "" for g in groups])
 
     fig, ax = plt.subplots()
     any_curve = False
     legend_entries = 0
     table_rows: List[Tuple[str, object, object]] = []
 
-    for label, d in series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col):
+    for label, d in groups:
+        color = colors.get(label or "")
         d[x_col] = pd.to_numeric(d[x_col], errors="coerce")
         d[y_col] = pd.to_numeric(d[y_col], errors="coerce")
         d = d.dropna(subset=[x_col, y_col]).sort_values(x_col)
@@ -354,10 +370,10 @@ def plot_all_fuels_with_value_labels(
             table_rows.append((label or "", xi, yi))
         any_curve = True
         if label:
-            ax.plot(d[x_col], d[y_col], "o-", label=label)
+            ax.plot(d[x_col], d[y_col], "o-", color=color, label=label)
             legend_entries += 1
         else:
-            ax.plot(d[x_col], d[y_col], "o-")
+            ax.plot(d[x_col], d[y_col], "o-", color=color)
         x = pd.to_numeric(d[x_col], errors="coerce").values.astype(float)
         y = pd.to_numeric(d[y_col], errors="coerce").values.astype(float)
         _annotate_points_variants(ax, x, y, label_variant)
@@ -412,24 +428,25 @@ def plot_all_fuels_delta_ref(
     plot_dir: Optional[Path] = None,
     y_tol_plus: object = 0.0,
     y_tol_minus: object = 0.0,
+    fuel_colors: Optional[Dict[str, str]] = None,
 ) -> bool:
     target_dir = Path(plot_dir) if plot_dir is not None else Path("plots")
     target_dir.mkdir(parents=True, exist_ok=True)
 
     has_delta = y_col_delta and y_col_delta in df.columns
 
+    groups = series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col)
+    colors = fuel_colors or fuel_color_map([g[0] or "" for g in groups])
+
     fig, ax1 = plt.subplots()
     ax2 = ax1.twinx() if has_delta else None
 
-    cmap = plt.cm.tab10
     any_curve = False
-    fuel_index = 0
     lines_all: list = []
     labels_all: list = []
 
-    for label, d in series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col):
-        color = cmap(fuel_index % 10)
-        fuel_index += 1
+    for label, d in groups:
+        color = colors.get(label or "")
 
         d = d.copy()
         d[x_col] = pd.to_numeric(d[x_col], errors="coerce")
