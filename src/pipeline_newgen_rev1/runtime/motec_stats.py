@@ -26,6 +26,10 @@ def compute_motec_trechos_stats(motec_raw: pd.DataFrame) -> pd.DataFrame:
     candidate_cols = [c for c in motec_raw.columns if c not in ignore_cols]
 
     mot = motec_raw.copy()
+    numeric_group_cols = [c for c in MOTEC_GROUP_COLS_TRECHOS if c not in ("BaseName", "WindowID")]
+    for c in numeric_group_cols:
+        if c in mot.columns:
+            mot[c] = pd.to_numeric(mot[c], errors="coerce")
     if candidate_cols:
         mot[candidate_cols] = mot[candidate_cols].apply(pd.to_numeric, errors="coerce")
 
@@ -56,6 +60,9 @@ def compute_motec_ponto_stats(motec_trechos: pd.DataFrame) -> pd.DataFrame:
     ]
 
     mot = motec_trechos.copy()
+    for c in MOTEC_GROUP_COLS_PONTO:
+        if c in mot.columns:
+            mot[c] = pd.to_numeric(mot[c], errors="coerce")
     if value_cols:
         mot[value_cols] = mot[value_cols].apply(pd.to_numeric, errors="coerce")
 

@@ -34,6 +34,7 @@ COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
         "title": "Consumo absoluto",
         "y_label": "Consumo absoluto (kg/h)",
         "filename_slug": "consumo_abs",
+        "delta_mode": "ratio",
     },
     {
         "metric_id": "co2",
@@ -42,6 +43,7 @@ COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
         "title": "CO2 medido",
         "y_label": "CO2 medido (%)",
         "filename_slug": "co2_medido",
+        "delta_mode": "diff",
     },
     {
         "metric_id": "co",
@@ -50,6 +52,7 @@ COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
         "title": "CO medido",
         "y_label": "CO medido (ppm)",
         "filename_slug": "co_medido",
+        "delta_mode": "ratio",
     },
     {
         "metric_id": "o2",
@@ -58,6 +61,7 @@ COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
         "title": "O2 medido",
         "y_label": "O2 medido (%)",
         "filename_slug": "o2_medido",
+        "delta_mode": "diff",
     },
     {
         "metric_id": "nox",
@@ -66,6 +70,7 @@ COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
         "title": "NOX medido",
         "y_label": "NOX medido (ppm)",
         "filename_slug": "nox_medido",
+        "delta_mode": "ratio",
     },
     {
         "metric_id": "thc",
@@ -74,6 +79,7 @@ COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
         "title": "THC medido",
         "y_label": "THC medido (ppm)",
         "filename_slug": "thc_medido",
+        "delta_mode": "ratio",
     },
     {
         "metric_id": "co2_g_kwh",
@@ -82,6 +88,7 @@ COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
         "title": "CO2 especifico",
         "y_label": "CO2 especifico (g/kWh)",
         "filename_slug": "co2_g_kwh",
+        "delta_mode": "ratio",
     },
     {
         "metric_id": "co_g_kwh",
@@ -90,6 +97,7 @@ COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
         "title": "CO especifico",
         "y_label": "CO especifico (g/kWh)",
         "filename_slug": "co_g_kwh",
+        "delta_mode": "ratio",
     },
     {
         "metric_id": "nox_g_kwh",
@@ -98,6 +106,7 @@ COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
         "title": "NOx especifico",
         "y_label": "NOx especifico (g/kWh)",
         "filename_slug": "nox_g_kwh",
+        "delta_mode": "ratio",
     },
     {
         "metric_id": "thc_g_kwh",
@@ -106,6 +115,7 @@ COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
         "title": "THC especifico",
         "y_label": "THC especifico (g/kWh)",
         "filename_slug": "thc_g_kwh",
+        "delta_mode": "ratio",
     },
     {
         "metric_id": "n_th",
@@ -114,6 +124,7 @@ COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
         "title": "Eficiencia termica",
         "y_label": "eta_th (%)",
         "filename_slug": "n_th_pct",
+        "delta_mode": "diff",
     },
 ]
 

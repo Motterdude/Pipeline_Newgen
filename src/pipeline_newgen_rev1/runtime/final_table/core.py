@@ -15,6 +15,7 @@ from ._airflow import (
     _resolve_airflow_maf_col,
     add_airflow_channels_prefer_maf_inplace,
 )
+from ._delta_vs_ref import _attach_delta_vs_ref_metrics
 from ._diesel_cost_delta import _attach_diesel_cost_delta_metrics
 from ._emissions import add_specific_emissions_channels_inplace
 from ._fuel_defaults import (
@@ -221,6 +222,9 @@ def build_final_table(
     df["uc_BSFC_g_kWh"] = (ua_bsfc**2 + ub_bsfc**2) ** 0.5
     df["U_BSFC_g_kWh"] = K_COVERAGE * df["uc_BSFC_g_kWh"]
     df.loc[invalid_bsfc, ["uA_BSFC_g_kWh", "uB_BSFC_g_kWh", "uc_BSFC_g_kWh", "U_BSFC_g_kWh"]] = pd.NA
+
+    # --- 5f. Delta vs reference fuel ---
+    df = _attach_delta_vs_ref_metrics(df)
 
     # --- 6. Airflow ---
     lambda_col = _resolve_airflow_lambda_col(df, mappings)

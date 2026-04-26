@@ -29,6 +29,9 @@ def _aggregate_kibox_cross_file(aggregate_rows: List[dict]) -> pd.DataFrame:
     if not present_group_cols:
         return df
 
+    numeric_group_cols = [c for c in present_group_cols if c not in ("SourceFolder",)]
+    for c in numeric_group_cols:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
     for c in kibox_cols:
         df[c] = pd.to_numeric(df[c], errors="coerce")
     df["KIBOX_N_files"] = pd.to_numeric(df.get("KIBOX_N_files", 1), errors="coerce").fillna(1)

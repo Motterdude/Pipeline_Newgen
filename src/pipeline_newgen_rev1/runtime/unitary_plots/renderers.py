@@ -388,3 +388,123 @@ def plot_all_fuels_with_value_labels(
     plt.close(fig)
     print(f"[OK] Salvei {outpath}")
     return True
+
+
+def plot_all_fuels_delta_ref(
+    df: pd.DataFrame,
+    y_col: str,
+    y_col_delta: str,
+    yerr_col: Optional[str],
+    yerr_col_delta: Optional[str],
+    title: str,
+    filename: str,
+    y_label: str,
+    y_label_delta: str,
+    ref_fuel: str = "D85B15",
+    fixed_y: Optional[Tuple[float, float, float]] = None,
+    fixed_y_limits: Optional[Tuple[float, float]] = None,
+    y_tick_step: Optional[float] = None,
+    fixed_x: Optional[Tuple[float, float, float]] = None,
+    x_col: str = "Load_kW",
+    x_label: str = "Power (kW)",
+    fuels_override: Optional[List[int]] = None,
+    series_col: Optional[str] = None,
+    plot_dir: Optional[Path] = None,
+    y_tol_plus: object = 0.0,
+    y_tol_minus: object = 0.0,
+) -> bool:
+    target_dir = Path(plot_dir) if plot_dir is not None else Path("plots")
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    has_delta = y_col_delta and y_col_delta in df.columns
+
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx() if has_delta else None
+
+    cmap = plt.cm.tab10
+    any_curve = False
+    fuel_index = 0
+    lines_all: list = []
+    labels_all: list = []
+
+    for label, d in series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col):
+        color = cmap(fuel_index % 10)
+        fuel_index += 1
+
+        d = d.copy()
+        d[x_col] = pd.to_numeric(d[x_col], errors="coerce")
+        d[y_col] = pd.to_numeric(d[y_col], errors="coerce")
+        if yerr_col and yerr_col in d.columns:
+            d[yerr_col] = pd.to_numeric(d[yerr_col], errors="coerce")
+
+        drop_cols = [x_col, y_col]
+        if yerr_col and yerr_col in d.columns:
+            drop_cols.append(yerr_col)
+        d = d.dropna(subset=[x_col, y_col]).sort_values(x_col)
+        if d.empty:
+            continue
+        any_curve = True
+
+        if yerr_col and yerr_col in d.columns:
+            eb = ax1.errorbar(
+                d[x_col], d[y_col], yerr=d[yerr_col],
+                fmt="o-", capsize=3, color=color, label=label or "",
+            )
+            lines_all.append(eb)
+        else:
+            (ln,) = ax1.plot(d[x_col], d[y_col], "o-", color=color, label=label or "")
+            lines_all.append(ln)
+        labels_all.append(label or "")
+
+        is_ref = label and label.strip() == ref_fuel
+        if has_delta and ax2 is not None and not is_ref:
+            d_delta = d.copy()
+            d_delta[y_col_delta] = pd.to_numeric(d_delta.get(y_col_delta, pd.NA), errors="coerce")
+            d_delta = d_delta.dropna(subset=[y_col_delta])
+            if not d_delta.empty:
+                delta_label = f"{label} delta" if label else "delta"
+                if yerr_col_delta and yerr_col_delta in d_delta.columns:
+                    d_delta[yerr_col_delta] = pd.to_numeric(d_delta[yerr_col_delta], errors="coerce")
+                    eb2 = ax2.errorbar(
+                        d_delta[x_col], d_delta[y_col_delta], yerr=d_delta[yerr_col_delta],
+                        fmt="s--", capsize=2, color=color, alpha=0.7, label=delta_label,
+                    )
+                    lines_all.append(eb2)
+                else:
+                    (ln2,) = ax2.plot(
+                        d_delta[x_col], d_delta[y_col_delta],
+                        "s--", color=color, alpha=0.7, label=delta_label,
+                    )
+                    lines_all.append(ln2)
+                labels_all.append(delta_label)
+
+    if not any_curve:
+        plt.close(fig)
+        print(f"[WARN] Sem dados para plot {filename}")
+        return False
+
+    if ax2 is not None:
+        ax2.axhline(0.0, color="gray", linestyle=":", linewidth=1.0, alpha=0.6)
+        ax2.set_ylabel(y_label_delta)
+
+    _apply_fixed_x_ax(ax1, fixed_x)
+    _apply_fixed_y_ax(ax1, fixed_y, fixed_y_limits)
+
+    guide_entries = _add_y_tolerance_guides(ax1, y_tol_plus=y_tol_plus, y_tol_minus=y_tol_minus)
+    if fixed_y is None:
+        _apply_y_tick_step(ax1, y_tick_step)
+
+    ax1.set_xlabel(x_label)
+    ax1.set_ylabel(y_label)
+    ax1.set_title(title)
+    ax1.grid(True, which="both", linestyle="--", linewidth=0.5)
+
+    if labels_all:
+        ax1.legend(lines_all, labels_all, loc="best", fontsize=8)
+
+    outpath = target_dir / filename
+    fig.tight_layout()
+    fig.savefig(outpath, dpi=220)
+    plt.close(fig)
+    print(f"[OK] Salvei {outpath}")
+    return True

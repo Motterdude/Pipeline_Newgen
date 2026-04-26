@@ -174,6 +174,16 @@ def resolve_requests(
             })
 
     if not requests:
+        is_catalog_mismatch = (
+            catalog is not None
+            and catalog.iteration_mode == "fuel"
+            and not fallback_pairs
+        )
+        if is_catalog_mismatch:
+            fallback = _default_compare_pairs(catalog)
+            if fallback:
+                print("[INFO] compare_iteracoes: GUI rows use legacy series but catalog is fuel mode — using default pairs.")
+                return _build_default_requests(fallback), "fallback_after_gui_mismatch"
         return [], "gui_invalid"
     return requests, "gui_compare_tab"
 
@@ -256,6 +266,7 @@ def compute_compare_iteracoes(
             label_right=pair_ctx["right_label"],
             interpret_neg=pair_ctx["interpret_neg"],
             interpret_pos=pair_ctx["interpret_pos"],
+            delta_mode=spec.get("delta_mode", "ratio"),
         )
         if not delta.empty:
             suffix = "" if variant_key == "with_uncertainty" else f" ({variant_key})"
@@ -263,6 +274,7 @@ def compute_compare_iteracoes(
             delta["Metrica"] = spec["title"]
             delta["Comparacao"] = pair_ctx["pair_title"] + suffix
             delta["Incerteza"] = "com" if variant_key == "with_uncertainty" else "sem"
+            delta["delta_mode"] = spec.get("delta_mode", "ratio")
             delta_rows.append(delta)
 
     if delta_rows:

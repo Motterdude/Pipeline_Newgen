@@ -33,6 +33,7 @@ from .config_parsing import (
 )
 from .renderers import (
     plot_all_fuels,
+    plot_all_fuels_delta_ref,
     plot_all_fuels_with_value_labels,
     plot_all_fuels_xy,
 )
@@ -187,6 +188,17 @@ def make_plots_from_config_with_summary(
             _dispatch_labels(
                 out_df, r, filename, title, plot_label,
                 x_col_req, y_col_req, x_label, y_label, label_variant,
+                fixed_x, fixed_y, fixed_y_limits, y_tick_step,
+                y_tol_plus, y_tol_minus, fuels_override, series_col,
+                plot_dir, mark_generated, mark_skipped, sweep_kw,
+            )
+            continue
+
+        # ── all_fuels_delta_ref / delta_ref ────────────────────────
+        if pt in {"all_fuels_delta_ref", "delta_ref"}:
+            _dispatch_delta_ref(
+                out_df, r, mappings, filename, title, plot_label,
+                x_col_req, y_col_req, x_label, y_label,
                 fixed_x, fixed_y, fixed_y_limits, y_tick_step,
                 y_tol_plus, y_tol_minus, fuels_override, series_col,
                 plot_dir, mark_generated, mark_skipped, sweep_kw,
@@ -520,3 +532,94 @@ def _dispatch_labels(
         mark_generated(filename or plot_label, filename)
     else:
         mark_skipped(filename or plot_label, "sem dados validos para plot")
+
+
+def _dispatch_delta_ref(
+    out_df, r, mappings, filename, title, plot_label,
+    x_col_req, y_col_req, x_label, y_label,
+    fixed_x, fixed_y, fixed_y_limits, y_tick_step,
+    y_tol_plus, y_tol_minus, fuels_override, series_col,
+    plot_dir, mark_generated, mark_skipped, sweep_kw,
+):
+    sw = sweep_kw or {}
+    x_resolve_kw = {k: sw.get(k, "") for k in ("sweep_active", "sweep_x_col", "sweep_effective_x_col")}
+    x_label_kw = {k: sw.get(k, "") for k in ("sweep_active", "sweep_x_col", "sweep_effective_x_col", "sweep_axis_label")}
+
+    x_col_base, mestrado_x_override = _resolve_plot_x_request(x_col_req, **x_resolve_kw)
+    try:
+        x_col = resolve_col(out_df, x_col_base)
+    except Exception as e:
+        print(f"[ERROR] Plot '{filename or title}': x_col '{x_col_base}' nao encontrado. Pulei. ({e})")
+        mark_skipped(plot_label, f"x_col ausente: {x_col_base}")
+        return
+    if not y_col_req:
+        print(f"[ERROR] Plot '{filename or title}': y_col vazio. Pulei.")
+        mark_skipped(plot_label, "y_col vazio")
+        return
+    try:
+        y_col = resolve_col(out_df, y_col_req)
+    except Exception as e:
+        print(f"[ERROR] Plot '{filename or title}': y_col '{y_col_req}' nao encontrado. Pulei. ({e})")
+        mark_skipped(plot_label, f"y_col ausente: {y_col_req}")
+        return
+
+    y_col_delta = _to_str_or_empty(r.get("y_col_delta", ""))
+    yerr_delta = _to_str_or_empty(r.get("yerr_delta", ""))
+    y_label_delta = _to_str_or_empty(r.get("y_label_delta", ""))
+    ref_fuel = _to_str_or_empty(r.get("ref_fuel", "D85B15")) or "D85B15"
+
+    x_label = _runtime_plot_x_label(x_label, x_col_base, x_col, mestrado_x_override, **x_label_kw)
+    if not y_label:
+        y_label = y_col
+    if not y_label_delta:
+        y_label_delta = f"Delta vs {ref_fuel}"
+    if not title:
+        title = f"{y_col} vs {x_col} — Delta vs {ref_fuel}"
+    if not filename:
+        filename = f"{_safe_name(y_col)}_vs_{_safe_name(x_col)}_delta_ref.png"
+
+    if sw.get("sweep_active"):
+        filename, title = rewrite_plot_filename_title(
+            filename, title, x_col_req=x_col_req, x_col_resolved=x_col,
+            sweep_active=True, sweep_x_col=sw.get("sweep_x_col", ""),
+            sweep_effective_x_col=sw.get("sweep_effective_x_col", ""),
+            sweep_axis_token=sw.get("sweep_axis_token", ""),
+            sweep_axis_label=sw.get("sweep_axis_label", ""),
+        )
+    eff_fixed_x = resolve_plot_fixed_x_for_sweep(
+        x_col_req, fixed_x,
+        sweep_active=sw.get("sweep_active", False),
+        sweep_x_col=sw.get("sweep_x_col", ""),
+    ) if sw.get("sweep_active") else fixed_x
+
+    variant_specs: List[Tuple[str, str, Optional[str], str]] = []
+    for variant_key, uncertainty_mode, dual_variant in _plot_uncertainty_variants(r):
+        variant_row = r.copy()
+        variant_row["show_uncertainty"] = uncertainty_mode
+        variant_filename, variant_title = _decorate_plot_variant_output(
+            filename, title, variant_key, dual_variant
+        )
+        yerr_col = _resolve_plot_yerr_col(
+            out_df, variant_row, y_col=y_col, mappings=mappings,
+            plot_label=variant_filename or variant_title or y_col,
+        )
+        variant_specs.append((variant_filename, variant_title, yerr_col, variant_key))
+
+    for variant_filename, variant_title, yerr_col, _variant_key in variant_specs:
+        item_label = variant_filename or variant_title or plot_label
+        ok = plot_all_fuels_delta_ref(
+            out_df, y_col=y_col, y_col_delta=y_col_delta,
+            yerr_col=yerr_col, yerr_col_delta=yerr_delta or None,
+            title=variant_title, filename=variant_filename,
+            y_label=y_label, y_label_delta=y_label_delta,
+            ref_fuel=ref_fuel,
+            fixed_y=fixed_y, fixed_y_limits=fixed_y_limits,
+            y_tick_step=y_tick_step, fixed_x=eff_fixed_x,
+            x_col=x_col, x_label=x_label,
+            fuels_override=fuels_override, series_col=series_col,
+            plot_dir=plot_dir, y_tol_plus=y_tol_plus, y_tol_minus=y_tol_minus,
+        )
+        if ok:
+            mark_generated(item_label, variant_filename)
+        else:
+            mark_skipped(item_label, "sem dados validos para plot")

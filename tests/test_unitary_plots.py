@@ -328,6 +328,51 @@ class TestRenderers(unittest.TestCase):
             self.assertTrue(ok)
 
 
+    def test_plot_all_fuels_delta_ref_generates_png(self):
+        from pipeline_newgen_rev1.runtime.unitary_plots.renderers import plot_all_fuels_delta_ref
+        df = pd.DataFrame({
+            "Load_kW": [10, 20, 30, 10, 20, 30],
+            "Y_val": [1.0, 2.0, 3.0, 1.1, 2.2, 3.3],
+            "Y_delta": [0.0, 0.0, 0.0, 0.5, 0.6, 0.7],
+            "U_Y_delta": [0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+            "Fuel_Label": ["D85B15"] * 3 + ["E75H25"] * 3,
+            "EtOH_pct": [0, 0, 0, 75, 75, 75],
+            "H2O_pct": [0, 0, 0, 25, 25, 25],
+            "DIES_pct": [85, 85, 85, 0, 0, 0],
+            "BIOD_pct": [15, 15, 15, 0, 0, 0],
+        })
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ok = plot_all_fuels_delta_ref(
+                df, y_col="Y_val", y_col_delta="Y_delta",
+                yerr_col=None, yerr_col_delta="U_Y_delta",
+                title="Test Delta Ref", filename="test_delta_ref.png",
+                y_label="Y", y_label_delta="Delta (pp)",
+                ref_fuel="D85B15", plot_dir=Path(tmpdir),
+            )
+            self.assertTrue(ok)
+            self.assertTrue((Path(tmpdir) / "test_delta_ref.png").exists())
+
+    def test_plot_delta_ref_fallback_no_delta_col(self):
+        from pipeline_newgen_rev1.runtime.unitary_plots.renderers import plot_all_fuels_delta_ref
+        df = pd.DataFrame({
+            "Load_kW": [10, 20, 30],
+            "Y_val": [1.0, 2.0, 3.0],
+            "EtOH_pct": [94, 94, 94],
+            "H2O_pct": [6, 6, 6],
+            "DIES_pct": [0, 0, 0],
+            "BIOD_pct": [0, 0, 0],
+        })
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ok = plot_all_fuels_delta_ref(
+                df, y_col="Y_val", y_col_delta="NONEXISTENT",
+                yerr_col=None, yerr_col_delta=None,
+                title="Test Fallback", filename="test_fallback.png",
+                y_label="Y", y_label_delta="Delta",
+                plot_dir=Path(tmpdir),
+            )
+            self.assertTrue(ok)
+
+
 class TestDispatch(unittest.TestCase):
     """Tests for runtime.unitary_plots.dispatch."""
 

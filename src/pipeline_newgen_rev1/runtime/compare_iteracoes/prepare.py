@@ -80,12 +80,14 @@ def find_consumo_col(df: pd.DataFrame) -> Optional[str]:
     return None
 
 
-def _apply_diesel_filter(df: pd.DataFrame) -> pd.DataFrame:
-    if ("DIES_pct" not in df.columns) and ("BIOD_pct" not in df.columns):
+def _apply_composition_filter(df: pd.DataFrame) -> pd.DataFrame:
+    comp_cols = ["DIES_pct", "BIOD_pct", "EtOH_pct", "H2O_pct"]
+    present = [c for c in comp_cols if c in df.columns]
+    if not present:
         return df
-    dies = pd.to_numeric(df.get("DIES_pct", pd.Series(pd.NA, index=df.index)), errors="coerce")
-    biod = pd.to_numeric(df.get("BIOD_pct", pd.Series(pd.NA, index=df.index)), errors="coerce")
-    mask = dies.gt(0) | biod.gt(0)
+    mask = pd.Series(False, index=df.index)
+    for c in present:
+        mask = mask | pd.to_numeric(df[c], errors="coerce").gt(0)
     if mask.any():
         return df[mask].copy()
     return df
@@ -162,7 +164,7 @@ def prepare_compare_points(
         return pd.DataFrame()
 
     out = df.copy()
-    out = _apply_diesel_filter(out)
+    out = _apply_composition_filter(out)
 
     uA_col, uB_col, uc_col, U_col = metric_uncertainty_cols(out, metric_col, mappings)
     out["Load_kW"] = pd.to_numeric(out.get("Load_kW", pd.NA), errors="coerce")
@@ -193,7 +195,7 @@ def prepare_consumo_points(
         return pd.DataFrame()
 
     out = df.copy()
-    out = _apply_diesel_filter(out)
+    out = _apply_composition_filter(out)
 
     out["Load_kW"] = pd.to_numeric(out.get("Load_kW", pd.NA), errors="coerce")
     out["_metric"] = pd.to_numeric(out[consumo_col], errors="coerce")

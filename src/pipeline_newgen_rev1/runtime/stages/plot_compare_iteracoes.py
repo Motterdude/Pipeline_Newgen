@@ -73,6 +73,8 @@ class PlotCompareIteracoesStage:
             if abs_path:
                 png_count += 1
 
+            dm = spec.get("delta_mode", "ratio")
+            title_prefix = "Δ(pp)" if dm == "diff" else "Δ%"
             delta_path = plot_compare_delta_pct(
                 delta_df=ctx.compare_iteracoes_table,
                 metric_id=metric_id,
@@ -80,12 +82,13 @@ class PlotCompareIteracoesStage:
                 right_id=right_id,
                 variant_key=variant_key,
                 value_name=value_name,
-                title=f"Δ% {spec.get('title', metric_id)} — {pair_ctx['pair_title']}",
+                title=f"{title_prefix} {spec.get('title', metric_id)} — {pair_ctx['pair_title']}",
                 filename=f"compare_iteracoes_{pair_ctx['pair_slug']}_{slug}{suffix}_delta_pct.png",
                 target_dir=target_dir,
                 label_line=pair_ctx["line_label"],
                 note_text=pair_ctx["note_text"],
                 include_uncertainty=include_uncertainty,
+                delta_mode=dm,
             )
             if delta_path:
                 png_count += 1

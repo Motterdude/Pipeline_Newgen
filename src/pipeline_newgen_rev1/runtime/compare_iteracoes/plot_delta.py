@@ -21,6 +21,7 @@ def plot_compare_delta_pct(
     label_line: str,
     note_text: str,
     include_uncertainty: bool = True,
+    delta_mode: str = "ratio",
 ) -> Optional[Path]:
     try:
         import matplotlib.pyplot as plt
@@ -62,9 +63,11 @@ def plot_compare_delta_pct(
     else:
         plt.plot(m["Load_kW"], m["delta_pct"], "o-", linewidth=1.8, markersize=4.5, color="#2ca02c", label=label_line)
 
-    plt.axhline(0.0, color="gray", linestyle="--", linewidth=1.0, label="0%")
+    ref_label = "0 pp" if delta_mode == "diff" else "0%"
+    plt.axhline(0.0, color="gray", linestyle="--", linewidth=1.0, label=ref_label)
     plt.xlabel("Carga nominal (kW)")
-    plt.ylabel("Delta percentual (%)")
+    y_axis_label = "Diferenca (pp)" if delta_mode == "diff" else "Delta percentual (%)"
+    plt.ylabel(y_axis_label)
     plt.title(title)
     plt.grid(True, which="both", linestyle="--", linewidth=0.5)
     plt.legend()
