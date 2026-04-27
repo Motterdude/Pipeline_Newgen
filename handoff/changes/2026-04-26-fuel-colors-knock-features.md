@@ -55,4 +55,4 @@
 
 ## Pendencias
 
-- **Knock CCDF escala log**: a curva log10/log2 plotada com eixo 0-100% achata o sinal na regiao mais relevante (<5%). Revisar: considerar eixo em fracao (0-1) ou ajustar limites y para log, ou usar escala log apenas no range util.
+- ~~**Knock CCDF escala log**~~: corrigido em 2026-04-27 (CCDF empirica Weibull + ylim adaptativo).

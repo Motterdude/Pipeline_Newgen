@@ -6,20 +6,32 @@ from pathlib import Path
 
 from ..context import RuntimeContext
 from ..fuel_colors import fuel_color_map
-from ..knock_histogram import plot_knock_histogram
-
-
-_VARIANTS = [
-    ("knock_kpeak_exceedance_distribution.png", "linear"),
-    ("knock_kpeak_exceedance_distribution_log10.png", "log10"),
-    ("knock_kpeak_exceedance_distribution_log2.png", "log2"),
-]
+from ..knock_histogram import plot_knock_exceedance_pct, plot_knock_cycle_count
 
 
 def _load_tag(load_kw: float) -> str:
     if load_kw == int(load_kw):
         return f"{int(load_kw)}kW"
     return f"{load_kw}kW"
+
+
+def _generate_set(data, plot_dir: Path, tag: str, colors: dict) -> None:
+    """Generate the 3 plot variants for a given dataset + tag."""
+    plot_knock_exceedance_pct(
+        data, plot_dir / f"knock_kpeak_exceedance_distribution_{tag}.png",
+        title=f"KPEAK Exceedance — {tag} (all fuels)",
+        fuel_colors=colors,
+    )
+    plot_knock_cycle_count(
+        data, plot_dir / f"knock_kpeak_cycle_count_{tag}.png",
+        title=f"KPEAK Exceedance — Cycle Count — {tag}",
+        y_scale="linear", fuel_colors=colors,
+    )
+    plot_knock_cycle_count(
+        data, plot_dir / f"knock_kpeak_cycle_count_log2_{tag}.png",
+        title=f"KPEAK Exceedance — Cycle Count — {tag}",
+        y_scale="log2", fuel_colors=colors,
+    )
 
 
 @dataclass(frozen=True)
@@ -48,14 +60,7 @@ class PlotKnockHistogramStage:
             f"{total_cycles} total cycles"
         )
 
-        for filename, y_scale in _VARIANTS:
-            plot_knock_histogram(
-                ctx.knock_histogram_raw,
-                plot_dir / filename,
-                title="KPEAK Exceedance Distribution (all fuels)",
-                y_scale=y_scale,
-                fuel_colors=colors,
-            )
+        _generate_set(ctx.knock_histogram_raw, plot_dir, "all", colors)
 
         n_loads = len(ctx.knock_histogram_by_load)
         if n_loads == 0:
@@ -65,12 +70,4 @@ class PlotKnockHistogramStage:
         for load_kw in sorted(ctx.knock_histogram_by_load):
             data_for_load = ctx.knock_histogram_by_load[load_kw]
             tag = _load_tag(load_kw)
-            for filename_tpl, y_scale in _VARIANTS:
-                stem = filename_tpl.replace(".png", f"_{tag}.png")
-                plot_knock_histogram(
-                    data_for_load,
-                    plot_dir / stem,
-                    title=f"KPEAK Exceedance — {tag} (all fuels)",
-                    y_scale=y_scale,
-                    fuel_colors=colors,
-                )
+            _generate_set(data_for_load, plot_dir, tag, colors)

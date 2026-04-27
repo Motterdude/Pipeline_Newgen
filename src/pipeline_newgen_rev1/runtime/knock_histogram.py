@@ -12,22 +12,20 @@ import numpy as np
 
 def compute_kpeak_exceedance(
     kpeak_values: Sequence[float],
-    n_points: int = 500,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Complementary CDF: for each x, P(KPEAK > x) as percentage.
+    """Empirical complementary CDF using Weibull plotting positions.
 
-    Returns (x, exceedance_pct) where x goes from 0 to max(KPEAK)*1.02
-    and exceedance_pct goes from ~100% down to 0%, monotonically decreasing.
+    Returns (x, exceedance_pct) — one point per observation, monotonically
+    decreasing, never zero (safe for log scale).
     """
     values = np.sort(np.asarray(kpeak_values, dtype=float))
     values = values[np.isfinite(values)]
     n = len(values)
     if n == 0:
         return np.array([]), np.array([])
-    x = np.linspace(0, float(values[-1]) * 1.02, n_points)
-    exceed_count = n - np.searchsorted(values, x, side="right")
-    exceedance_pct = 100.0 * exceed_count / n
-    return x, exceedance_pct
+    ranks = np.arange(1, n + 1)
+    exceedance_pct = 100.0 * (n - ranks + 1) / (n + 1)
+    return values, exceedance_pct
 
 
 _FUEL_PREFERRED_ORDER = ["D85B15", "E94H6", "E75H25", "E65H35"]
@@ -39,20 +37,13 @@ def _sorted_fuel_labels(labels: Sequence[str]) -> List[str]:
     return ordered + extras
 
 
-YScaleMode = Literal["linear", "log10", "log2"]
-
-
-def plot_knock_histogram(
+def plot_knock_exceedance_pct(
     data_by_fuel: Dict[str, List[float]],
     output_path: Path,
     title: str = "KPEAK Exceedance Distribution (all fuels)",
-    x_label: str = "KPEAK intensity (bar)",
-    y_label: str = "Cycles exceeding threshold (%)",
-    x_max_override: Optional[float] = None,
-    y_scale: YScaleMode = "linear",
-    n_points: int = 500,
     fuel_colors: Optional[Dict[str, str]] = None,
 ) -> Optional[Path]:
+    """Exceedance as percentage (0-100%), linear axes."""
     if not data_by_fuel:
         return None
 
@@ -65,39 +56,24 @@ def plot_knock_histogram(
 
     for fuel_label in sorted_labels:
         values = data_by_fuel[fuel_label]
-        x, exceedance = compute_kpeak_exceedance(values, n_points=n_points)
+        x, exceedance = compute_kpeak_exceedance(values)
         if len(x) == 0:
             continue
         any_curve = True
-        color = colors.get(fuel_label)
-        ax.plot(x, exceedance, "-", color=color, linewidth=1.8, label=fuel_label)
+        ax.plot(x, exceedance, "-", color=colors.get(fuel_label),
+                linewidth=1.8, label=fuel_label)
 
     if not any_curve:
         plt.close(fig)
         return None
 
-    if y_scale == "log10":
-        ax.set_yscale("log", base=10)
-        y_label = y_label.replace("(%)", "(%, log10)")
-        title = title + " [log10]"
-    elif y_scale == "log2":
-        ax.set_yscale("log", base=2)
-        y_label = y_label.replace("(%)", "(%, log2)")
-        title = title + " [log2]"
-
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
+    ax.set_xlabel("KPEAK intensity (bar)")
+    ax.set_ylabel("Cycles exceeding threshold (%)")
     ax.set_title(title)
     ax.legend(loc="best")
     ax.grid(True, alpha=0.3)
-
-    if x_max_override and np.isfinite(x_max_override):
-        ax.set_xlim(left=0, right=x_max_override)
-    else:
-        ax.set_xlim(left=0)
-
-    if y_scale == "linear":
-        ax.set_ylim(bottom=0, top=105)
+    ax.set_xlim(left=0)
+    ax.set_ylim(bottom=0, top=105)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.tight_layout()
@@ -105,3 +81,66 @@ def plot_knock_histogram(
     plt.close(fig)
     print(f"[OK] Salvei {output_path}")
     return output_path
+
+
+CycleScaleMode = Literal["linear", "log2"]
+
+
+def plot_knock_cycle_count(
+    data_by_fuel: Dict[str, List[float]],
+    output_path: Path,
+    title: str = "KPEAK Exceedance — Cycle Count",
+    y_scale: CycleScaleMode = "linear",
+    fuel_colors: Optional[Dict[str, str]] = None,
+) -> Optional[Path]:
+    """Exceedance as absolute cycle count, x from 0-20 bar."""
+    if not data_by_fuel:
+        return None
+
+    from .fuel_colors import fuel_color_map
+    sorted_labels = _sorted_fuel_labels(list(data_by_fuel.keys()))
+    colors = fuel_colors or fuel_color_map(sorted_labels)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    any_curve = False
+
+    for fuel_label in sorted_labels:
+        values = data_by_fuel[fuel_label]
+        x, exc_pct = compute_kpeak_exceedance(values)
+        if len(x) == 0:
+            continue
+        any_curve = True
+        n = len(values)
+        cycles = exc_pct * (n + 1) / 100.0
+        ax.plot(x, cycles, "-", color=colors.get(fuel_label),
+                linewidth=1.8, label=fuel_label)
+
+    if not any_curve:
+        plt.close(fig)
+        return None
+
+    if y_scale == "log2":
+        ax.set_yscale("log", base=2)
+        ax.set_ylim(bottom=1, top=256)
+        title = title + " [log2]"
+    else:
+        ax.set_ylim(bottom=0)
+
+    ax.set_xlabel("KPEAK intensity (bar)")
+    ax.set_ylabel("Cycles exceeding threshold")
+    ax.set_title(title)
+    ax.legend(loc="best")
+    ax.grid(True, alpha=0.3)
+    ax.set_xlim(left=0, right=20)
+    ax.set_xticks(np.arange(0, 22, 2))
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.tight_layout()
+    fig.savefig(str(output_path), dpi=150)
+    plt.close(fig)
+    print(f"[OK] Salvei {output_path}")
+    return output_path
+
+
+# backward compat alias
+plot_knock_histogram = plot_knock_exceedance_pct
