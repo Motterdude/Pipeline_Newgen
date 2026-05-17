@@ -75,10 +75,20 @@ def build_final_table(
     # --- 1. Merge inputs ---
     df = add_source_identity_columns(ponto)
     df = _left_merge_on_fuel_keys(df, fuel_properties)
+    _sweep_merge_ok = (
+        "Sweep_Value" in df.columns
+        and pd.to_numeric(df["Sweep_Value"], errors="coerce").notna().any()
+    )
     if kibox_agg is not None and not kibox_agg.empty:
-        df = _left_merge_on_fuel_keys(df, kibox_agg, extra_on=["SourceFolder", "Load_kW"])
+        kibox_extra = ["SourceFolder", "Load_kW"]
+        if _sweep_merge_ok and "Sweep_Value" in kibox_agg.columns:
+            kibox_extra.append("Sweep_Value")
+        df = _left_merge_on_fuel_keys(df, kibox_agg, extra_on=kibox_extra)
     if motec_ponto is not None and not motec_ponto.empty:
-        df = _left_merge_on_fuel_keys(df, motec_ponto, extra_on=["Load_kW"])
+        motec_extra = ["Load_kW"]
+        if _sweep_merge_ok and "Sweep_Value" in motec_ponto.columns:
+            motec_extra.append("Sweep_Value")
+        df = _left_merge_on_fuel_keys(df, motec_ponto, extra_on=motec_extra)
 
     # --- 2. KiBox cleanup ---
     kibox_bug_cols = ["KIBOX_MBF_10_90_1", "KIBOX_MBF_10_90_AVG_1"]

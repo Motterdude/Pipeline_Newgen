@@ -101,6 +101,23 @@ def _candidate_sweep_bin_centers(
     return []
 
 
+def _resolve_x_col(df: pd.DataFrame, x_col: str) -> str:
+    if x_col in df.columns:
+        return x_col
+    if SWEEP_VALUE_COL in df.columns:
+        return SWEEP_VALUE_COL
+    suffixed = [c for c in df.columns if c.startswith(SWEEP_VALUE_COL + "_")]
+    mean_candidates = [c for c in suffixed if "mean" in c.lower() and c.endswith("_x")]
+    if mean_candidates:
+        return mean_candidates[0]
+    mean_any = [c for c in suffixed if "mean" in c.lower()]
+    if mean_any:
+        return mean_any[0]
+    if suffixed:
+        return suffixed[0]
+    return x_col
+
+
 def apply_sweep_binning(
     df: pd.DataFrame,
     *,
@@ -116,20 +133,27 @@ def apply_sweep_binning(
         out[SWEEP_BIN_LABEL_COL] = pd.Series(dtype="object")
         return out
 
+    resolved_x_col = _resolve_x_col(out, x_col)
+    if resolved_x_col != x_col:
+        print(
+            f"[INFO] Sweep binning: coluna '{x_col}' nao encontrada; "
+            f"usando fallback '{resolved_x_col}'."
+        )
+
     if not sweep_active:
-        if x_col in out.columns:
-            numeric = pd.to_numeric(out[x_col], errors="coerce")
+        if resolved_x_col in out.columns:
+            numeric = pd.to_numeric(out[resolved_x_col], errors="coerce")
             out[SWEEP_BIN_VALUE_COL] = numeric
             out[SWEEP_BIN_LABEL_COL] = numeric.map(format_sweep_bin_label).replace("", pd.NA)
         return out
 
-    if x_col not in out.columns:
+    if resolved_x_col not in out.columns:
         out[SWEEP_BIN_VALUE_COL] = pd.Series(np.nan, index=out.index, dtype="float64")
         out[SWEEP_BIN_LABEL_COL] = pd.Series(pd.NA, index=out.index, dtype="object")
         return out
 
-    centers = _candidate_sweep_bin_centers(out, x_col=x_col, tol=tol)
-    raw_series = pd.to_numeric(out[x_col], errors="coerce")
+    centers = _candidate_sweep_bin_centers(out, x_col=resolved_x_col, tol=tol)
+    raw_series = pd.to_numeric(out[resolved_x_col], errors="coerce")
     binned = raw_series.map(
         lambda value: _assign_value_to_sweep_bin(value, centers=centers, tol=tol)
     )

@@ -2,6 +2,10 @@
 
 Ordem cronológica inversa. Uma linha por sessão. Detalhe completo em `handoff/changes/YYYY-MM-DD-slug.md`.
 
+## 2026-05
+
+- **2026-05-17** — [fix-sweep-binning-grouping](changes/2026-05-17-fix-sweep-binning-grouping.md) — Fix bug crítico: agregação MoTeC/KiBox/LabVIEW sem Sweep_Value como groupby destruía bins de lambda sweep; agora preserva granularidade por setpoint + fallback no binning.
+
 ## 2026-04
 
 - **2026-04-27** — [fix-knock-ccdf-log-scale](changes/2026-04-27-fix-knock-ccdf-log-scale.md) — CCDF empirica Weibull substitui linspace+searchsorted: elimina zeros, escada e ylim instavel nas escalas log.

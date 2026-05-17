@@ -7,9 +7,9 @@ DT_S = 1.0
 
 GROUP_COLS_TRECHOS = [
     "BaseName", "Load_kW", "DIES_pct", "BIOD_pct",
-    "EtOH_pct", "H2O_pct", "WindowID",
+    "EtOH_pct", "H2O_pct", "Sweep_Value", "WindowID",
 ]
 GROUP_COLS_PONTO = [
     "BaseName", "Load_kW", "DIES_pct", "BIOD_pct",
-    "EtOH_pct", "H2O_pct",
+    "EtOH_pct", "H2O_pct", "Sweep_Value",
 ]

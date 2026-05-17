@@ -25,29 +25,30 @@ def compute_trechos_stats(
             columns=GROUP_COLS_TRECHOS + ["N_samples", "Consumo_kg_h", "uB_Consumo_kg_h"]
         )
 
+    active_trechos_cols = [c for c in GROUP_COLS_TRECHOS if c in lv_raw.columns]
     bcol = find_b_etanol_col(lv_raw)
 
-    ignore_cols = set(GROUP_COLS_TRECHOS + ["Index"])
+    ignore_cols = set(active_trechos_cols + ["Index"])
     candidate_cols = [c for c in lv_raw.columns if c not in ignore_cols]
 
     lv = lv_raw.copy()
-    numeric_group_cols = [c for c in GROUP_COLS_TRECHOS if c not in ("BaseName", "WindowID")]
+    numeric_group_cols = [c for c in active_trechos_cols if c not in ("BaseName", "WindowID")]
     for c in numeric_group_cols:
         if c in lv.columns:
             lv[c] = pd.to_numeric(lv[c], errors="coerce")
     if candidate_cols:
         lv[candidate_cols] = lv[candidate_cols].apply(pd.to_numeric, errors="coerce")
 
-    g = lv.groupby(GROUP_COLS_TRECHOS, dropna=False, sort=True)
+    g = lv.groupby(active_trechos_cols, dropna=False, sort=True)
     n_df = g.size().reset_index(name="N_samples")
-    valid_groups = n_df[n_df["N_samples"] >= MIN_SAMPLES_PER_WINDOW][GROUP_COLS_TRECHOS].copy()
+    valid_groups = n_df[n_df["N_samples"] >= MIN_SAMPLES_PER_WINDOW][active_trechos_cols].copy()
     if valid_groups.empty:
         return pd.DataFrame(
-            columns=GROUP_COLS_TRECHOS + ["N_samples", "Consumo_kg_h", "uB_Consumo_kg_h"]
+            columns=active_trechos_cols + ["N_samples", "Consumo_kg_h", "uB_Consumo_kg_h"]
         )
 
-    lv_valid = lv.merge(valid_groups, on=GROUP_COLS_TRECHOS, how="inner")
-    gv = lv_valid.groupby(GROUP_COLS_TRECHOS, dropna=False, sort=True)
+    lv_valid = lv.merge(valid_groups, on=active_trechos_cols, how="inner")
+    gv = lv_valid.groupby(active_trechos_cols, dropna=False, sort=True)
 
     means = gv[candidate_cols].mean(numeric_only=True).add_suffix("_mean").copy()
     first = gv[bcol].first().rename("BEtanol_start")
@@ -76,7 +77,7 @@ def compute_trechos_stats(
         out["uB_Consumo_kg_h"] = pd.NA
 
     keep = (
-        GROUP_COLS_TRECHOS
+        active_trechos_cols
         + [c for c in out.columns if c.endswith("_mean")]
         + ["Consumo_kg_h", "uB_Consumo_kg_h", "N_samples"]
     )
@@ -87,17 +88,18 @@ def compute_ponto_stats(trechos: pd.DataFrame) -> pd.DataFrame:
     if trechos.empty:
         return pd.DataFrame()
 
-    value_cols = [c for c in trechos.columns if c not in GROUP_COLS_PONTO and c != "WindowID"]
+    active_ponto_cols = [c for c in GROUP_COLS_PONTO if c in trechos.columns]
+    value_cols = [c for c in trechos.columns if c not in active_ponto_cols and c != "WindowID"]
 
     tre = trechos.copy()
-    numeric_group_cols = [c for c in GROUP_COLS_PONTO if c != "BaseName"]
+    numeric_group_cols = [c for c in active_ponto_cols if c != "BaseName"]
     for c in numeric_group_cols:
         if c in tre.columns:
             tre[c] = pd.to_numeric(tre[c], errors="coerce")
     if value_cols:
         tre[value_cols] = tre[value_cols].apply(pd.to_numeric, errors="coerce")
 
-    g = tre.groupby(GROUP_COLS_PONTO, dropna=False, sort=True)
+    g = tre.groupby(active_ponto_cols, dropna=False, sort=True)
 
     mean_of_windows = g[value_cols].mean(numeric_only=True).add_suffix("_mean_of_windows").copy()
     sd_of_windows = g[value_cols].std(ddof=1, numeric_only=True).add_suffix("_sd_of_windows").copy()
@@ -109,15 +111,15 @@ def compute_ponto_stats(trechos: pd.DataFrame) -> pd.DataFrame:
 
     uB_col = "uB_Consumo_kg_h"
     if uB_col in tre.columns:
-        tmp = tre[GROUP_COLS_PONTO + [uB_col]].copy()
+        tmp = tre[active_ponto_cols + [uB_col]].copy()
         tmp[uB_col] = pd.to_numeric(tmp[uB_col], errors="coerce")
 
         sum_u2_df = (
-            tmp.groupby(GROUP_COLS_PONTO, dropna=False, sort=True)[uB_col]
+            tmp.groupby(active_ponto_cols, dropna=False, sort=True)[uB_col]
             .apply(lambda s: float((s**2).sum()))
             .reset_index(name="sum_u2")
         )
-        out = out.merge(sum_u2_df, on=GROUP_COLS_PONTO, how="left").copy()
+        out = out.merge(sum_u2_df, on=active_ponto_cols, how="left").copy()
 
         N = pd.to_numeric(out["N_trechos_validos"], errors="coerce")
         out["uB_Consumo_kg_h_mean_of_windows"] = (

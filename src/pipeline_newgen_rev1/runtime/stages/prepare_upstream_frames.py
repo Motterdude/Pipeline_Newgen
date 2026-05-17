@@ -15,7 +15,7 @@ from ..context import RuntimeContext
 from ..fuel_properties import load_fuel_properties
 from ..motec_stats import compute_motec_ponto_stats, compute_motec_trechos_stats
 
-KIBOX_GROUP_COLS = ["SourceFolder", "Load_kW", "DIES_pct", "BIOD_pct", "EtOH_pct", "H2O_pct"]
+KIBOX_GROUP_COLS = ["SourceFolder", "Load_kW", "DIES_pct", "BIOD_pct", "EtOH_pct", "H2O_pct", "Sweep_Value"]
 
 
 def _aggregate_kibox_cross_file(aggregate_rows: List[dict]) -> pd.DataFrame:
