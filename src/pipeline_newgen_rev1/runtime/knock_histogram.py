@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import Dict, List, Literal, Optional, Sequence
 
 import matplotlib
-matplotlib.use("Agg")
+if not matplotlib.get_backend():
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 

@@ -14,3 +14,12 @@ Thumbs.db
 .vscode/*.local.json
 state/
 .claude/settings.local.json
+
+# Data folders (raw inputs and outputs — machine-specific, not tracked)
+raw_*/
+Out_*/
+out_*/
+*.bak_*
+
+# User-specific preset files (machine-specific data paths)
+preview_presets.json

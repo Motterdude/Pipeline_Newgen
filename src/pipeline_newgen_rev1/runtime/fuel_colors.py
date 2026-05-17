@@ -8,7 +8,8 @@ from __future__ import annotations
 from typing import Dict, Optional, Sequence
 
 import matplotlib
-matplotlib.use("Agg")
+if not matplotlib.get_backend():
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 

@@ -76,6 +76,7 @@ from ...adapters.open_to_csv import (
 )
 from ...config import RuntimeState, default_runtime_state_path, save_runtime_state
 from ..campaign_planner_tab import CampaignPlannerTab
+from ..preview_plot_tab import PreviewPlotTab
 from ...ui.runtime_preflight.models import RuntimeSelection
 
 
@@ -1901,6 +1902,19 @@ class Pipeline29ConfigEditor(QMainWindow):
             status_callback=self._show_status,
             add_row_dialog_factory=lambda initial=None: self._open_row_helper("Plots", DEFAULT_PLOT_COLUMNS, initial),
         )
+        self.preview_plot_tab = PreviewPlotTab(
+            get_preview_df=self._current_preview_output_df,
+            get_plots_records=self.plots_table.records,
+            get_fuel_colors=self._current_fuel_colors_dict,
+            get_mappings=lambda: self._current_mappings_dict(),
+            variable_catalog_provider=self._available_variable_catalog,
+            status_callback=self._show_status,
+            apply_back_callback=self._apply_preview_back_to_plots,
+            save_config_callback=self.save_text_bundle,
+            get_output_dir=self._current_pipeline30_out_dir,
+            get_config_dir=self._current_config_dir,
+            parent=self,
+        )
         self.campaign_planner = CampaignPlannerTab(
             get_raw_input_dir=self._current_pipeline30_raw_input_dir,
             status_callback=self._show_status,
@@ -1955,6 +1969,7 @@ class Pipeline29ConfigEditor(QMainWindow):
         self.tabs.addTab(self.reporting_table, "Reporting")
         self.tabs.addTab(self.fuel_properties_table, "Fuel Properties")
         self.tabs.addTab(self.plots_table, "Plots")
+        self.tabs.addTab(self.preview_plot_tab, "Preview Plot")
         self.tabs.addTab(knock_widget, "Knock Thresholds")
         self.tabs.addTab(self.campaign_planner, "Campanha")
         self.tabs.setCurrentWidget(self.defaults_table)
@@ -1975,9 +1990,11 @@ class Pipeline29ConfigEditor(QMainWindow):
         self.btn_save_preset.clicked.connect(self.save_preset)
         self.btn_load_preset.clicked.connect(self.load_preset)
         self.tabs.currentChanged.connect(self._handle_tab_changed)
+        self.plots_table.table.itemSelectionChanged.connect(self._sync_preview_from_plots_selection)
 
         self._load_initial_bundle()
         self.reload_variable_catalog(show_message=False)
+        QTimer.singleShot(200, self.preview_plot_tab.auto_discover_data)
 
     def _current_config_dir(self) -> Path:
         raw = self.config_dir_edit.text().strip()
@@ -2002,6 +2019,44 @@ class Pipeline29ConfigEditor(QMainWindow):
 
     def _current_pipeline30_out_dir(self) -> Path:
         return _best_pipeline30_out_dir(self.defaults_table.records(), base_dir=self.base_dir)
+
+    def _current_fuel_colors_dict(self) -> Dict[str, str]:
+        result: Dict[str, str] = {}
+        for fl in FUEL_COLOR_LABELS:
+            hex_val = self._fuel_color_edits[fl].text().strip()
+            if hex_val:
+                result[f"FUEL_COLOR_{fl}"] = hex_val
+        return result
+
+    def _current_mappings_dict(self) -> Dict[str, Any]:
+        records = self.mappings_table.records()
+        out: Dict[str, Any] = {}
+        for rec in records:
+            key = str(rec.get("key", "")).strip()
+            if key:
+                out[key] = rec
+        return out
+
+    def _sync_preview_from_plots_selection(self) -> None:
+        items = self.plots_table.table.selectedItems()
+        if not items:
+            return
+        row_idx = items[0].row()
+        self.preview_plot_tab.sync_from_plots_selection(row_idx)
+
+    def _apply_preview_back_to_plots(self, row_idx: int, values: Dict[str, str]) -> None:
+        table = self.plots_table.table
+        if row_idx < 0 or row_idx >= table.rowCount():
+            return
+        columns = self.plots_table.columns
+        for col_name, val in values.items():
+            if col_name in columns:
+                col_idx = columns.index(col_name)
+                item = table.item(row_idx, col_idx)
+                if item is not None:
+                    item.setText(val)
+                else:
+                    table.setItem(row_idx, col_idx, QTableWidgetItem(val))
 
     def _scan_pipeline30_sweep_dir(self, raw_input_dir: Path) -> Dict[str, Any]:
         return _scan_pipeline30_sweep_catalog(raw_input_dir)
@@ -2214,6 +2269,7 @@ class Pipeline29ConfigEditor(QMainWindow):
         self.reporting_table.load_records(bundle.reporting_df.to_dict(orient="records"))
         self.fuel_properties_table.load_records(bundle.fuel_properties_df.to_dict(orient="records"))
         self.plots_table.load_records([_sanitize_plot_record(record) for record in bundle.plots_df.to_dict(orient="records")])
+        self.preview_plot_tab.refresh_plot_selector()
         compare_df = bundle.compare_df.copy() if bundle.compare_df is not None else pd.DataFrame(columns=DEFAULT_COMPARE_COLUMNS)
         mean_enabled = _pair_enabled_in_compare_df(compare_df, "baseline_media", "aditivado_media")
         up_enabled = _pair_enabled_in_compare_df(compare_df, "baseline_subida", "aditivado_subida")
@@ -2704,6 +2760,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             use_preflight=False,
             prompt_runtime_dirs=True,
             prompt_plot_filter=True,
+            plot_scope="none",
         )
         print(json.dumps(result.summary, indent=2, sort_keys=True))
         return 0

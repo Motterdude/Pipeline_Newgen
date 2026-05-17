@@ -195,6 +195,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                 use_preflight=False,
                 prompt_runtime_dirs=True,
                 prompt_plot_filter=True,
+                plot_scope="none",
             )
             print(json.dumps(result.summary, indent=2, sort_keys=True))
             return 0

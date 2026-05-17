@@ -66,7 +66,8 @@ def plot_time_delta_all_samples(
 ) -> Optional[Path]:
     """Gera o PNG único com todos os samples concatenados (ordem global)."""
     import matplotlib
-    matplotlib.use("Agg")
+    if not matplotlib.get_backend():
+        matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     if time_df is None or time_df.empty:
@@ -123,7 +124,8 @@ def plot_time_delta_all_samples(
 def plot_time_delta_by_file(time_df: pd.DataFrame, plot_dir: Optional[Path] = None) -> int:
     """Gera um PNG por BaseName dentro de `<plot_dir>/time_delta_by_file/`. Retorna a contagem de PNGs escritos."""
     import matplotlib
-    matplotlib.use("Agg")
+    if not matplotlib.get_backend():
+        matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     if time_df is None or time_df.empty:

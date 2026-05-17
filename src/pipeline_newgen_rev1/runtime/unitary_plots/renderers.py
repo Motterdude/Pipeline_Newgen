@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import matplotlib
-matplotlib.use("Agg")
+if not matplotlib.get_backend():
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -175,9 +176,11 @@ def plot_all_fuels(
     y_tol_plus: object = 0.0,
     y_tol_minus: object = 0.0,
     fuel_colors: Optional[Dict[str, str]] = None,
+    return_fig: bool = False,
 ) -> bool:
     target_dir = Path(plot_dir) if plot_dir is not None else Path("plots")
-    target_dir.mkdir(parents=True, exist_ok=True)
+    if not return_fig:
+        target_dir.mkdir(parents=True, exist_ok=True)
 
     groups = series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col)
     colors = fuel_colors or fuel_color_map([g[0] or "" for g in groups])
@@ -217,6 +220,8 @@ def plot_all_fuels(
     if not any_curve:
         plt.close()
         print(f"[WARN] Sem dados para plot {filename}")
+        if return_fig:
+            return None
         return False
 
     _apply_fixed_x(fixed_x)
@@ -236,6 +241,8 @@ def plot_all_fuels(
         plt.legend()
     outpath = target_dir / filename
     plt.tight_layout()
+    if return_fig:
+        return plt.gcf()
     plt.savefig(outpath, dpi=200)
     plt.close()
     print(f"[OK] Salvei {outpath}")
@@ -261,9 +268,11 @@ def plot_all_fuels_xy(
     y_tol_plus: object = 0.0,
     y_tol_minus: object = 0.0,
     fuel_colors: Optional[Dict[str, str]] = None,
+    return_fig: bool = False,
 ) -> bool:
     target_dir = Path(plot_dir) if plot_dir is not None else Path("plots")
-    target_dir.mkdir(parents=True, exist_ok=True)
+    if not return_fig:
+        target_dir.mkdir(parents=True, exist_ok=True)
 
     groups = series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col)
     colors = fuel_colors or fuel_color_map([g[0] or "" for g in groups])
@@ -303,6 +312,8 @@ def plot_all_fuels_xy(
     if not any_curve:
         plt.close()
         print(f"[WARN] Sem dados para plot {filename}")
+        if return_fig:
+            return None
         return False
 
     _apply_fixed_x(fixed_x)
@@ -322,6 +333,8 @@ def plot_all_fuels_xy(
         plt.legend()
     outpath = target_dir / filename
     plt.tight_layout()
+    if return_fig:
+        return plt.gcf()
     plt.savefig(outpath, dpi=200)
     plt.close()
     print(f"[OK] Salvei {outpath}")
@@ -347,9 +360,11 @@ def plot_all_fuels_with_value_labels(
     y_tol_plus: object = 0.0,
     y_tol_minus: object = 0.0,
     fuel_colors: Optional[Dict[str, str]] = None,
+    return_fig: bool = False,
 ) -> bool:
     target_dir = Path(plot_dir) if plot_dir is not None else Path("plots")
-    target_dir.mkdir(parents=True, exist_ok=True)
+    if not return_fig:
+        target_dir.mkdir(parents=True, exist_ok=True)
 
     groups = series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col)
     colors = fuel_colors or fuel_color_map([g[0] or "" for g in groups])
@@ -381,6 +396,8 @@ def plot_all_fuels_with_value_labels(
     if not any_curve:
         plt.close(fig)
         print(f"[WARN] Sem dados para plot {filename}")
+        if return_fig:
+            return None
         return False
 
     _apply_fixed_x_ax(ax, fixed_x)
@@ -400,6 +417,8 @@ def plot_all_fuels_with_value_labels(
 
     outpath = target_dir / filename
     fig.tight_layout()
+    if return_fig:
+        return fig
     fig.savefig(outpath, dpi=220)
     plt.close(fig)
     print(f"[OK] Salvei {outpath}")
@@ -429,9 +448,11 @@ def plot_all_fuels_delta_ref(
     y_tol_plus: object = 0.0,
     y_tol_minus: object = 0.0,
     fuel_colors: Optional[Dict[str, str]] = None,
+    return_fig: bool = False,
 ) -> bool:
     target_dir = Path(plot_dir) if plot_dir is not None else Path("plots")
-    target_dir.mkdir(parents=True, exist_ok=True)
+    if not return_fig:
+        target_dir.mkdir(parents=True, exist_ok=True)
 
     has_delta = y_col_delta and y_col_delta in df.columns
 
@@ -498,6 +519,8 @@ def plot_all_fuels_delta_ref(
     if not any_curve:
         plt.close(fig)
         print(f"[WARN] Sem dados para plot {filename}")
+        if return_fig:
+            return None
         return False
 
     if ax2 is not None:
@@ -521,6 +544,8 @@ def plot_all_fuels_delta_ref(
 
     outpath = target_dir / filename
     fig.tight_layout()
+    if return_fig:
+        return fig
     fig.savefig(outpath, dpi=220)
     plt.close(fig)
     print(f"[OK] Salvei {outpath}")

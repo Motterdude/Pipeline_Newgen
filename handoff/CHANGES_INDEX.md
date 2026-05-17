@@ -4,6 +4,7 @@ Ordem cronológica inversa. Uma linha por sessão. Detalhe completo em `handoff/
 
 ## 2026-05
 
+- **2026-05-17** — [preview-plot-tab-and-presets](changes/2026-05-17-preview-plot-tab-and-presets.md) — Nova aba Preview Plot na GUI (render inline, setas, Lock X, presets/workspaces com save/load de dados + eixos) + fix sweep binning (Sweep_Value no groupby + resolve_x_col fallback) + renderers return_fig + matplotlib backend guard.
 - **2026-05-17** — [fix-sweep-binning-grouping](changes/2026-05-17-fix-sweep-binning-grouping.md) — Fix bug crítico: agregação MoTeC/KiBox/LabVIEW sem Sweep_Value como groupby destruía bins de lambda sweep; agora preserva granularidade por setpoint + fallback no binning.
 
 ## 2026-04
