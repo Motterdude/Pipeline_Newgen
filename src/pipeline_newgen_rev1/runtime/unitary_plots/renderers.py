@@ -52,6 +52,8 @@ def _apply_y_tick_step(ax: plt.Axes, y_tick_step: Optional[float]) -> None:
     ymin, ymax = ax.get_ylim()
     if not (np.isfinite(ymin) and np.isfinite(ymax)):
         return
+    if (ymax - ymin) / step > _MAX_TICKS:
+        return
     eps = abs(step) * 1e-9
     snapped_min = np.floor((ymin + eps) / step) * step
     snapped_max = np.ceil((ymax - eps) / step) * step
@@ -96,16 +98,20 @@ def _annotate_points_variants(ax, x: np.ndarray, y: np.ndarray, variant: str) ->
 
 # ── axis / layout helpers ───────────────────────────────────────────
 
+_MAX_TICKS = 80
+
+
 def _apply_fixed_x(fixed_x: Optional[Tuple[float, float, float]]) -> None:
     if fixed_x is None:
         return
     xmin, xmax, xstep = fixed_x
     plt.xlim(xmin, xmax)
-    try:
-        ticks = np.arange(xmin, xmax + 1e-12, xstep).tolist()
-        plt.xticks(ticks)
-    except Exception:
-        pass
+    if xstep > 0 and (xmax - xmin) / xstep <= _MAX_TICKS:
+        try:
+            ticks = np.arange(xmin, xmax + 1e-12, xstep).tolist()
+            plt.xticks(ticks)
+        except Exception:
+            pass
 
 
 def _apply_fixed_y(
@@ -115,11 +121,12 @@ def _apply_fixed_y(
     if fixed_y is not None:
         ymin, ymax, ystep = fixed_y
         plt.ylim(ymin, ymax)
-        try:
-            ticks = np.arange(ymin, ymax + 1e-12, ystep).tolist()
-            plt.yticks(ticks)
-        except Exception:
-            pass
+        if ystep > 0 and (ymax - ymin) / ystep <= _MAX_TICKS:
+            try:
+                ticks = np.arange(ymin, ymax + 1e-12, ystep).tolist()
+                plt.yticks(ticks)
+            except Exception:
+                pass
     elif fixed_y_limits is not None:
         ymin, ymax = fixed_y_limits
         plt.ylim(ymin, ymax)
@@ -133,11 +140,12 @@ def _apply_fixed_y_ax(
     if fixed_y is not None:
         ymin, ymax, ystep = fixed_y
         ax.set_ylim(ymin, ymax)
-        try:
-            ticks = np.arange(ymin, ymax + 1e-12, ystep).tolist()
-            ax.set_yticks(ticks)
-        except Exception:
-            pass
+        if ystep > 0 and (ymax - ymin) / ystep <= _MAX_TICKS:
+            try:
+                ticks = np.arange(ymin, ymax + 1e-12, ystep).tolist()
+                ax.set_yticks(ticks)
+            except Exception:
+                pass
     elif fixed_y_limits is not None:
         ymin, ymax = fixed_y_limits
         ax.set_ylim(ymin, ymax)
@@ -148,11 +156,12 @@ def _apply_fixed_x_ax(ax, fixed_x: Optional[Tuple[float, float, float]]) -> None
         return
     xmin, xmax, xstep = fixed_x
     ax.set_xlim(xmin, xmax)
-    try:
-        ticks = np.arange(xmin, xmax + 1e-12, xstep).tolist()
-        ax.set_xticks(ticks)
-    except Exception:
-        pass
+    if xstep > 0 and (xmax - xmin) / xstep <= _MAX_TICKS:
+        try:
+            ticks = np.arange(xmin, xmax + 1e-12, xstep).tolist()
+            ax.set_xticks(ticks)
+        except Exception:
+            pass
 
 
 # ── renderers ───────────────────────────────────────────────────────
@@ -206,16 +215,16 @@ def plot_all_fuels(
         any_curve = True
         if yerr_col:
             if label:
-                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color, label=label)
+                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color, label=label, picker=5)
                 legend_entries += 1
             else:
-                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color)
+                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color, picker=5)
         else:
             if label:
-                plt.plot(d[x_col], d[y_col], "o-", color=color, label=label)
+                plt.plot(d[x_col], d[y_col], "o-", color=color, label=label, picker=5)
                 legend_entries += 1
             else:
-                plt.plot(d[x_col], d[y_col], "o-", color=color)
+                plt.plot(d[x_col], d[y_col], "o-", color=color, picker=5)
 
     if not any_curve:
         plt.close()
@@ -298,16 +307,16 @@ def plot_all_fuels_xy(
         any_curve = True
         if yerr_col:
             if label:
-                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color, label=label)
+                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color, label=label, picker=5)
                 legend_entries += 1
             else:
-                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color)
+                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color, picker=5)
         else:
             if label:
-                plt.plot(d[x_col], d[y_col], "o-", color=color, label=label)
+                plt.plot(d[x_col], d[y_col], "o-", color=color, label=label, picker=5)
                 legend_entries += 1
             else:
-                plt.plot(d[x_col], d[y_col], "o-", color=color)
+                plt.plot(d[x_col], d[y_col], "o-", color=color, picker=5)
 
     if not any_curve:
         plt.close()

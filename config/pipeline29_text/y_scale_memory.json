@@ -1,0 +1,82 @@
+{
+  "ECT_CTRL_ERROR_C": {
+    "y_min": "-10.0",
+    "y_max": "10.0",
+    "y_step": "1.0"
+  },
+  "n_mech_pct": {
+    "y_min": "0.0",
+    "y_max": "100.0",
+    "y_step": "10.0"
+  },
+  "ETA_V_pct": {
+    "y_min": "50",
+    "y_max": "100",
+    "y_step": "5"
+  },
+  "Ignition_Delay_abs_degCA": {
+    "y_min": "",
+    "y_max": "",
+    "y_step": "0.5"
+  },
+  "Motec_Ignition Timing_mean_of_windows": {
+    "y_min": "",
+    "y_max": "",
+    "y_step": "1.0"
+  },
+  "Motec_Exhaust Lambda_mean_of_windows": {
+    "y_min": "0.9",
+    "y_max": "1.1",
+    "y_step": "0.02"
+  },
+  "n_th_ind_pct": {
+    "y_min": "35",
+    "y_max": "55",
+    "y_step": "2"
+  },
+  "NOX_mean_of_windows": {
+    "y_min": "0",
+    "y_max": "1500",
+    "y_step": "100"
+  },
+  "n_th_pct": {
+    "y_min": "30",
+    "y_max": "44",
+    "y_step": "1"
+  },
+  "T_ADMISSAO_mean_of_windows": {
+    "y_min": "56",
+    "y_max": "64",
+    "y_step": "1"
+  },
+  "T_CARTER_mean_of_windows": {
+    "y_min": "90",
+    "y_max": "116",
+    "y_step": "2"
+  },
+  "T_S_AGUA_mean_of_windows": {
+    "y_min": "80.0",
+    "y_max": "100.0",
+    "y_step": "1.0"
+  },
+  "T_S_TURB_mean_of_windows": {
+    "y_min": "200",
+    "y_max": "650",
+    "y_step": "20"
+  },
+  "T_WATERCOOLER_mean_of_windows": {
+    "y_min": "20",
+    "y_max": "100",
+    "y_step": ""
+  },
+  "UMIDADE_mean_of_windows": {
+    "y_min": "20",
+    "y_max": "70",
+    "y_step": "10.0"
+  },
+  "__cursor_font_size__": {
+    "y_min": "15",
+    "y_max": "",
+    "y_step": ""
+  }
+}
