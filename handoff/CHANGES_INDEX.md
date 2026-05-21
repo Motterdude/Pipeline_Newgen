@@ -4,6 +4,7 @@ Ordem cronológica inversa. Uma linha por sessão. Detalhe completo em `handoff/
 
 ## 2026-05
 
+- **2026-05-21** — [compare-mode-preview](changes/2026-05-21-compare-mode-preview.md) — Compare BL vs ADTV no Preview Plot: dual-panel (absolute+delta), combos metrica/par, setas navegam metricas, preset Nanum Compare.
 - **2026-05-21** — [maf-uncertainty-cursor-readout](changes/2026-05-21-maf-uncertainty-cursor-readout.md) — MAF plot com sd_of_windows + cursor vertical interativo com tabela de valores interpolados + dropdown Y browse de todas as colunas numéricas.
 - **2026-05-21** — [thc-plot-and-point-exclusion-system](changes/2026-05-21-thc-plot-and-point-exclusion-system.md) — THC ppm plot + sistema de exclusão interativa de pontos (click-to-exclude com justificativa, persistência JSON, review dialog).
 - **2026-05-21** — [all-iterations-overlay-plot-type](changes/2026-05-21-all-iterations-overlay-plot-type.md) — Novo plot_type `all_iterations_yx` com preset "Nanum All Iterations" e guard de navegação; plota todas as iterações sobrepostas (BL/ADTV × sub/des) com cores e markers distintos.

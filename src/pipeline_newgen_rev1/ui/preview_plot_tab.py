@@ -110,6 +110,11 @@ _BUILTIN_PRESETS: Dict[str, Dict[str, str]] = {
         "x_min": "0", "x_max": "55", "x_step": "5", "series_col": "",
         "plot_type": "all_iterations_yx",
     },
+    "Nanum Compare": {
+        "x_col": "Load_kW", "x_label": "Carga nominal (kW)",
+        "x_min": "0", "x_max": "55", "x_step": "5", "series_col": "",
+        "plot_type": "compare_bl_vs_adtv",
+    },
 }
 
 
@@ -272,6 +277,8 @@ class PreviewPlotTab(QWidget):
         self._cursor_line = None
         self._cursor_arrow = None
         self._cursor_x: float = 0.0
+        self._compare_df: Optional[pd.DataFrame] = None
+        self._compare_path: Optional[Path] = None
 
         self._populating = False
 
@@ -371,6 +378,7 @@ class PreviewPlotTab(QWidget):
             "all_fuels_labels",
             "all_fuels_delta_ref",
             "all_iterations_yx",
+            "compare_bl_vs_adtv",
             "kibox_all",
         ])
         left_form.addRow("Plot type:", self.combo_plot_type)
@@ -404,6 +412,14 @@ class PreviewPlotTab(QWidget):
         self.chk_show_uncertainty = QCheckBox("Show uncertainty bars")
         self.chk_show_uncertainty.setChecked(True)
         left_form.addRow("", self.chk_show_uncertainty)
+
+        self.combo_compare_metric = QComboBox()
+        self.combo_compare_metric.setVisible(False)
+        left_form.addRow("Metrica:", self.combo_compare_metric)
+
+        self.combo_compare_pair = QComboBox()
+        self.combo_compare_pair.setVisible(False)
+        left_form.addRow("Comparacao:", self.combo_compare_pair)
 
         self.edit_x_label = QLineEdit()
         left_form.addRow("X label:", self.edit_x_label)
@@ -640,6 +656,9 @@ class PreviewPlotTab(QWidget):
         self.btn_cursor.toggled.connect(self._on_cursor_mode_toggled)
         self.edit_cursor_font.editingFinished.connect(self._on_cursor_font_changed)
         self.combo_y_browse.currentIndexChanged.connect(self._on_y_browse_selected)
+        self.combo_compare_metric.currentIndexChanged.connect(self._schedule_render)
+        self.combo_compare_pair.currentIndexChanged.connect(self._schedule_render)
+        self.combo_plot_type.currentTextChanged.connect(self._on_plot_type_changed)
 
     def _schedule_render(self) -> None:
         if self._populating:
@@ -723,6 +742,12 @@ class PreviewPlotTab(QWidget):
         self._populate_from_record(self._get_effective_record(index))
 
     def _navigate_next_plot(self) -> None:
+        if self.combo_plot_type.currentText() == "compare_bl_vs_adtv":
+            cnt = self.combo_compare_metric.count()
+            if cnt > 0:
+                nxt = (self.combo_compare_metric.currentIndex() + 1) % cnt
+                self.combo_compare_metric.setCurrentIndex(nxt)
+            return
         count = self.combo_plot_selector.count()
         if count == 0:
             return
@@ -730,6 +755,12 @@ class PreviewPlotTab(QWidget):
         self.combo_plot_selector.setCurrentIndex(nxt)
 
     def _navigate_prev_plot(self) -> None:
+        if self.combo_plot_type.currentText() == "compare_bl_vs_adtv":
+            cnt = self.combo_compare_metric.count()
+            if cnt > 0:
+                prev = (self.combo_compare_metric.currentIndex() - 1) % cnt
+                self.combo_compare_metric.setCurrentIndex(prev)
+            return
         count = self.combo_plot_selector.count()
         if count == 0:
             return
@@ -1287,6 +1318,121 @@ class PreviewPlotTab(QWidget):
             self._cursor_table.setItem(i, 0, item_label)
             self._cursor_table.setItem(i, 1, QTableWidgetItem(val_text))
         self._cursor_table.setHorizontalHeaderLabels(["Serie", f"@ {self._cursor_x:.1f} kW"])
+
+    # ------------------------------------------------------------------
+    # Compare Mode
+    # ------------------------------------------------------------------
+
+    def _on_plot_type_changed(self, text: str) -> None:
+        is_compare = (text == "compare_bl_vs_adtv")
+        self.combo_compare_metric.setVisible(is_compare)
+        self.combo_compare_pair.setVisible(is_compare)
+        if is_compare and self._compare_df is None:
+            self._auto_discover_compare_xlsx()
+
+    def _auto_discover_compare_xlsx(self) -> None:
+        search_dirs = []
+        if self._loaded_path:
+            parent = self._loaded_path.parent
+            search_dirs.append(parent / "plots" / "compare_iteracoes_bl_vs_adtv")
+            search_dirs.append(parent)
+        if self._get_output_dir:
+            try:
+                out = self._get_output_dir()
+                search_dirs.append(out / "plots" / "compare_iteracoes_bl_vs_adtv")
+            except Exception:
+                pass
+
+        for d in search_dirs:
+            candidate = d / "compare_iteracoes_metricas_incertezas.xlsx"
+            if candidate.exists():
+                self._load_compare_xlsx(candidate)
+                return
+        self._show_status("Compare xlsx nao encontrado. Use Browse para carregar.")
+
+    def _load_compare_xlsx(self, path: Path) -> None:
+        from ..runtime.compare_iteracoes.preview_renderers import (
+            load_compare_xlsx, available_metrics, available_comparacoes,
+        )
+        try:
+            self._compare_df = load_compare_xlsx(path)
+            self._compare_path = path
+        except Exception as e:
+            self._show_status(f"Erro ao carregar compare xlsx: {e}")
+            return
+
+        self._populating = True
+        self.combo_compare_metric.clear()
+        metrics = available_metrics(self._compare_df)
+        self.combo_compare_metric.addItems(metrics)
+
+        self.combo_compare_pair.clear()
+        pairs = available_comparacoes(self._compare_df)
+        self.combo_compare_pair.addItems(pairs)
+        self._populating = False
+
+        self._show_status(f"Compare: {path.name} ({len(metrics)} metricas, {len(pairs)} pares)")
+
+    def _render_compare_preview(self) -> Optional[Figure]:
+        if self._compare_df is None or self._compare_df.empty:
+            return None
+        metrica = self.combo_compare_metric.currentText()
+        comparacao = self.combo_compare_pair.currentText()
+        if not metrica or not comparacao:
+            return None
+
+        from ..runtime.compare_iteracoes.preview_renderers import (
+            render_compare_absolute_preview,
+            render_compare_delta_preview,
+        )
+
+        fig_abs = render_compare_absolute_preview(
+            self._compare_df, metrica=metrica, comparacao=comparacao,
+            include_uncertainty=self.chk_show_uncertainty.isChecked(),
+        )
+        fig_delta = render_compare_delta_preview(
+            self._compare_df, metrica=metrica, comparacao=comparacao,
+            include_uncertainty=self.chk_show_uncertainty.isChecked(),
+        )
+
+        if fig_abs is None and fig_delta is None:
+            return None
+
+        import matplotlib.pyplot as plt
+        fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True,
+                                 gridspec_kw={"hspace": 0.3})
+
+        if fig_abs is not None:
+            src_ax = fig_abs.gca()
+            for line in src_ax.get_lines():
+                axes[0].plot(line.get_xdata(), line.get_ydata(),
+                             color=line.get_color(), marker=line.get_marker(),
+                             linestyle=line.get_linestyle(), linewidth=line.get_linewidth(),
+                             markersize=line.get_markersize(), label=line.get_label(),
+                             picker=5)
+            axes[0].set_xlabel(src_ax.get_xlabel())
+            axes[0].set_ylabel(src_ax.get_ylabel())
+            axes[0].set_title(src_ax.get_title())
+            axes[0].grid(True, which="both", linestyle="--", linewidth=0.5)
+            axes[0].legend(loc="best", fontsize=9)
+            plt.close(fig_abs)
+
+        if fig_delta is not None:
+            src_ax = fig_delta.gca()
+            for line in src_ax.get_lines():
+                axes[1].plot(line.get_xdata(), line.get_ydata(),
+                             color=line.get_color(), marker=line.get_marker(),
+                             linestyle=line.get_linestyle(), linewidth=line.get_linewidth(),
+                             markersize=line.get_markersize(), label=line.get_label(),
+                             picker=5)
+            axes[1].set_xlabel(src_ax.get_xlabel())
+            axes[1].set_ylabel(src_ax.get_ylabel())
+            axes[1].set_title(src_ax.get_title())
+            axes[1].grid(True, which="both", linestyle="--", linewidth=0.5)
+            axes[1].legend(loc="best", fontsize=9)
+            plt.close(fig_delta)
+
+        return fig
 
     # ------------------------------------------------------------------
     # Y Column Browser
@@ -1850,7 +1996,7 @@ class PreviewPlotTab(QWidget):
         lock_x = self.chk_lock_x.isChecked()
         current_ptype = self.combo_plot_type.currentText()
 
-        if not (lock_x and current_ptype == "all_iterations_yx"):
+        if not (lock_x and current_ptype in ("all_iterations_yx", "compare_bl_vs_adtv")):
             ptype = str(rec.get("plot_type", "all_fuels_yx"))
             idx = self.combo_plot_type.findText(ptype)
             if idx >= 0:
@@ -2084,6 +2230,8 @@ class PreviewPlotTab(QWidget):
                 x_label=x_label, style_overrides=self._series_style_overrides,
                 **common_kwargs,
             )
+        elif plot_type == "compare_bl_vs_adtv":
+            return self._render_compare_preview()
         elif plot_type == "kibox_all":
             kibox_col = next((c for c in df.columns if str(c).upper().startswith("KIBOX_")), None)
             if kibox_col is None:
