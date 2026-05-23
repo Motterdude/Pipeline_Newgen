@@ -23,8 +23,13 @@ O usuário quer visualizar os compares (média BL vs ADTV) diretamente no Previe
 - `python -m unittest discover` → 445 testes, 0 regressão
 - Smoke test com xlsx real: 600 rows, 11 métricas, 3 pares → rendering OK
 
-## Pendências
+## Status: NÃO FUNCIONOU COMO ESPERADO
 
-- **Teste visual na GUI**: confirmar dual-panel, setas entre métricas, cursor funciona no compare.
-- **ErrorBar no dual-panel**: os renderers usam errorbar internamente, mas a cópia para dual-panel copia apenas linhas (sem errorbar). Se necessário, ajustar para copiar também as barras de erro.
+Teste visual na GUI revelou problemas — não renderizou corretamente. Requer investigação e ajuste na próxima sessão.
+
+## Pendências (prioridade para retomada)
+
+- **Debug do rendering**: o dual-panel não apareceu como esperado. Possíveis causas: (1) cópia de linhas do fig_abs/fig_delta para o dual-panel perde errorbar containers, (2) auto-discover não encontrou o xlsx, (3) combos não popularam corretamente.
+- **ErrorBar no dual-panel**: os renderers usam errorbar internamente, mas a cópia para dual-panel copia apenas linhas (`get_lines()`) sem as barras de erro. Precisa usar os renderers diretamente nos axes do dual-panel em vez de copiar artists.
 - **Compare overlay**: adicionar opção de ver todas as 3 comparações sobrepostas (usa `render_compare_all_overlay`).
+- **Investigar**: se o problema é no auto-discover, no rendering, ou na interação com outros modos (cursor/filter).

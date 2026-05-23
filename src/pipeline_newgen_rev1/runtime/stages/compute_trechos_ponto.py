@@ -33,6 +33,16 @@ class ComputeTrechosPontoStage:
             return
         ponto = compute_ponto_stats(trechos)
 
+        if ctx.exclusion_list_path:
+            from ..exclusion_runner import load_exclusion_list, apply_exclusions_to_ponto
+            excl = load_exclusion_list(ctx.exclusion_list_path)
+            if excl:
+                ponto, n_removed = apply_exclusions_to_ponto(ponto, excl)
+                print(
+                    f"[INFO] compute_trechos_ponto | exclusion_list={ctx.exclusion_list_path.name}"
+                    f" removed {n_removed} rows from ponto"
+                )
+
         ctx.trechos = trechos
         ctx.ponto = ponto
         print(f"[OK] compute_trechos_ponto | trechos={len(trechos)} rows, ponto={len(ponto)} rows")

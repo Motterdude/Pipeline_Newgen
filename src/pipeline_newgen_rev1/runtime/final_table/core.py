@@ -195,15 +195,15 @@ def build_final_table(
     rpm_col = _resolve_existing_column(df, rpm_col_name, ["rotação", "rotacao", "rpm"])
     RPM = pd.to_numeric(df[rpm_col], errors="coerce") if rpm_col else _nan_series(df)
 
-    imeph_col = None
-    for cand in ["KIBOX_IMEPH_AVG_1", "KIBOX_IMEPH_1"]:
+    imepn_col = None
+    for cand in ["KIBOX_IMEPN_AVG_1", "KIBOX_IMEPN_1"]:
         if cand in df.columns:
-            imeph_col = cand
+            imepn_col = cand
             break
 
-    if imeph_col:
-        imeph_bar = pd.to_numeric(df[imeph_col], errors="coerce")
-        p_ind_kw = imeph_bar * 1e5 * displacement_m3 * RPM / 120_000.0
+    if imepn_col:
+        imepn_bar = pd.to_numeric(df[imepn_col], errors="coerce")
+        p_ind_kw = imepn_bar * 1e5 * displacement_m3 * RPM / 120_000.0
         n_th_ind = p_ind_kw / (mdot * LHVv)
         n_mech = PkW / p_ind_kw
         ind_cols = {
@@ -214,10 +214,10 @@ def build_final_table(
             "n_mech_pct": (n_mech * 100.0).where((PkW > 0) & (p_ind_kw > 0), pd.NA),
         }
         df = df.assign(**ind_cols)
-        print(f"[INFO] n_th_ind: IMEPH='{imeph_col}', RPM='{rpm_col}', V_d={displacement_l}L")
+        print(f"[INFO] n_th_ind: IMEPN='{imepn_col}', RPM='{rpm_col}', V_d={displacement_l}L")
     else:
         df = df.assign(**{c: pd.NA for c in ("P_ind_kW", "n_th_ind", "n_th_ind_pct", "n_mech", "n_mech_pct")})
-        print("[WARN] IMEPH nao encontrado no KiBox; n_th_ind ficara vazio.")
+        print("[WARN] IMEPN nao encontrado no KiBox; n_th_ind ficara vazio.")
 
     # --- 5b. Consumo L/h ---
     volume_factor = 1000.0 / fuel_density

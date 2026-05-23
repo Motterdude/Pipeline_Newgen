@@ -63,6 +63,11 @@ class OpenToCsvAdapterTests(unittest.TestCase):
         self.assertEqual(planned_pipeline_csv_path(source).name, "run_01_i.csv")
         self.assertEqual(build_output_name(source, name_mode="tool", export_type="res"), "run_01_res.csv")
 
+    def test_planned_pipeline_name_no_double_i_suffix(self) -> None:
+        source = Path(r"C:\tmp\D85B15_10kW_i.open")
+        self.assertEqual(planned_pipeline_csv_name(source), "D85B15_10kW_i.csv")
+        self.assertEqual(planned_pipeline_csv_path(source).name, "D85B15_10kW_i.csv")
+
     def test_find_open_to_csv_path_uses_env_var(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             fake_converter = Path(tmpdir) / "fake_OpenToCSV.py"

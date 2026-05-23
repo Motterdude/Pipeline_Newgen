@@ -1,5 +1,7 @@
 {
-  "version": 3,
+  "version": 2,
+  "type": "exclusion_list",
+  "exported_at": "2026-05-23T15:16:43",
   "exclusions": [
     {
       "series_label": "ADTV Sub 1",
@@ -170,42 +172,6 @@
       "basename": "Subindo_Aditivado_1__D85B15_45kW",
       "reason": "[SERIE] vazão_de_ar_baixa",
       "excluded_at": "2026-05-23T15:16:27",
-      "excluded_by": "user"
-    },
-    {
-      "series_label": "ADTV Des 2",
-      "load_kw": 0.0,
-      "y_col": "*",
-      "basename": "Descendo_Aditivado_2__D85B15_0kW",
-      "reason": "Outlier_consumo_especifico_0kw",
-      "excluded_at": "2026-05-23T16:43:54",
-      "excluded_by": "user"
-    },
-    {
-      "series_label": "ADTV Sub 2",
-      "load_kw": 40.0,
-      "y_col": "*",
-      "basename": "Subindo_Aditivado_2__D85B15_40kW",
-      "reason": "Oscilação de medição de consumo",
-      "excluded_at": "2026-05-23T17:41:46",
-      "excluded_by": "user"
-    },
-    {
-      "series_label": "ADTV Des 1",
-      "load_kw": 42.5,
-      "y_col": "*",
-      "basename": "Descendo_Aditivado_1__D85B15_42.5kW",
-      "reason": "Oscilação de medição de consumo",
-      "excluded_at": "2026-05-23T17:41:56",
-      "excluded_by": "user"
-    },
-    {
-      "series_label": "ADTV Des 1",
-      "load_kw": 20.0,
-      "y_col": "*",
-      "basename": "Descendo_Aditivado_1__D85B15_20kW",
-      "reason": "Outlier de CO2 muito baixo",
-      "excluded_at": "2026-05-23T17:43:38",
       "excluded_by": "user"
     }
   ]

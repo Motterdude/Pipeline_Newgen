@@ -31,7 +31,7 @@
   },
   "n_th_ind_pct": {
     "y_min": "35",
-    "y_max": "55",
+    "y_max": "60",
     "y_step": "2"
   },
   "NOX_mean_of_windows": {
@@ -41,8 +41,8 @@
   },
   "n_th_pct": {
     "y_min": "30",
-    "y_max": "44",
-    "y_step": "1"
+    "y_max": "45",
+    "y_step": "2"
   },
   "T_ADMISSAO_mean_of_windows": {
     "y_min": "56",
@@ -78,5 +78,10 @@
     "y_min": "15",
     "y_max": "",
     "y_step": ""
+  },
+  "Consumo absoluto": {
+    "y_min": "-5",
+    "y_max": "5",
+    "y_step": "0,5"
   }
 }

@@ -20,6 +20,7 @@ try:
         QApplication,
         QCheckBox,
         QDialog,
+        QFileDialog,
         QHeaderView,
         QHBoxLayout,
         QLabel,
@@ -35,6 +36,7 @@ except Exception:
     QApplication = None
     QCheckBox = None
     QDialog = None
+    QFileDialog = None
     QHeaderView = None
     QHBoxLayout = None
     QLabel = None
@@ -59,6 +61,14 @@ except Exception:
 PlotPointKey = Tuple[str, float]
 PromptPlotPointFunc = Callable[[List[str], List[float], Dict[PlotPointKey, int]], Optional[Set[PlotPointKey]]]
 PLOT_POINT_FILTER_STATE_PATH = default_app_state_dir() / "plot_point_filter_last.json"
+
+# Set by the interactive dialog when the user selects an exclusion list; read by the runner.
+_runtime_exclusion_list_path: Optional[Path] = None
+
+
+def get_runtime_exclusion_list_path() -> Optional[Path]:
+    """Return the exclusion list path selected in the last run of the point filter dialog."""
+    return _runtime_exclusion_list_path
 
 
 def _canon_name(value: object) -> str:
@@ -323,6 +333,55 @@ def _ensure_qt_application() -> Tuple[object, bool]:
     return app, owns_app
 
 
+def _show_exclusion_preview_qt(path: Path, parent=None) -> None:
+    """Read-only dialog showing the contents of an exclusion list JSON (Qt version)."""
+    if QDialog is None:
+        return
+    try:
+        import json as _json
+        data = _json.loads(path.read_text(encoding="utf-8"))
+        entries = data.get("exclusions", []) if isinstance(data, dict) else []
+    except Exception as exc:
+        QMessageBox.warning(parent, "Exclusion List", f"Erro ao ler arquivo:\n{exc}")
+        return
+
+    dlg = QDialog(parent)
+    dlg.setWindowTitle(f"{path.name}  —  {len(entries)} exclusoes")
+    dlg.setMinimumSize(820, 460)
+    layout = QVBoxLayout(dlg)
+
+    info = QLabel(f"Arquivo: {path}\n{len(entries)} entradas — serao removidas dos calculos de KPIs antes do run.")
+    info.setWordWrap(True)
+    info.setStyleSheet("font-size: 11px; color: #888;")
+    layout.addWidget(info)
+
+    table = QTableWidget()
+    table.setColumnCount(5)
+    table.setHorizontalHeaderLabels(["Serie", "Load (kW)", "Escopo", "Razao", "Data"])
+    table.setRowCount(len(entries))
+    table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
+    table.setEditTriggers(QTableWidget.NoEditTriggers)
+    table.setAlternatingRowColors(True)
+    for i, exc in enumerate(entries):
+        table.setItem(i, 0, QTableWidgetItem(str(exc.get("series_label", ""))))
+        lkw = exc.get("load_kw")
+        table.setItem(i, 1, QTableWidgetItem(f"{lkw:g}" if lkw is not None else ""))
+        scope = "GLOBAL" if str(exc.get("y_col", "")) == "*" else str(exc.get("y_col", ""))
+        table.setItem(i, 2, QTableWidgetItem(scope))
+        table.setItem(i, 3, QTableWidgetItem(str(exc.get("reason", ""))))
+        table.setItem(i, 4, QTableWidgetItem(str(exc.get("excluded_at", ""))[:16]))
+    layout.addWidget(table)
+
+    btn_row = QHBoxLayout()
+    btn_row.addStretch()
+    btn_ok = QPushButton("OK — aplicar estas exclusoes")
+    btn_ok.setDefault(True)
+    btn_ok.clicked.connect(dlg.accept)
+    btn_row.addWidget(btn_ok)
+    layout.addLayout(btn_row)
+    dlg.exec()
+
+
 def _prompt_plot_point_filter_catalog_via_qt(
     fuel_labels: List[str],
     load_values: List[float],
@@ -462,12 +521,39 @@ def _prompt_plot_point_filter_catalog_via_qt(
     selected_result: dict[str, object] = {"selected": None}
 
     def accept_selection() -> None:
+        global _runtime_exclusion_list_path
         selected = selected_points_now()
         if not selected:
             QMessageBox.critical(dialog, "Pipeline newgen", "Selecione pelo menos um ponto para gerar os graficos.")
             return
         save_plot_point_filter_state(selected, available_points)
         selected_result["selected"] = selected
+
+        # Ask user about exclusion list before proceeding
+        reply = QMessageBox.question(
+            dialog,
+            "Exclusion list",
+            "Deseja aplicar uma lista de exclusao de pontos neste run?\n\n"
+            "Sim  →  selecionar arquivo e ver pontos excluidos\n"
+            "Nao  →  rodar sem exclusoes",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply == QMessageBox.Yes:
+            path, _ = QFileDialog.getOpenFileName(
+                dialog,
+                "Selecionar exclusion list JSON",
+                "",
+                "JSON (*.json);;All files (*)",
+            )
+            if path:
+                _runtime_exclusion_list_path = Path(path)
+                _show_exclusion_preview_qt(Path(path), parent=dialog)
+            else:
+                _runtime_exclusion_list_path = None
+        else:
+            _runtime_exclusion_list_path = None
+
         dialog.accept()
 
     btn_run.clicked.connect(accept_selection)

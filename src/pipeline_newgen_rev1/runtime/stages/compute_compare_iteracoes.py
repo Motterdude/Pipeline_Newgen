@@ -47,6 +47,8 @@ class ComputeCompareIteracoesStage:
         ctx.compare_iteracoes_requests = result.requests
 
         if ctx.output_dir is not None and not result.delta_table.empty:
+            import pandas as _pd
+
             target_dir = ctx.output_dir / "plots" / "compare_iteracoes_bl_vs_adtv"
             target_dir.mkdir(parents=True, exist_ok=True)
             xlsx_path = target_dir / "compare_iteracoes_metricas_incertezas.xlsx"
@@ -59,5 +61,21 @@ class ComputeCompareIteracoesStage:
                 result.delta_table.to_excel(alt, index=False)
                 ctx.compare_iteracoes_export_path = alt
                 print(f"[WARN] compute_compare_iteracoes | permission error → wrote {alt.name}")
+
+            # Also embed compare data as a second sheet in lv_kpis_clean.xlsx so the
+            # Preview Plot auto-detects it on a single Browse without a separate file.
+            lv_kpis_path = getattr(ctx, "lv_kpis_path", None)
+            if lv_kpis_path and lv_kpis_path.exists():
+                try:
+                    with _pd.ExcelWriter(
+                        lv_kpis_path, engine="openpyxl", mode="a",
+                        if_sheet_exists="replace",
+                    ) as writer:
+                        result.delta_table.to_excel(writer, sheet_name="compare", index=False)
+                    print(
+                        f"[OK] compute_compare_iteracoes | embedded 'compare' sheet in {lv_kpis_path.name}"
+                    )
+                except Exception as exc:
+                    print(f"[WARN] compute_compare_iteracoes | could not embed compare sheet: {exc}")
         elif result.delta_table.empty:
             print("[INFO] compute_compare_iteracoes | no delta rows produced (no enabled comparisons?).")

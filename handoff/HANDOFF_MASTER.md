@@ -115,9 +115,133 @@ Target repository: `https://github.com/Motterdude/Pipeline_Newgen`
 - `py_compile` passing across the repository
 - real run validated on `E:\raw_pyton\raw_NANUM`
 
-## Next step
+## Next step (2026-04-23, já concluído)
 - move from the current summary-oriented migrated executor into full processing parity with the legacy runtime:
   - real KPI/output generation
   - final plot generation
   - compare/compare_iteracoes outputs
   - sweep binning and duplicate filtering wired into final outputs
+
+---
+
+## Sessão 2026-05-23 — Sistema de Exclusão de Pontos, Preview Plot e Pipeline de Combustão
+
+### Contexto da campanha
+
+A campanha em curso é a **Rev2 combustão do Nanum**: combustível D85B15 (diesel 85% + biodiesel 15%), com 12 iterações (3 BL × subida/descida + 3 ADTV × subida/descida). Os arquivos brutos originais (pós-correção do injetor) foram organizados em `raw_nanum_post_injector_fix_renamed_combustion/` com 222 xlsx + 223 .open pareados.
+
+Descobrimos que a série `Subindo_Aditivado_1` (→ label "ADTV Sub 1") tinha um defeito instrumental: vazão de ar (`Air_g_s`) sistematicamente baixa em todos os pontos, o que invalidava os KPIs derivados dessa iteração. A decisão foi excluir a série do pipeline antes do cálculo de médias.
+
+### O que foi feito nesta sessão
+
+#### 1. Sistema de Exclusão de Pontos — Preview Plot → Pipeline
+
+**Objetivo:** criar um ciclo completo de exclusão: identificar pontos ruins visualmente no Preview Plot → exportar a lista → re-rodar o pipeline com os pontos excluídos → comparar os resultados visualmente.
+
+**Implementado:**
+- `point_exclusion.py`: chave `ExclusionKey` passou a incluir `y_col` (sem mais bleeding entre plots). Exclusões de série (`[SERIE]`) usam `y_col="*"` (global). Migração automática de JSON v1→v2. Métodos `remove_all()` e `active_keys_for_ycol()`.
+- `preview_plot_tab.py`: botões "Restore All", "Export...", fix de row-shift no diálogo de exclusões (rebuilding da tabela em vez de `removeRow(i)`), render imediato ao restaurar.
+- `exclusion_runner.py`: novo módulo em `runtime/` que carrega uma exclusion list JSON e aplica o filtro no DataFrame `ponto` por `(BaseName, Load_kW)`.
+- `RuntimeContext.exclusion_list_path`: novo campo opcional que ativa o filtro de exclusão na stage `ComputeTrechosPontoStage`.
+- `runner.py` / `run_load_sweep`: parâmetro `exclusion_list_path` propagado do GUI ao contexto.
+- `Pipeline30SweepHelperDialog`: seletor de exclusion list com combo (arquivos disponíveis no config dir), botão "Ver lista..." (preview read-only) e botão "Browse...". Persiste em `pipeline30_runtime_settings`.
+- `plot_point_filter.py` (`_prompt_plot_point_filter_catalog_via_qt`): ao clicar em "Gerar gráficos", abre popup "Tem exclusion list? [Sim/Não]". Sim → file picker → preview da lista → aplica. Não → roda sem exclusões. Path propagado via variável de módulo `_runtime_exclusion_list_path`, lida pelo runner imediatamente após o dialog.
+
+**Resultado do pipeline com exclusion list:**
+- `out_nanum_post_injector_fix_renamed_combustion_excl_list/lv_kpis_clean.xlsx`: **203 linhas** (222 − 19 = 203). ADTV Sub 1 ausente — ✓ confirmado.
+- `out_nanum_post_injector_fix_renamed_combustion/lv_kpis_clean.xlsx`: **222 linhas** (referência pré-exclusão). ADTV Sub 1 presente.
+
+#### 2. Preview Plot — Toggle Raw / Excl
+
+**Objetivo:** poder alternar instantaneamente entre o arquivo original (raw, 222 linhas) e o arquivo pós-exclusão (excl, 203 linhas) para comparação visual.
+
+**Implementado:**
+- Segunda barra de dados abaixo da barra principal: labels "Raw / Excl" com Browse, Reload e combo "Ativo: [raw | excl]".
+- Novos campos internos: `_raw_df`, `_raw_path`, `_excl_df`, `_excl_path`, `_active_source`.
+- `_get_effective_df()` reescrito: raw_df → excl_df → loaded_df → fallback.
+- Session persistence: `data_source.raw_path`, `data_source.excl_path`, `data_source.active_source`.
+- `_browse_data_file` (Browse antigo): popula automaticamente `_raw_df` se ele ainda for None, para que o workflow natural "Browse → toggle" funcione sem precisar usar Browse Raw explicitamente.
+- Modo raw bypassa o `ExclusionStore` (`apply_exclusions` não é chamado quando `active_source == "raw"`). Raw = dados originais, sem nenhum filtro de preview.
+
+**Resultado:** toggle raw=222 linhas com ADTV Sub 1 visível, excl=203 linhas sem ADTV Sub 1.
+
+#### 3. Compare mode unificado no lv_kpis_clean.xlsx
+
+**Objetivo:** eliminar o Browse separado para carregar o `compare_iteracoes_metricas_incertezas.xlsx`.
+
+**Implementado:**
+- `compute_compare_iteracoes.py`: após salvar o arquivo de compare separado, appenda o mesmo DataFrame como sheet `"compare"` no `lv_kpis_clean.xlsx` via `ExcelWriter(mode="a", if_sheet_exists="replace")`.
+- `load_data_from_file()`: ao carregar um xlsx, tenta ler sheet `"compare"`. Se presente com colunas `Metrica`/`Comparacao`, popula `_compare_df` automaticamente — sem Browse adicional.
+- Backward compatible: se a aba não existe (arquivo gerado antes desta feature), comporta-se como antes.
+
+**Resultado:** carregar `lv_kpis_clean.xlsx` do próximo run ativa compare mode automaticamente.
+
+#### 4. Robustez do workspace do Preview Plot
+
+Quatro bugs corrigidos após investigação com subagentes:
+
+| Bug | Causa | Fix |
+|-----|-------|-----|
+| **Workspace merge** | `dict.update()` em `_on_workspace_double_click` contaminava novo workspace com y_scales/series_styles do anterior | Full replace: reset da `_session` ao template antes de carregar |
+| **ExclusionStore bleeding** | Singleton do ExclusionStore persiste entre troca de arquivo | Toggle "Aplicar excl." removido; substituído pelo toggle Raw/Excl |
+| **Browse não limpa styles** | `_browse_data_file` não resetava `series_style_overrides` | Reset de `series_styles`, `series_style_overrides`, `draft_overrides` ao Browse |
+| **Stale `_loaded_df`** | `_restore_session_to_ui` não limpava `_loaded_df` antes de recarregar | Reset explícito de `_loaded_df = None` no início de `_restore_session_to_ui` |
+
+#### 5. Workspace list e outros fixes de UI
+
+- `_refresh_workspace_list`: glob `*.json` com filtro `version==2 + data_source` em vez de `preview_workspace*.json`. Encontra qualquer workspace salvo com nome livre (ex: `NANUM_W_COMBUSTION.json`).
+- `_open_exclusions_review`: rebuild da tabela a cada restore, render imediato, botão Restore All com confirmação.
+- Crash "no attribute `_presets_file_path`": substituído por `_workspace_file_path()` em `_get_exclusion_store`.
+- Thumbnails: `_invalidate_thumb_cache` reseta `_thumb_items_snapshot` para forçar rebuild ao trocar dataset.
+
+#### 6. Organização dos arquivos raw e open_to_csv
+
+- Skill `/organize-raw-files` organizou 222 xlsx + 223 .open em `raw_nanum_post_injector_fix_renamed_combustion/`.
+- Fix duplicação de sufixo `_i`: `open_to_csv.py` detectava `.open` → adicionava `_i` mesmo quando nome já tinha `_i`.
+- Fix detecção do `OpenToCSV.exe`: limpa path stale se arquivo não existe mais em disco.
+- ETA na barra de status durante conversão batch.
+
+### Sanity check das pastas raw
+
+| Subpasta | xlsx | .open | Status |
+|---|---|---|---|
+| Descendo_Baseline_2 | 15 | 15 | 4 pares ausentes (0–7.5 kW) |
+| Descendo_Baseline_3 | 18 | 18 | 0 kW ausente |
+| Subindo_Baseline_2 | 18 | 19 | xlsx 35 kW ausente (.open existe) |
+| Outras 9 | 19 | 19 | ✓ completo |
+
+### Estado dos arquivos de saída
+
+| Arquivo | Linhas | ADTV Sub 1 | Uso |
+|---|---|---|---|
+| `out_.../lv_kpis_clean.xlsx` (14:08) | 222 | ✓ presente | Raw — referência pré-exclusão |
+| `out_excl.../lv_kpis_clean.xlsx` (15:27) | 203 | ✗ ausente | Excl — para cálculos e comparações |
+
+### Arquivos novos/modificados de código
+
+| Arquivo | Tipo | Mudança principal |
+|---|---|---|
+| `ui/preview_plot_tab.py` | modificado | Toggle Raw/Excl, compare auto-detect, workspace robustness, exclusão bugs |
+| `ui/point_exclusion.py` | modificado | ExclusionKey com y_col, remove_all, active_keys_for_ycol |
+| `ui/legacy/pipeline29_config_gui.py` | modificado | Seletor de exclusion list no Sweep Helper, exclusion_list_path para run |
+| `runtime/exclusion_runner.py` | **novo** | Carrega JSON de exclusão e filtra DataFrame ponto por (BaseName, Load_kW) |
+| `runtime/context.py` | modificado | Campo `exclusion_list_path: Optional[Path]` |
+| `runtime/runner.py` | modificado | Kwarg `exclusion_list_path` + leitura do módulo plot_point_filter |
+| `runtime/stages/compute_trechos_ponto.py` | modificado | Aplica exclusion_list_path após compute_ponto_stats |
+| `runtime/stages/compute_compare_iteracoes.py` | modificado | Embeds sheet "compare" em lv_kpis_clean.xlsx |
+| `runtime/plot_point_filter.py` | modificado | Popup exclusion list no "Gerar gráficos", variável de módulo `_runtime_exclusion_list_path` |
+| `adapters/open_to_csv.py` | modificado | Fix sufixo _i duplo, fix stale settings, ETA |
+
+### Validação final
+
+- `python -m unittest discover -s tests -p "test_*.py"` → 446 testes, 10 erros pré-existentes (bridges legacy). Sem novas regressões.
+- `python -m py_compile` → OK em todos os arquivos modificados.
+- Validação headless com dados reais: toggle raw=222/excl=203, ADTV Sub 1 presente/ausente corretamente, Air_kg_h 222/203 pontos.
+- ExcelWriter append write+read roundtrip: Sheet1 intacta, compare sheet com schema correto.
+
+### Próximos passos sugeridos
+
+1. Rodar próximo `Save & Run` com `exclusion_list_1.json` selecionada no Sweep Helper para gerar `lv_kpis_clean.xlsx` com a sheet "compare" embutida.
+2. Abrir o `lv_kpis_clean.xlsx` novo no Preview Plot — compare mode deve ativar automaticamente sem Browse extra.
+3. Usar o toggle raw/excl para comparar todas as métricas com e sem ADTV Sub 1.
+4. Avaliar se `Descendo_Baseline_2` (faltam 0–7.5 kW) e `Subindo_Baseline_2` (xlsx 35 kW ausente) precisam de medições complementares ou serão tratados como dados incompletos na campanha.

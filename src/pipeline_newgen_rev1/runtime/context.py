@@ -34,6 +34,7 @@ class RuntimeContext:
     plot_filter_prompt_func: Optional[Callable[..., Any]] = None
     plot_scope: str = "all"
     compare_iter_pairs_override: Optional[str] = None
+    exclusion_list_path: Optional[Path] = None
 
     # --- Populated by stages ---
     bundle: Optional[ConfigBundle] = None
@@ -116,6 +117,7 @@ class RuntimeContext:
         runtime_dirs_prompt_func: Optional[PromptRuntimeDirsFunc] = None,
         plot_filter_prompt_func: Optional[Callable[..., Any]] = None,
         sweep_dup_prompt_func: Optional[Callable[..., Any]] = None,
+        exclusion_list_path: Optional[Path] = None,
     ) -> "RuntimeContext":
         return cls(
             project_root=Path(project_root).expanduser().resolve(),
@@ -131,4 +133,5 @@ class RuntimeContext:
             runtime_dirs_prompt_func=runtime_dirs_prompt_func,
             plot_filter_prompt_func=plot_filter_prompt_func,
             sweep_dup_prompt_func=sweep_dup_prompt_func,
+            exclusion_list_path=exclusion_list_path,
         )

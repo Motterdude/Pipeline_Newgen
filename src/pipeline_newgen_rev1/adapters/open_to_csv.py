@@ -109,7 +109,12 @@ def find_open_to_csv_path(explicit_path: Optional[Path] = None, *, settings_path
 
     saved_candidate = _saved_open_to_csv_path(settings_path)
     if saved_candidate is not None:
-        candidates.append(saved_candidate)
+        if saved_candidate.exists():
+            candidates.append(saved_candidate)
+        else:
+            settings = load_open_to_csv_settings(settings_path)
+            settings.pop("open_to_csv_path", None)
+            save_open_to_csv_settings(settings, settings_path)
 
     for default_candidate in DEFAULT_OPENTOCSV_CANDIDATES:
         candidates.append(default_candidate)
@@ -211,7 +216,10 @@ def _default_output_name(source_open: Path, *, name_mode: str, export_type: str)
     if name_mode == "pipeline":
         if export_type != "res":
             raise ValueError("name_mode='pipeline' exige export_type='res'.")
-        return f"{source_open.stem}{PIPELINE_RESULT_SUFFIX}"
+        stem = source_open.stem
+        if stem.endswith("_i"):
+            return f"{stem}.csv"
+        return f"{stem}{PIPELINE_RESULT_SUFFIX}"
     return f"{source_open.stem}.csv"
 
 

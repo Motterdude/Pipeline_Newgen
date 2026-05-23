@@ -4,9 +4,12 @@ import argparse
 import difflib
 import fnmatch
 import json
+import logging
+import logging.handlers
 import os
 import re
 import sys
+import traceback
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -162,7 +165,7 @@ DEFAULT_FIELD_SPECS_BY_SECTION: Dict[str, List[Dict[str, Any]]] = {
         {"name": "enabled", "kind": "combo", "options": ["1", "0"]},
         {"name": "with_uncertainty", "kind": "checkbox"},
         {"name": "without_uncertainty", "kind": "checkbox"},
-        {"name": "plot_type", "kind": "combo", "options": ["all_fuels_yx", "all_fuels_xy", "all_fuels_labels", "kibox_all"]},
+        {"name": "plot_type", "kind": "combo", "options": ["all_fuels_yx", "all_fuels_xy", "all_fuels_labels", "all_iterations_yx", "all_fuels_delta_ref", "kibox_all"]},
         {"name": "filename", "kind": "text"},
         {"name": "title", "kind": "text"},
         {"name": "x_col", "kind": "variable"},
@@ -1357,6 +1360,53 @@ class ConfigRowDialog(QDialog):
         return out
 
 
+def _show_exclusion_list_preview(path: "Path", parent=None) -> None:
+    """Read-only dialog showing the contents of an exclusion list JSON."""
+    from PySide6.QtWidgets import (
+        QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem,
+        QHeaderView, QPushButton, QLabel, QHBoxLayout, QMessageBox,
+    )
+    try:
+        import json as _json
+        data = _json.loads(Path(path).read_text(encoding="utf-8"))
+        entries = data.get("exclusions", []) if isinstance(data, dict) else []
+    except Exception as exc:
+        QMessageBox.warning(parent, "Exclusion List", f"Erro ao ler arquivo:\n{exc}")
+        return
+
+    dlg = QDialog(parent)
+    dlg.setWindowTitle(f"Exclusion List — {path.name}  ({len(entries)} entradas)")
+    dlg.setMinimumSize(820, 440)
+    layout = QVBoxLayout(dlg)
+    lbl = QLabel(f"Arquivo: {path}\nEntradas: {len(entries)}")
+    lbl.setStyleSheet("font-size: 11px; color: #888;")
+    layout.addWidget(lbl)
+
+    table = QTableWidget()
+    table.setColumnCount(5)
+    table.setHorizontalHeaderLabels(["Serie", "Load (kW)", "Escopo", "Razao", "Data"])
+    table.setRowCount(len(entries))
+    table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
+    table.setEditTriggers(QTableWidget.NoEditTriggers)
+    for i, exc in enumerate(entries):
+        table.setItem(i, 0, QTableWidgetItem(str(exc.get("series_label", ""))))
+        lkw = exc.get("load_kw")
+        table.setItem(i, 1, QTableWidgetItem(f"{lkw:g}" if lkw is not None else ""))
+        scope = "GLOBAL" if str(exc.get("y_col", "")) == "*" else str(exc.get("y_col", ""))
+        table.setItem(i, 2, QTableWidgetItem(scope))
+        table.setItem(i, 3, QTableWidgetItem(str(exc.get("reason", ""))))
+        table.setItem(i, 4, QTableWidgetItem(str(exc.get("excluded_at", ""))[:16]))
+    layout.addWidget(table)
+
+    btn_row = QHBoxLayout()
+    btn_row.addStretch()
+    btn_close = QPushButton("Fechar")
+    btn_close.clicked.connect(dlg.accept)
+    btn_row.addWidget(btn_close)
+    layout.addLayout(btn_row)
+    dlg.exec()
+
+
 class Pipeline30SweepHelperDialog(QDialog):
     def __init__(
         self,
@@ -1370,6 +1420,7 @@ class Pipeline30SweepHelperDialog(QDialog):
         variable_catalog_provider: Callable[[], List[str]],
         scan_callback: Callable[[Path], Dict[str, Any]],
         convert_callback: Callable[[Path], Dict[str, Any]],
+        config_dir: Optional[Path] = None,
         parent: Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent)
@@ -1377,6 +1428,7 @@ class Pipeline30SweepHelperDialog(QDialog):
         self.scan_callback = scan_callback
         self.convert_callback = convert_callback
         self._current_scan = dict(initial_scan or {})
+        self._config_dir = config_dir
         self._input_dir = Path(input_dir).expanduser().resolve()
         self._out_dir = Path(out_dir).expanduser().resolve()
 
@@ -1416,6 +1468,8 @@ class Pipeline30SweepHelperDialog(QDialog):
         self.bin_tol_edit.setText(str(initial_sweep_bin_tol or PIPELINE30_SWEEP_DEFAULT_BIN_TOL).strip() or PIPELINE30_SWEEP_DEFAULT_BIN_TOL)
         self.bin_tol_edit.setPlaceholderText(PIPELINE30_SWEEP_DEFAULT_BIN_TOL)
         form.addRow("Tolerancia do bin", self.bin_tol_edit)
+
+
         root.addLayout(form)
 
         action_row = QHBoxLayout()
@@ -1429,7 +1483,8 @@ class Pipeline30SweepHelperDialog(QDialog):
         helper_text = QLabel(
             "O dropdown de varredura mistura as colunas vistas nos arquivos brutos do LabVIEW/MoTeC com o catalogo atual "
             "de variaveis do editor. Em modo sweep, o pipeline30 usa essa coluna como eixo X e para o seletor de duplicatas por combustivel x valor de varredura. "
-            "A tolerancia do bin agrupa valores medidos proximos no mesmo lambda nominal."
+            "A tolerancia do bin agrupa valores medidos proximos no mesmo lambda nominal.\n"
+            "Exclusion list: pontos/series selecionados serao removidos antes do calculo de medias e derivados (KPIs)."
         )
         helper_text.setWordWrap(True)
         root.addWidget(helper_text)
@@ -1447,6 +1502,7 @@ class Pipeline30SweepHelperDialog(QDialog):
 
         self._refresh_scan_info(self._current_scan, initial_sweep_x_col or PIPELINE30_SWEEP_DEFAULT_X_COL)
         self._sync_mode_state()
+
 
     def _sync_mode_state(self) -> None:
         is_sweep = self.mode_combo.currentText().strip().lower() == "sweep"
@@ -1570,6 +1626,7 @@ class EditableTableSection(QWidget):
         self.auto_sort_column = auto_sort_column
         self.status_callback = status_callback
         self.add_row_dialog_factory = add_row_dialog_factory
+        self.on_rows_changed: Optional[Callable[[], None]] = None
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
@@ -1666,6 +1723,8 @@ class EditableTableSection(QWidget):
             if values is None:
                 return
         self._insert_row(values)
+        if self.on_rows_changed is not None:
+            self.on_rows_changed()
 
     def load_records(self, records: List[Dict[str, Any]]) -> None:
         self.table.setRowCount(0)
@@ -1678,6 +1737,8 @@ class EditableTableSection(QWidget):
         rows = sorted({item.row() for item in self.table.selectedItems()}, reverse=True)
         for row in rows:
             self.table.removeRow(row)
+        if self.on_rows_changed is not None:
+            self.on_rows_changed()
 
     def duplicate_selected_rows(self) -> None:
         rows = sorted({item.row() for item in self.table.selectedItems()})
@@ -1991,6 +2052,7 @@ class Pipeline29ConfigEditor(QMainWindow):
         self.btn_load_preset.clicked.connect(self.load_preset)
         self.tabs.currentChanged.connect(self._handle_tab_changed)
         self.plots_table.table.itemSelectionChanged.connect(self._sync_preview_from_plots_selection)
+        self.plots_table.on_rows_changed = lambda: self.preview_plot_tab.refresh_plot_selector()
 
         self._load_initial_bundle()
         self.reload_variable_catalog(show_message=False)
@@ -2079,10 +2141,21 @@ class Pipeline29ConfigEditor(QMainWindow):
 
         errors: List[str] = []
         QApplication.setOverrideCursor(Qt.WaitCursor)
+        import time as _time
+        _t_start = _time.perf_counter()
         try:
             for idx, source_open in enumerate(missing_files, start=1):
                 planned_path = _planned_pipeline_csv_path_for_open(source_open)
-                self._show_status(f"Convertendo .open [{idx}/{len(missing_files)}]: {source_open.name}")
+                elapsed = _time.perf_counter() - _t_start
+                if idx > 1:
+                    avg_per_file = elapsed / (idx - 1)
+                    remaining = avg_per_file * (len(missing_files) - idx + 1)
+                    eta_min = int(remaining // 60)
+                    eta_sec = int(remaining % 60)
+                    eta_str = f" | ETA: {eta_min}m{eta_sec:02d}s" if eta_min > 0 else f" | ETA: {eta_sec}s"
+                else:
+                    eta_str = ""
+                self._show_status(f"Convertendo .open [{idx}/{len(missing_files)}]: {source_open.name}{eta_str}")
                 QApplication.processEvents()
                 result = export_open_file(
                     ExportRequest(
@@ -2156,6 +2229,7 @@ class Pipeline29ConfigEditor(QMainWindow):
             variable_catalog_provider=self._available_variable_catalog,
             scan_callback=self._scan_pipeline30_sweep_dir,
             convert_callback=self._convert_pipeline30_missing_open_files,
+            config_dir=self._current_config_dir(),
             parent=self,
         )
         if dialog.exec() != QDialog.Accepted:
@@ -2309,6 +2383,9 @@ class Pipeline29ConfigEditor(QMainWindow):
         preview_df = self._current_preview_output_df()
         if preview_df is not None and not preview_df.empty:
             names.update([str(name).strip() for name in preview_df.columns if str(name).strip()])
+        preview_plot_df = getattr(self.preview_plot_tab, "_loaded_df", None)
+        if preview_plot_df is not None and not preview_plot_df.empty:
+            names.update([str(c).strip() for c in preview_plot_df.columns if str(c).strip()])
         names.update(_expected_uncertainty_columns(self.mappings_table.records(), self.instruments_table.records()))
         for table_section, columns in (
             (self.mappings_table, SEARCHABLE_COLUMNS_BY_SECTION.get("Mappings", set())),
@@ -2405,7 +2482,13 @@ class Pipeline29ConfigEditor(QMainWindow):
             suggestion = _build_axis_suggestion(self.variable_preview_df, y_text)
             if suggestion is not None:
                 suggestion["unit"] = unit
-            return suggestion
+                return suggestion
+        preview_plot_df = getattr(self.preview_plot_tab, "_loaded_df", None)
+        if preview_plot_df is not None and not preview_plot_df.empty:
+            suggestion = _build_axis_suggestion(preview_plot_df, y_text)
+            if suggestion is not None:
+                suggestion["unit"] = unit
+                return suggestion
         return None
 
     def _open_row_helper(
@@ -2531,7 +2614,8 @@ class Pipeline29ConfigEditor(QMainWindow):
             self._fuel_color_buttons[fuel_label].setStyleSheet(f"background-color: {hex_val};")
 
     def _show_status(self, message: str) -> None:
-        self.status.showMessage(message, 12000)
+        if hasattr(self, "status") and self.status is not None:
+            self.status.showMessage(message, 12000)
 
     def reload_variable_catalog(self, *, show_message: bool = True) -> None:
         path = self._current_variable_source_path()
@@ -2708,11 +2792,57 @@ class Pipeline29ConfigEditor(QMainWindow):
             pass
 
 
+def _setup_gui_logging(log_dir: Path) -> None:
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / "gui_error.log"
+    handler = logging.handlers.RotatingFileHandler(
+        log_path, maxBytes=2_000_000, backupCount=3, encoding="utf-8",
+    )
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+    root_logger.addHandler(handler)
+
+    _original_excepthook = sys.excepthook
+
+    def _log_uncaught(exc_type, exc_value, exc_tb):
+        if exc_type is KeyboardInterrupt:
+            _original_excepthook(exc_type, exc_value, exc_tb)
+            return
+        msg = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
+        logging.critical("Uncaught exception:\n%s", msg)
+        _original_excepthook(exc_type, exc_value, exc_tb)
+
+    sys.excepthook = _log_uncaught
+
+    try:
+        from PySide6.QtCore import qInstallMessageHandler, QtMsgType
+
+        def _qt_msg_handler(mode, _context, message):
+            level = {
+                QtMsgType.QtDebugMsg: logging.DEBUG,
+                QtMsgType.QtInfoMsg: logging.INFO,
+                QtMsgType.QtWarningMsg: logging.WARNING,
+                QtMsgType.QtCriticalMsg: logging.ERROR,
+                QtMsgType.QtFatalMsg: logging.CRITICAL,
+            }.get(mode, logging.WARNING)
+            logging.log(level, "[Qt] %s", message)
+
+        qInstallMessageHandler(_qt_msg_handler)
+    except Exception:
+        pass
+
+    logging.info("GUI session started — log: %s", log_path)
+
+
 def launch_config_gui(*, base_dir: Path, config_dir: Optional[Path] = None, excel_path: Optional[Path] = None) -> int:
+    resolved_config_dir = (config_dir or default_text_config_dir(base_dir)).resolve()
+    _setup_gui_logging(resolved_config_dir)
+
     app = QApplication.instance() or QApplication(["pipeline29-config-gui"])
     window = Pipeline29ConfigEditor(
         base_dir=base_dir,
-        config_dir=(config_dir or default_text_config_dir(base_dir)).resolve(),
+        config_dir=resolved_config_dir,
         excel_path=(excel_path or (base_dir / "config" / "config_incertezas_rev3.xlsx")).resolve(),
     )
     previous_quit_on_close = app.quitOnLastWindowClosed()
@@ -2722,6 +2852,7 @@ def launch_config_gui(*, base_dir: Path, config_dir: Optional[Path] = None, exce
         exit_code = app.exec()
     finally:
         app.setQuitOnLastWindowClosed(previous_quit_on_close)
+        logging.info("GUI session ended (exit_code=%s)", exit_code)
     requested_exit_code = getattr(window, "_requested_exit_code", None)
     if requested_exit_code is not None and exit_code == 0:
         return int(requested_exit_code)

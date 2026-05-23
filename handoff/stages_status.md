@@ -40,7 +40,7 @@ Legenda:
 |---|---|---|---|---|---|
 | Diagnóstico de tempo (compute + xlsx) | `run_time_diagnostics` | 🟢 | `runtime/time_diagnostics/` + `runtime/stages/run_time_diagnostics.py` | `nanum_pipeline_29.py::build_time_diagnostics` + `summarize_time_diagnostics` | 2026-04-25 — 3 fases: compute only, sem PNGs |
 | Diagnóstico de tempo (PNGs) | `plot_time_diagnostics` | 🟢 | `runtime/stages/plot_time_diagnostics.py` | (extraído de run_time_diagnostics) | 2026-04-25 — split para fase PLOTTING |
-| Agregação por trechos e pontos | `compute_trechos_ponto` | 🟢 | `runtime/trechos_ponto/` + `runtime/stages/compute_trechos_ponto.py` | `nanum_pipeline_29.py::compute_trechos_stats` + `compute_ponto_stats` | 2026-04-24 — Passo 3b.2 (port nativo) |
+| Agregação por trechos e pontos | `compute_trechos_ponto` | 🟢 | `runtime/trechos_ponto/` + `runtime/stages/compute_trechos_ponto.py` | `nanum_pipeline_29.py::compute_trechos_stats` + `compute_ponto_stats` | 2026-05-23 — aplica exclusion_list_path antes de ctx.ponto |
 | Consulta de propriedades do combustível (LHV/densidade/custo) | `prepare_upstream_frames` | 🟢 | `runtime/fuel_properties.py` + `runtime/stages/prepare_upstream_frames.py` | `nanum_pipeline_29.py::load_fuel_properties_lookup` | 2026-04-24 — Passo 3b.3 (port nativo) |
 | Agregação KiBox por ponto | `prepare_upstream_frames` | 🟢 | `runtime/stages/prepare_upstream_frames.py` | `nanum_pipeline_29.py::kibox_aggregate` | 2026-04-24 — Passo 3b.3 (port nativo) |
 | Regra de vazão de ar (MAF vs consumo+lambda) | — | 🟢 | `runtime/final_table/_airflow.py` | `nanum_pipeline_29.py` (fluxo airflow) | 2026-04-24 — port build_final_table |
@@ -62,7 +62,7 @@ Legenda:
 | Dispatcher de plots | — | 🟢 | `runtime/unitary_plots/dispatch.py` | `nanum_pipeline_29.py::make_plots_from_config_with_summary` | 2026-04-24 — port nativo |
 | Plots unitários | `run_unitary_plots` | 🟢 | `runtime/unitary_plots/` + `runtime/stages/run_unitary_plots.py` | `nanum_pipeline_29.py::make_plots_from_config_with_summary` | 2026-04-24 — port nativo (subpacote 5 módulos) |
 | Plots compare (subida × descida) | `run_compare_plots` | 🟢 | `runtime/compare_plots.py` + `runtime/stages/run_compare_plots.py` | `nanum_pipeline_29.py::iter_compare_plot_groups` | 2026-04-25 — port nativo |
-| Compute compare_iteracoes (deltas + incertezas + xlsx) | `compute_compare_iteracoes` | 🟢 | `runtime/compare_iteracoes/` + `runtime/stages/compute_compare_iteracoes.py` | `nanum_pipeline_29.py::_plot_compare_iteracoes_bl_vs_adtv` (parte dados) | 2026-04-25 — generalizado para fuel mode via CampaignCatalog |
+| Compute compare_iteracoes (deltas + incertezas + xlsx) | `compute_compare_iteracoes` | 🟢 | `runtime/compare_iteracoes/` + `runtime/stages/compute_compare_iteracoes.py` | `nanum_pipeline_29.py::_plot_compare_iteracoes_bl_vs_adtv` (parte dados) | 2026-05-23 — embeds sheet "compare" em lv_kpis_clean.xlsx (auto-detectada pelo Preview Plot) |
 | Plot compare_iteracoes (PNGs absolutos + delta) | `plot_compare_iteracoes` | 🟢 | `runtime/compare_iteracoes/plot_*.py` + `runtime/stages/plot_compare_iteracoes.py` | `nanum_pipeline_29.py::_plot_compare_iteracoes_bl_vs_adtv` (parte plot) | 2026-04-25 — port nativo (3 fases) |
 | Plots especiais de load (ethanol_equivalent, máquinas) | `run_special_load_plots` | 🟢 | `runtime/special_load_plots/` + `runtime/stages/run_special_load_plots.py` | `nanum_pipeline_30.py::_plot_ethanol_equivalent_*` + `_plot_machine_scenario_suite` | 2026-04-25 — port nativo |
 | Plot_scope gating (`all`/`unitary`/`compare`/`none`) | — | 🟢 | `runner.py` (`_PLOT_SCOPE_INCLUDE`) + `cli.py` (`--plot-scope`) | `nanum_pipeline_29.py::main` — `--plot-scope` | 2026-04-25 — CLI + runner |
@@ -79,7 +79,9 @@ Legenda:
 
 | Estação | Estado | newgen | Âncora legado | Última mudança |
 |---|---|---|---|---|
-| GUI de configuração (PySide6, abas Defaults/Data Quality/Mappings/Instruments/Reporting/Plots/Campanha/Fuel Properties/Variable Source/Sweep-Load) | 🟢 evoluindo | `ui/legacy/pipeline29_config_gui.py` + `ui/campaign_planner_tab.py` | `pipeline29_config_gui.py` + `pipeline29_config_backend.py` | 2026-04-25 — aba Compare → Campanha |
+| GUI de configuração (PySide6, abas Defaults/Data Quality/Mappings/Instruments/Reporting/Plots/Campanha/Fuel Properties/Variable Source/Sweep-Load) | 🟢 evoluindo | `ui/legacy/pipeline29_config_gui.py` + `ui/campaign_planner_tab.py` | `pipeline29_config_gui.py` + `pipeline29_config_backend.py` | 2026-05-23 — seletor de exclusion list no Sweep Helper, exclusion_list_path para run |
+| Preview Plot (aba inline matplotlib: browse, toggle raw/excl, compare auto-detect, exclusão interativa, workspaces, thumbnails) | 🟢 evoluindo | `ui/preview_plot_tab.py` + `ui/point_exclusion.py` | — (nativa) | 2026-05-23 — toggle raw/excl, compare sheet embed, workspace robustness |
+| Filtro de exclusão de pontos no pipeline (exclusion_runner) | 🟢 | `runtime/exclusion_runner.py` | — (nativa) | 2026-05-23 — novo módulo: carrega JSON e filtra ponto DataFrame |
 | Save & Run → executor migrado | 🟢 | ligação feita | exit code 1001 + `load_gui_state` | 2026-04-23 |
 | CLI (`show-plan`, `discover-inputs`, `inspect-*`, `run-load-sweep`, `launch-config-gui`, `convert-open`, `scan-preflight`, `show-runtime-state`, `inspect-config`) | 🟢 básico | `cli.py` | — | 2026-04-23 |
 | CLI flag `--plot-scope` | 🟢 | `cli.py` + `runner.py` | `nanum_pipeline_29.py` argparse | 2026-04-25 |

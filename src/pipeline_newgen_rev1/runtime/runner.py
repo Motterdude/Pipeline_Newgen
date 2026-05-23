@@ -151,6 +151,11 @@ def _discover_and_read_inputs(ctx: RuntimeContext) -> None:
             lv_files,
             prompt_func=ctx.plot_filter_prompt_func,
         )
+        from .plot_point_filter import get_runtime_exclusion_list_path
+        excl_from_dialog = get_runtime_exclusion_list_path()
+        if excl_from_dialog is not None and excl_from_dialog.exists():
+            ctx.exclusion_list_path = excl_from_dialog
+            print(f"[INFO] Exclusion list selecionada no dialog: {excl_from_dialog.name}")
     elif ctx.normalized_state.selection.aggregation_mode == "sweep":
         print("[INFO] Modo sweep ativo: pulando o filtro de pontos Fuel x Load do fluxo convencional.")
 
@@ -318,6 +323,7 @@ def run_load_sweep(
     compare_iter_pairs: Optional[str] = None,
     aggregation_mode_override: Optional[str] = None,
     sweep_bin_tol_override: Optional[float] = None,
+    exclusion_list_path: Optional[Path] = None,
 ) -> RuntimeExecutionResult:
     ctx = RuntimeContext.from_kwargs(
         project_root=project_root,
@@ -333,6 +339,7 @@ def run_load_sweep(
         runtime_dirs_prompt_func=_runtime_dirs_prompt_func,
         plot_filter_prompt_func=_plot_filter_prompt_func,
         sweep_dup_prompt_func=_sweep_dup_prompt_func,
+        exclusion_list_path=exclusion_list_path,
     )
 
     ctx.plot_scope = plot_scope if plot_scope in _PLOT_SCOPE_INCLUDE else "all"

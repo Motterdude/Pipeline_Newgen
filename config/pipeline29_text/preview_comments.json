@@ -1,0 +1,18 @@
+{
+  "__default__": {
+    "text": "negativo melhor",
+    "font_size": 9,
+    "bold": false,
+    "italic": true,
+    "color": "#333333",
+    "position": "bottom-left"
+  },
+  "Nanum_Compare_Novo": {
+    "text": "Valor negativo mostra melhora de consumo com aditivo.",
+    "font_size": 9,
+    "bold": false,
+    "italic": true,
+    "color": "#000000",
+    "position": "bottom-left"
+  }
+}
