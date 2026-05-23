@@ -4,6 +4,7 @@ Ordem cronológica inversa. Uma linha por sessão. Detalhe completo em `handoff/
 
 ## 2026-05
 
+- **2026-05-23** — [session-mega-gui-improvements](changes/2026-05-23-session-mega-gui-improvements.md) — CONSOLIDADO: 14 fixes/features na GUI (exclusões globais, workspace persistente, KIBOX, lazy load, sync Plots↔Preview, logging). Ver arquivo para detalhes.
 - **2026-05-23** — [plots-kibox-dropdown-and-preview-sync](changes/2026-05-23-plots-kibox-dropdown-and-preview-sync.md) — Dropdown do Plots tab inclui colunas KIBOX; Preview Plot auto-atualiza ao editar Plots tab.
 - **2026-05-23** — [global-exclusion-and-collapsible-review](changes/2026-05-23-global-exclusion-and-collapsible-review.md) — Exclusões agora globais (ponto excluído some de todos os plots); review dialog com QTreeWidget colapsável por série; migração v3.
 - **2026-05-23** — [fix-excl-duplicate-prompt-and-gui-logging](changes/2026-05-23-fix-excl-duplicate-prompt-and-gui-logging.md) — Remove excl list duplicada do Helper; gui_error.log rotativo; gráficos 10×6; fix layout empurrando botões; fix Y scale ignorando preset salvo.
