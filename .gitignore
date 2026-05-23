@@ -15,9 +15,14 @@ Thumbs.db
 state/
 .claude/settings.local.json
 
+# Runtime logs (machine-specific, rotated)
+gui_error.log*
+config/*/gui_error.log*
+
 # Data folders (raw inputs and outputs — machine-specific, not tracked)
 raw_*/
 Out_*/
+out_*/
 out_*/
 *.bak_*
 
