@@ -97,13 +97,16 @@ def build_final_table(
         df = df.drop(columns=drop_now)
 
     ai90_col = _find_kibox_col_by_tokens(df, ["ai", "90"])
+    ai50_col = _find_kibox_col_by_tokens(df, ["ai", "50"])
     ai10_col = _find_kibox_col_by_tokens(df, ["ai", "10"])
-    if ai90_col and ai10_col:
-        df["MFB_10_90"] = pd.to_numeric(df[ai90_col], errors="coerce") - pd.to_numeric(df[ai10_col], errors="coerce")
-    else:
-        df["MFB_10_90"] = pd.NA
-        if not ai90_col or not ai10_col:
-            print(f"[WARN] Nao calculei MFB_10_90: ai90_col={ai90_col}, ai10_col={ai10_col}")
+    ai90_v = pd.to_numeric(df[ai90_col], errors="coerce") if ai90_col else pd.Series(pd.NA, index=df.index)
+    ai50_v = pd.to_numeric(df[ai50_col], errors="coerce") if ai50_col else pd.Series(pd.NA, index=df.index)
+    ai10_v = pd.to_numeric(df[ai10_col], errors="coerce") if ai10_col else pd.Series(pd.NA, index=df.index)
+    df["MFB_10_90"] = ai90_v - ai10_v
+    df["MFB_10_50"] = ai50_v - ai10_v
+    df["MFB_50_90"] = ai90_v - ai50_v
+    if not ai90_col or not ai10_col:
+        print(f"[WARN] MFB parcial: ai90={ai90_col}, ai50={ai50_col}, ai10={ai10_col}")
 
     # --- 3. Uncertainties from instruments ---
     N = pd.to_numeric(df["N_trechos_validos"], errors="coerce")

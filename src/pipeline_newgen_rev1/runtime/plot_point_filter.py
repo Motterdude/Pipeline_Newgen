@@ -71,6 +71,21 @@ def get_runtime_exclusion_list_path() -> Optional[Path]:
     return _runtime_exclusion_list_path
 
 
+def _find_config_dir_for_exclusion_scan() -> Path:
+    """Best-effort discovery of the config dir containing exclusion list JSONs."""
+    candidates = [
+        Path.cwd() / "config" / "pipeline29_text",
+        Path(__file__).resolve().parents[3] / "config" / "pipeline29_text",
+    ]
+    state = load_plot_point_filter_state()
+    if state and state.get("_config_dir"):
+        candidates.insert(0, Path(state["_config_dir"]))
+    for c in candidates:
+        if c.is_dir():
+            return c
+    return Path.cwd()
+
+
 def _canon_name(value: object) -> str:
     text = str(value).replace("\ufeff", "").strip().lower()
     text = unicodedata.normalize("NFKD", text)
@@ -529,26 +544,63 @@ def _prompt_plot_point_filter_catalog_via_qt(
         save_plot_point_filter_state(selected, available_points)
         selected_result["selected"] = selected
 
-        # Ask user about exclusion list before proceeding
-        reply = QMessageBox.question(
-            dialog,
-            "Exclusion list",
-            "Deseja aplicar uma lista de exclusao de pontos neste run?\n\n"
-            "Sim  →  selecionar arquivo e ver pontos excluidos\n"
-            "Nao  →  rodar sem exclusoes",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
-        )
-        if reply == QMessageBox.Yes:
-            path, _ = QFileDialog.getOpenFileName(
-                dialog,
-                "Selecionar exclusion list JSON",
-                "",
-                "JSON (*.json);;All files (*)",
+        # Ask user about exclusion list with quick-pick dialog
+        from .exclusion_runner import scan_exclusion_lists
+        config_dir = _find_config_dir_for_exclusion_scan()
+        available_lists = scan_exclusion_lists(config_dir)
+
+        excl_dlg = QDialog(dialog)
+        excl_dlg.setWindowTitle("Exclusion list")
+        excl_dlg.setMinimumWidth(450)
+        excl_layout = QVBoxLayout(excl_dlg)
+        excl_layout.addWidget(QLabel("Selecione uma lista de exclusoes ou rode sem:"))
+
+        from PySide6.QtWidgets import QListWidget, QListWidgetItem
+        excl_list_widget = QListWidget()
+        excl_list_widget.addItem("(nenhuma — rodar sem exclusoes)")
+        for ep in available_lists:
+            n_items = 0
+            try:
+                d = json.loads(ep.read_text(encoding="utf-8"))
+                n_items = len(d.get("exclusions", []))
+            except Exception:
+                pass
+            item = QListWidgetItem(f"{ep.name}  ({n_items} exclusoes)")
+            item.setData(Qt.ItemDataRole.UserRole, str(ep))
+            excl_list_widget.addItem(item)
+        excl_list_widget.setCurrentRow(0)
+        excl_layout.addWidget(excl_list_widget)
+
+        excl_btn_row = QHBoxLayout()
+        btn_browse_other = QPushButton("Browse outro...")
+        btn_excl_ok = QPushButton("OK")
+        btn_excl_ok.setDefault(True)
+        excl_btn_row.addWidget(btn_browse_other)
+        excl_btn_row.addStretch()
+        excl_btn_row.addWidget(btn_excl_ok)
+        excl_layout.addLayout(excl_btn_row)
+
+        def _browse_other():
+            p, _ = QFileDialog.getOpenFileName(
+                excl_dlg, "Selecionar exclusion list JSON",
+                str(config_dir), "JSON (*.json);;All files (*)",
             )
-            if path:
-                _runtime_exclusion_list_path = Path(path)
-                _show_exclusion_preview_qt(Path(path), parent=dialog)
+            if p:
+                item = QListWidgetItem(f"{Path(p).name}  (manual)")
+                item.setData(Qt.ItemDataRole.UserRole, p)
+                excl_list_widget.addItem(item)
+                excl_list_widget.setCurrentRow(excl_list_widget.count() - 1)
+
+        btn_browse_other.clicked.connect(_browse_other)
+        btn_excl_ok.clicked.connect(excl_dlg.accept)
+        excl_list_widget.itemDoubleClicked.connect(lambda _: excl_dlg.accept())
+
+        if excl_dlg.exec() == QDialog.Accepted:
+            sel = excl_list_widget.currentItem()
+            sel_path = sel.data(Qt.ItemDataRole.UserRole) if sel else None
+            if sel_path:
+                _runtime_exclusion_list_path = Path(sel_path)
+                _show_exclusion_preview_qt(Path(sel_path), parent=dialog)
             else:
                 _runtime_exclusion_list_path = None
         else:

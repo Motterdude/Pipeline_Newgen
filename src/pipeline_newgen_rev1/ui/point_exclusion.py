@@ -157,28 +157,29 @@ def apply_exclusions(
     """Filter out ALL excluded points globally. Returns a copy.
 
     Matches by:
-    1. (series_label, Load_kW) — works for all_iterations mode
-    2. (basename) — works regardless of plot_type or x_col
+    1. BaseName — works regardless of plot_type or x_col
+    2. (series_label, Load_kW) — fallback for all_iterations mode
     """
     if not store.count():
         return df
 
+    excluded_basenames = frozenset(e.basename for e in store.all_exclusions() if e.basename)
     keys = store.active_keys()
-    excluded_basenames = {e.basename for e in store.all_exclusions() if e.basename}
-
-    has_load = "Load_kW" in df.columns
-    load_rounded = pd.to_numeric(df["Load_kW"], errors="coerce").round(6) if has_load else pd.Series(dtype="float64")
-    has_basename = "BaseName" in df.columns
-    basenames = df["BaseName"].astype(str) if has_basename else pd.Series("", index=df.index)
 
     mask = pd.Series(True, index=df.index)
-    for idx in df.index:
-        if has_basename and basenames.at[idx] in excluded_basenames:
-            mask.at[idx] = False
-        elif has_load:
-            lbl = series_labels.get(idx, "")
-            lkw = load_rounded.get(idx)
-            if pd.notna(lkw) and (lbl, round(float(lkw), 6)) in keys:
-                mask.at[idx] = False
+
+    if "BaseName" in df.columns and excluded_basenames:
+        mask &= ~df["BaseName"].astype(str).isin(excluded_basenames)
+
+    if "Load_kW" in df.columns and keys:
+        load_rounded = pd.to_numeric(df["Load_kW"], errors="coerce").round(6)
+        pairs = set(zip(series_labels, load_rounded))
+        hit_keys = pairs & keys
+        if hit_keys:
+            pair_mask = pd.Series(
+                [(lbl, lkw) in hit_keys for lbl, lkw in zip(series_labels, load_rounded)],
+                index=df.index,
+            )
+            mask &= ~pair_mask
 
     return df.loc[mask].copy()

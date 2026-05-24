@@ -2811,7 +2811,7 @@ def _setup_gui_logging(log_dir: Path) -> None:
     )
     handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
+    root_logger.setLevel(logging.WARNING)
     root_logger.addHandler(handler)
 
     _original_excepthook = sys.excepthook

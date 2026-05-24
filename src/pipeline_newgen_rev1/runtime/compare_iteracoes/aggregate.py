@@ -112,10 +112,19 @@ def mean_subida_descida(df: pd.DataFrame, *, value_name: str) -> pd.DataFrame:
 
     sub = df[df["_sentido_plot"].eq("subida")].copy()
     des = df[df["_sentido_plot"].eq("descida")].copy()
-    if sub.empty or des.empty:
+    if sub.empty and des.empty:
         return pd.DataFrame(columns=out_cols)
 
-    m = sub.merge(des, on=["_campaign_bl_adtv", "Load_kW"], how="inner", suffixes=("_sub", "_des"))
+    if sub.empty:
+        m = des.rename(columns={c: f"{c}_des" for c in des.columns if c not in ("_campaign_bl_adtv", "Load_kW")})
+        for c in [value_name, f"uA_{value_name}", f"uB_{value_name}", f"uc_{value_name}", f"U_{value_name}", "n_points"]:
+            m[f"{c}_sub"] = pd.NA
+    elif des.empty:
+        m = sub.rename(columns={c: f"{c}_sub" for c in sub.columns if c not in ("_campaign_bl_adtv", "Load_kW")})
+        for c in [value_name, f"uA_{value_name}", f"uB_{value_name}", f"uc_{value_name}", f"U_{value_name}", "n_points"]:
+            m[f"{c}_des"] = pd.NA
+    else:
+        m = sub.merge(des, on=["_campaign_bl_adtv", "Load_kW"], how="outer", suffixes=("_sub", "_des"))
     if m.empty:
         return pd.DataFrame(columns=out_cols)
 
@@ -133,24 +142,41 @@ def mean_subida_descida(df: pd.DataFrame, *, value_name: str) -> pd.DataFrame:
     U_sub = _num(f"U_{value_name}_sub")
     U_des = _num(f"U_{value_name}_des")
 
+    both = value_sub.notna() & value_des.notna()
+    only_sub = value_sub.notna() & value_des.isna()
+    only_des = value_sub.isna() & value_des.notna()
+
     out = pd.DataFrame()
     out["_campaign_bl_adtv"] = m["_campaign_bl_adtv"]
     out["Load_kW"] = pd.to_numeric(m["Load_kW"], errors="coerce")
-    out[value_name] = (value_sub + value_des) / 2.0
-    out[f"uA_{value_name}"] = (ua_sub**2 + ua_des**2) ** 0.5 / 2.0
-    out[f"uB_{value_name}"] = (ub_sub + ub_des) / 2.0
-    out[f"uc_{value_name}"] = (out[f"uA_{value_name}"] ** 2 + out[f"uB_{value_name}"] ** 2) ** 0.5
+    out[value_name] = pd.NA
+    out.loc[both, value_name] = (value_sub[both] + value_des[both]) / 2.0
+    out.loc[only_sub, value_name] = value_sub[only_sub]
+    out.loc[only_des, value_name] = value_des[only_des]
+
+    out[f"uA_{value_name}"] = pd.NA
+    out.loc[both, f"uA_{value_name}"] = (ua_sub[both]**2 + ua_des[both]**2) ** 0.5 / 2.0
+    out.loc[only_sub, f"uA_{value_name}"] = ua_sub[only_sub]
+    out.loc[only_des, f"uA_{value_name}"] = ua_des[only_des]
+
+    out[f"uB_{value_name}"] = pd.NA
+    out.loc[both, f"uB_{value_name}"] = (ub_sub[both] + ub_des[both]) / 2.0
+    out.loc[only_sub, f"uB_{value_name}"] = ub_sub[only_sub]
+    out.loc[only_des, f"uB_{value_name}"] = ub_des[only_des]
+
+    ua_out = pd.to_numeric(out[f"uA_{value_name}"], errors="coerce")
+    ub_out = pd.to_numeric(out[f"uB_{value_name}"], errors="coerce")
+    out[f"uc_{value_name}"] = (ua_out**2 + ub_out**2) ** 0.5
+    uc_fallback = pd.NA
+    uc_both = (uc_sub + uc_des) / 2.0
     out[f"uc_{value_name}"] = out[f"uc_{value_name}"].where(
         out[f"uc_{value_name}"].notna(),
-        (uc_sub + uc_des) / 2.0,
+        uc_both.where(both, uc_sub.where(only_sub, uc_des)),
     )
-    out[f"U_{value_name}"] = K_COVERAGE * out[f"uc_{value_name}"]
-    out[f"U_{value_name}"] = out[f"U_{value_name}"].where(
-        out[f"U_{value_name}"].notna(),
-        (U_sub + U_des) / 2.0,
-    )
+    out[f"U_{value_name}"] = K_COVERAGE * pd.to_numeric(out[f"uc_{value_name}"], errors="coerce")
+
     out["n_points"] = (
-        pd.to_numeric(m["n_points_sub"], errors="coerce").fillna(0)
-        + pd.to_numeric(m["n_points_des"], errors="coerce").fillna(0)
+        pd.to_numeric(m.get("n_points_sub", 0), errors="coerce").fillna(0)
+        + pd.to_numeric(m.get("n_points_des", 0), errors="coerce").fillna(0)
     )
     return out[out_cols].sort_values("Load_kW").copy()

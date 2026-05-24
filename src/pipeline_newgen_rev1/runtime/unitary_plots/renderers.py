@@ -33,14 +33,16 @@ def _add_y_tolerance_guides(
     y_tol_plus: object,
     y_tol_minus: object,
 ) -> int:
-    tp = _normalize_tol_value(y_tol_plus)
-    tm = _normalize_tol_value(y_tol_minus)
     n = 0
-    if tp > 0:
-        ax.axhline(tp, color="red", linestyle="--", linewidth=1.2, label=f"limite +{tp:g}")
+    tp = _to_float(y_tol_plus, float("nan"))
+    tm = _to_float(y_tol_minus, float("nan"))
+    if np.isfinite(tp):
+        ax.axhline(tp, color="red", linestyle="--", linewidth=1.4,
+                   dash_capstyle="butt", label=f"tol {tp:g}")
         n += 1
-    if tm > 0:
-        ax.axhline(-tm, color="red", linestyle="--", linewidth=1.2, label=f"limite -{tm:g}")
+    if np.isfinite(tm):
+        ax.axhline(tm, color="red", linestyle="--", linewidth=1.4,
+                   dash_capstyle="butt", label=f"tol {tm:g}")
         n += 1
     return n
 

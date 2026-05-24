@@ -412,6 +412,16 @@ class PreviewPlotTab(QWidget):
         self._hover_last_event = None
         self._hover_tooltip: Optional[QLabel] = None
 
+        # Comment tracking: only persist when explicitly edited
+        self._comment_dirty: bool = False
+
+        # Y-axis drag rescale
+        self._ydrag_active: bool = False
+        self._ydrag_start_y: float = 0.0
+        self._ydrag_line_lo = None
+        self._ydrag_line_hi = None
+        self._yscale_history: List[Tuple[str, str, str]] = []
+
         # Raw / Excl toggle data sources
         self._raw_path: Optional[Path] = None
         self._raw_df: Optional[pd.DataFrame] = None
@@ -622,6 +632,12 @@ class PreviewPlotTab(QWidget):
         left_form.addRow("Metrica:", self.combo_compare_metric)
 
         self.combo_compare_pair = QComboBox()
+        self.combo_compare_pair.addItems([
+            "Todos (overlay)",
+            "Media vs Media",
+            "Subida vs Subida",
+            "Descida vs Descida",
+        ])
         self.combo_compare_pair.setVisible(False)
         left_form.addRow("Comparacao:", self.combo_compare_pair)
 
@@ -676,9 +692,15 @@ class PreviewPlotTab(QWidget):
         self.edit_y_max.setPlaceholderText("max")
         self.edit_y_step = QLineEdit()
         self.edit_y_step.setPlaceholderText("step")
+        self.btn_yscale_undo = QPushButton("↩")
+        self.btn_yscale_undo.setFixedWidth(26)
+        self.btn_yscale_undo.setToolTip("Voltar para escala Y anterior")
+        self.btn_yscale_undo.setEnabled(False)
+        self.btn_yscale_undo.clicked.connect(self._undo_yscale)
         y_axis_row.addWidget(self.edit_y_min)
         y_axis_row.addWidget(self.edit_y_max)
         y_axis_row.addWidget(self.edit_y_step)
+        y_axis_row.addWidget(self.btn_yscale_undo)
         y_axis_widget = QWidget()
         y_axis_widget.setLayout(y_axis_row)
         left_form.addRow("Y min/max/step:", y_axis_widget)
@@ -1434,20 +1456,15 @@ class PreviewPlotTab(QWidget):
                     and "Metrica" in self._loaded_df.columns
                     and "Comparacao" in self._loaded_df.columns):
                 self._load_compare_from_df(self._loaded_df, p)
-            # Populate _raw_df so the Raw/Excl toggle has a "raw" to work with.
-            # Only if _raw_df not already set by Browse Raw — avoid overwriting an
-            # intentional raw source with a secondary Browse.
-            if (self._loaded_df is not None and not self._loaded_df.empty
-                    and "Metrica" not in self._loaded_df.columns
-                    and self._raw_df is None):
+            # Update raw/excl paths to follow the new Browse target
+            if self._loaded_df is not None and not self._loaded_df.empty and "Metrica" not in self._loaded_df.columns:
                 self._raw_df = self._loaded_df
                 self._raw_path = self._loaded_path
-                mtime = time.strftime(
-                    "%Y-%m-%d %H:%M",
-                    time.localtime(self._loaded_path.stat().st_mtime),
-                )
-                shape_txt = f"{self._raw_df.shape[0]}r×{self._raw_df.shape[1]}c"
-                self.lbl_raw_data.setText(f"Raw: {p.name}  {shape_txt}  {mtime}")
+                self._excl_df = self._loaded_df
+                self._excl_path = self._loaded_path
+                mtime = time.strftime("%Y-%m-%d %H:%M", time.localtime(p.stat().st_mtime))
+                shape_txt = f"{self._loaded_df.shape[0]}r x {self._loaded_df.shape[1]}c"
+                self.lbl_raw_data.setText(f"Raw/Excl: {p.name}  {shape_txt}  {mtime}")
             self._schedule_render()
 
     def _reload_data(self) -> None:
@@ -1664,6 +1681,8 @@ class PreviewPlotTab(QWidget):
                 "x_max": self.edit_x_max.text().strip(),
                 "x_step": self.edit_x_step.text().strip(),
                 "show_uncertainty": "1" if self.chk_show_uncertainty.isChecked() else "0",
+                "y_tol_plus": self.edit_y_tol_plus.text().strip(),
+                "y_tol_minus": self.edit_y_tol_minus.text().strip(),
             }
         # Axis
         self._session["axis"] = {
@@ -1696,9 +1715,22 @@ class PreviewPlotTab(QWidget):
         self._session["active_mode"] = self.combo_plot_type.currentText()
         # Compare
         self._session["compare"]["active_metric"] = self.combo_compare_metric.currentText() or ""
-        # Comment (per-plot, keyed by current y_col or metric)
+        self._session["compare"]["active_pair"] = self.combo_compare_pair.currentText() or "Todos (overlay)"
+        if self.combo_plot_type.currentText() == "compare_bl_vs_adtv":
+            cmp_metric = self.combo_compare_metric.currentText()
+            if cmp_metric:
+                cmp_ys = self._session.get("y_scales", {}).get(cmp_metric, {})
+                cmp_ys.update({
+                    "y_tol_plus": self.edit_y_tol_plus.text().strip(),
+                    "y_tol_minus": self.edit_y_tol_minus.text().strip(),
+                })
+                cmp_ys.pop("title", None)
+                cmp_ys.pop("x_label_compare", None)
+                cmp_ys.pop("y_label_compare", None)
+                self._session["y_scales"][cmp_metric] = cmp_ys
+        # Comment (per-plot, keyed by current y_col or metric) — only if edited in this view
         cmt_key = self._current_y_scale_key()
-        if cmt_key and self._compare_comment_data.get("text"):
+        if cmt_key and self._comment_dirty and self._compare_comment_data.get("text"):
             self._session["comments"][cmt_key] = dict(self._compare_comment_data)
         # Series styles
         self._session["series_styles"] = dict(self._series_style_overrides)
@@ -1771,12 +1803,16 @@ class PreviewPlotTab(QWidget):
         idx_pt = self.combo_plot_type.findText(mode)
         if idx_pt >= 0:
             self.combo_plot_type.setCurrentIndex(idx_pt)
-        # Compare active metric
+        # Compare active metric + pair
         metric = s.get("compare", {}).get("active_metric", "")
         if metric and self.combo_compare_metric.count() > 0:
             idx_m = self.combo_compare_metric.findText(metric)
             if idx_m >= 0:
                 self.combo_compare_metric.setCurrentIndex(idx_m)
+        pair = s.get("compare", {}).get("active_pair", "Todos (overlay)")
+        idx_p = self.combo_compare_pair.findText(pair)
+        if idx_p >= 0:
+            self.combo_compare_pair.setCurrentIndex(idx_p)
         # Y scale for active context
         y_key = self._current_y_scale_key()
         if y_key and y_key in s.get("y_scales", {}):
@@ -1947,15 +1983,151 @@ class PreviewPlotTab(QWidget):
     # Hover tooltip
     # ------------------------------------------------------------------
 
+    # ------------------------------------------------------------------
+    # Y-axis drag rescale
+    # ------------------------------------------------------------------
+
+    def _is_in_yaxis_area(self, event) -> bool:
+        """Check if mouse is in the Y-axis margin (left of plot area)."""
+        if not self._current_fig or event.inaxes is not None:
+            return False
+        ax = self._current_fig.gca()
+        bbox = ax.get_window_extent()
+        return event.x is not None and event.x < bbox.x0 and bbox.y0 <= event.y <= bbox.y1
+
+    def _on_ydrag_press(self, event) -> None:
+        if event.button != 1:
+            return
+        if self._cursor_mode_active or self._exclusion_mode_active:
+            return
+        if not self._is_in_yaxis_area(event):
+            return
+        ax = self._current_fig.gca()
+        inv = ax.transData.inverted()
+        _, y_data = inv.transform((event.x, event.y))
+        self._ydrag_active = True
+        self._ydrag_start_y = y_data
+        self._ydrag_line_lo = ax.axhline(y_data, color="#ff6600", linestyle="--", linewidth=1.5, zorder=60)
+        self._ydrag_line_hi = ax.axhline(y_data, color="#ff6600", linestyle="--", linewidth=1.5, zorder=60)
+        self._canvas.draw_idle()
+
+    def _on_ydrag_move(self, event) -> None:
+        if not self._ydrag_active or event.y is None:
+            return
+        if not self._current_fig:
+            return
+        ax = self._current_fig.gca()
+        inv = ax.transData.inverted()
+        _, y_data = inv.transform((event.x or 0, event.y))
+        lo = min(self._ydrag_start_y, y_data)
+        hi = max(self._ydrag_start_y, y_data)
+        if self._ydrag_line_lo:
+            self._ydrag_line_lo.set_ydata([lo])
+        if self._ydrag_line_hi:
+            self._ydrag_line_hi.set_ydata([hi])
+        self._canvas.draw_idle()
+        if self._canvas:
+            self._canvas.setCursor(Qt.SizeVerCursor)
+
+    def _on_ydrag_release(self, event) -> None:
+        if not self._ydrag_active:
+            return
+        self._ydrag_active = False
+        if self._canvas:
+            self._canvas.setCursor(Qt.ArrowCursor)
+        if not self._current_fig or event.y is None:
+            self._cleanup_ydrag_lines()
+            return
+        ax = self._current_fig.gca()
+        inv = ax.transData.inverted()
+        _, y_end = inv.transform((event.x or 0, event.y))
+        lo = min(self._ydrag_start_y, y_end)
+        hi = max(self._ydrag_start_y, y_end)
+        self._cleanup_ydrag_lines()
+        if abs(hi - lo) < 1e-9:
+            return
+        prev = (self.edit_y_min.text().strip(), self.edit_y_max.text().strip(), self.edit_y_step.text().strip())
+        self._yscale_history.append(prev)
+        self.btn_yscale_undo.setEnabled(True)
+        span = hi - lo
+        step = self._nice_step_1dp(span / 8.0)
+        new_min = np.floor(lo / step) * step
+        new_max = np.ceil(hi / step) * step
+        self.edit_y_min.setText(f"{new_min:g}")
+        self.edit_y_max.setText(f"{new_max:g}")
+        self.edit_y_step.setText(f"{step:g}")
+        self._on_y_scale_edited()
+        self._render_preview()
+
+    def _undo_yscale(self) -> None:
+        if not self._yscale_history:
+            return
+        prev_min, prev_max, prev_step = self._yscale_history.pop()
+        self.edit_y_min.setText(prev_min)
+        self.edit_y_max.setText(prev_max)
+        self.edit_y_step.setText(prev_step)
+        self.btn_yscale_undo.setEnabled(bool(self._yscale_history))
+        self._on_y_scale_edited()
+        self._render_preview()
+
+    def _cleanup_ydrag_lines(self) -> None:
+        if self._ydrag_line_lo:
+            try:
+                self._ydrag_line_lo.remove()
+            except Exception:
+                pass
+            self._ydrag_line_lo = None
+        if self._ydrag_line_hi:
+            try:
+                self._ydrag_line_hi.remove()
+            except Exception:
+                pass
+            self._ydrag_line_hi = None
+        if self._canvas:
+            self._canvas.draw_idle()
+
+    @staticmethod
+    def _nice_step_1dp(raw_step: float) -> float:
+        """Round step to a nice number with at most 1 decimal place."""
+        if raw_step <= 0:
+            return 1.0
+        mag = 10 ** np.floor(np.log10(raw_step))
+        residual = raw_step / mag
+        if residual <= 1.0:
+            nice = 1.0
+        elif residual <= 1.5:
+            nice = 1.5
+        elif residual <= 2.0:
+            nice = 2.0
+        elif residual <= 2.5:
+            nice = 2.5
+        elif residual <= 3.0:
+            nice = 3.0
+        elif residual <= 5.0:
+            nice = 5.0
+        else:
+            nice = 10.0
+        result = nice * mag
+        if result >= 1:
+            return round(result, 1)
+        return round(result, 2)
+
     def _on_hover_check(self, event) -> None:
-        if self._exclusion_mode_active:
+        if self._exclusion_mode_active or self._ydrag_active:
             self._hover_timer.stop()
             self._hide_hover_tooltip()
             return
         if event.inaxes is None or event.xdata is None:
             self._hover_timer.stop()
             self._hide_hover_tooltip()
+            if not self._ydrag_active and self._is_in_yaxis_area(event):
+                if self._canvas:
+                    self._canvas.setCursor(Qt.SizeVerCursor)
+            elif self._canvas and not self._cursor_mode_active and not self._exclusion_mode_active:
+                self._canvas.setCursor(Qt.ArrowCursor)
             return
+        if self._canvas and not self._cursor_mode_active and not self._exclusion_mode_active:
+            self._canvas.setCursor(Qt.ArrowCursor)
         self._hover_last_event = event
         self._hover_timer.stop()
         self._hide_hover_tooltip()
@@ -1998,11 +2170,11 @@ class PreviewPlotTab(QWidget):
         text_lines = [
             f"<b>{series_label}</b>",
             f"Load: {info.get('Load_kW', '—')}",
-            f"Consumo: SD {info.get('sd_consumo', '—')}",
-            f"Rotacao: {info.get('rotacao', '—')} | SD {info.get('sd_rotacao', '—')}",
-            f"T_E_TURB: {info.get('T_E_TURB', '—')} | SD {info.get('sd_T_E_TURB', '—')}",
-            f"P_E_TURB: {info.get('P_E_TURB', '—')} | SD {info.get('sd_P_E_TURB', '—')}",
-            f"P_COLETOR: {info.get('P_COLETOR', '—')} | SD {info.get('sd_P_COLETOR', '—')}",
+            f"Consumo: SD {info.get('sd_consumo', '—')} ({info.get('sdpct_consumo', '—')})",
+            f"Rotacao: {info.get('rotacao', '—')} | SD {info.get('sd_rotacao', '—')} ({info.get('sdpct_rotacao', '—')})",
+            f"T_E_TURB: {info.get('T_E_TURB', '—')} | SD {info.get('sd_T_E_TURB', '—')} ({info.get('sdpct_T_E_TURB', '—')})",
+            f"P_E_TURB: {info.get('P_E_TURB', '—')} | SD {info.get('sd_P_E_TURB', '—')} ({info.get('sdpct_P_E_TURB', '—')})",
+            f"P_COLETOR: {info.get('P_COLETOR', '—')} | SD {info.get('sd_P_COLETOR', '—')} ({info.get('sdpct_P_COLETOR', '—')})",
         ]
         html = "<br>".join(text_lines)
         if self._hover_tooltip is None:
@@ -2026,10 +2198,11 @@ class PreviewPlotTab(QWidget):
 
     def _lookup_point_info(self, df: pd.DataFrame, x_val: float, series_label: str) -> Dict[str, str]:
         result: Dict[str, str] = {
-            "Load_kW": "—", "sd_consumo": "—", "sd_rotacao": "—",
-            "rotacao": "—", "T_E_TURB": "—", "P_E_TURB": "—",
-            "sd_T_E_TURB": "—", "sd_P_E_TURB": "—",
-            "P_COLETOR": "—", "sd_P_COLETOR": "—",
+            "Load_kW": "—", "sd_consumo": "—", "sdpct_consumo": "—",
+            "rotacao": "—", "sd_rotacao": "—", "sdpct_rotacao": "—",
+            "T_E_TURB": "—", "sd_T_E_TURB": "—", "sdpct_T_E_TURB": "—",
+            "P_E_TURB": "—", "sd_P_E_TURB": "—", "sdpct_P_E_TURB": "—",
+            "P_COLETOR": "—", "sd_P_COLETOR": "—", "sdpct_P_COLETOR": "—",
         }
         if df is None or df.empty:
             return result
@@ -2044,31 +2217,62 @@ class PreviewPlotTab(QWidget):
             return result
         row = rows.iloc[0]
 
-        def _fmt(col, unit="", decimals=1):
+        def _val(col):
             if col not in df.columns:
-                return "—"
+                return float("nan")
             v = row.get(col)
-            return f"{float(v):.{decimals}f}{' ' + unit if unit else ''}" if pd.notna(v) else "—"
+            return float(v) if pd.notna(v) else float("nan")
 
-        result["Load_kW"] = _fmt("Load_kW", "kW", 1)
-        for cand in ["Consumo_kg_h_sd_of_windows", "Consumo_sd_of_windows"]:
-            if cand in df.columns:
-                result["sd_consumo"] = _fmt(cand, "kg/h", 3)
-                break
+        def _fmt(val, unit="", decimals=1):
+            if not np.isfinite(val):
+                return "—"
+            return f"{val:.{decimals}f}{' ' + unit if unit else ''}"
+
+        def _pct(sd_val, mean_val):
+            if not np.isfinite(sd_val) or not np.isfinite(mean_val) or abs(mean_val) < 1e-9:
+                return "—"
+            return f"{sd_val / abs(mean_val) * 100:.1f}%"
+
+        result["Load_kW"] = _fmt(_val("Load_kW"), "kW", 1)
+
+        consumo_mean = _val("Consumo_kg_h_mean_of_windows")
+        consumo_sd = _val("Consumo_kg_h_sd_of_windows")
+        result["sd_consumo"] = _fmt(consumo_sd, "kg/h", 3)
+        result["sdpct_consumo"] = _pct(consumo_sd, consumo_mean)
+
+        rot_mean = float("nan")
+        rot_sd = float("nan")
         for cand in ["Rotação_mean_of_windows", "Rotacao_mean_of_windows"]:
-            if cand in df.columns:
-                result["rotacao"] = _fmt(cand, "rpm", 0)
+            v = _val(cand)
+            if np.isfinite(v):
+                rot_mean = v
                 break
         for cand in ["Rotação_sd_of_windows", "Rotacao_sd_of_windows"]:
-            if cand in df.columns:
-                result["sd_rotacao"] = _fmt(cand, "rpm", 1)
+            v = _val(cand)
+            if np.isfinite(v):
+                rot_sd = v
                 break
-        result["T_E_TURB"] = _fmt("T_E_TURB_mean_of_windows", "C", 1)
-        result["sd_T_E_TURB"] = _fmt("T_E_TURB_sd_of_windows", "C", 1)
-        result["P_E_TURB"] = _fmt("P_E_TURB_RAW_mean_of_windows", "kPa", 1)
-        result["sd_P_E_TURB"] = _fmt("P_E_TURB_RAW_sd_of_windows", "kPa", 2)
-        result["P_COLETOR"] = _fmt("P_COLETOR_RAW_mean_of_windows", "kPa", 1)
-        result["sd_P_COLETOR"] = _fmt("P_COLETOR_RAW_sd_of_windows", "kPa", 2)
+        result["rotacao"] = _fmt(rot_mean, "rpm", 0)
+        result["sd_rotacao"] = _fmt(rot_sd, "rpm", 1)
+        result["sdpct_rotacao"] = _pct(rot_sd, rot_mean)
+
+        te_mean = _val("T_E_TURB_mean_of_windows")
+        te_sd = _val("T_E_TURB_sd_of_windows")
+        result["T_E_TURB"] = _fmt(te_mean, "C", 1)
+        result["sd_T_E_TURB"] = _fmt(te_sd, "C", 1)
+        result["sdpct_T_E_TURB"] = _pct(te_sd, te_mean)
+
+        pe_mean = _val("P_E_TURB_RAW_mean_of_windows")
+        pe_sd = _val("P_E_TURB_RAW_sd_of_windows")
+        result["P_E_TURB"] = _fmt(pe_mean, "kPa", 1)
+        result["sd_P_E_TURB"] = _fmt(pe_sd, "kPa", 2)
+        result["sdpct_P_E_TURB"] = _pct(pe_sd, pe_mean)
+
+        pc_mean = _val("P_COLETOR_RAW_mean_of_windows")
+        pc_sd = _val("P_COLETOR_RAW_sd_of_windows")
+        result["P_COLETOR"] = _fmt(pc_mean, "kPa", 1)
+        result["sd_P_COLETOR"] = _fmt(pc_sd, "kPa", 2)
+        result["sdpct_P_COLETOR"] = _pct(pc_sd, pc_mean)
         return result
 
     def _on_cursor_move(self, event) -> None:
@@ -2172,35 +2376,61 @@ class PreviewPlotTab(QWidget):
     def _on_plot_type_changed(self, text: str) -> None:
         is_compare = (text == "compare_bl_vs_adtv")
         self.combo_compare_metric.setVisible(is_compare)
-        self.combo_compare_pair.setVisible(False)
+        self.combo_compare_pair.setVisible(is_compare)
         if self._populating:
             return
-        if is_compare and self._compare_df is None:
-            self._auto_discover_compare_xlsx()
+        if is_compare:
+            if self._compare_df is None:
+                self._auto_discover_compare_xlsx()
+            metric = self.combo_compare_metric.currentText()
+            if metric:
+                self._last_y_col = metric
+                ys = self._session["y_scales"].get(metric, {})
+                self._populating = True
+                self.edit_y_min.setText(ys.get("y_min", ""))
+                self.edit_y_max.setText(ys.get("y_max", ""))
+                self.edit_y_step.setText(ys.get("y_step", ""))
+                self.edit_y_tol_plus.setText(ys.get("y_tol_plus", ""))
+                self.edit_y_tol_minus.setText(ys.get("y_tol_minus", ""))
+                self.edit_title.setText(f"Delta — {metric}")
+                self.edit_x_label.setText("Carga nominal (kW)")
+                self.edit_y_label.setText("Delta (%)")
+                self._populating = False
+                self._compare_comment_data = self._session.get("comments", {}).get(metric, _empty_comment_data())
 
     def _on_compare_metric_changed(self) -> None:
         if self._populating:
             return
-        # Save Y scale + comment for previous metric
+        # Save Y scale for previous metric (NOT title — title is auto-generated per metric)
         prev = self._session["compare"].get("active_metric", "")
         if prev:
-            self._session["y_scales"][prev] = {
+            prev_ys = self._session.get("y_scales", {}).get(prev, {})
+            prev_ys.update({
                 "y_min": self.edit_y_min.text().strip(),
                 "y_max": self.edit_y_max.text().strip(),
                 "y_step": self.edit_y_step.text().strip(),
-            }
-            if self._compare_comment_data.get("text"):
+                "y_tol_plus": self.edit_y_tol_plus.text().strip(),
+                "y_tol_minus": self.edit_y_tol_minus.text().strip(),
+            })
+            self._session["y_scales"][prev] = prev_ys
+            if self._comment_dirty and self._compare_comment_data.get("text"):
                 self._session["comments"][prev] = dict(self._compare_comment_data)
+        self._comment_dirty = False
         # Switch to new metric
         new_metric = self.combo_compare_metric.currentText()
         self._session["compare"]["active_metric"] = new_metric
         self._last_y_col = new_metric
-        # Recall Y scale
+        # Recall Y scale + tolerance
         ys = self._session["y_scales"].get(new_metric, {})
         self._populating = True
         self.edit_y_min.setText(ys.get("y_min", ""))
         self.edit_y_max.setText(ys.get("y_max", ""))
         self.edit_y_step.setText(ys.get("y_step", ""))
+        self.edit_y_tol_plus.setText(ys.get("y_tol_plus", ""))
+        self.edit_y_tol_minus.setText(ys.get("y_tol_minus", ""))
+        self.edit_title.setText(f"Delta — {new_metric}")
+        self.edit_x_label.setText("Carga nominal (kW)")
+        self.edit_y_label.setText("Delta (%)")
         self._populating = False
         # Recall comment for new metric
         self._compare_comment_data = self._session.get("comments", {}).get(new_metric, _empty_comment_data())
@@ -2210,11 +2440,18 @@ class PreviewPlotTab(QWidget):
     def _open_comment_dialog(self) -> None:
         def _apply_cb(data):
             self._compare_comment_data = data
+            self._comment_dirty = True
             self._render_preview()
 
         dlg = CommentDialog(self._compare_comment_data, apply_callback=_apply_cb, parent=self)
         if dlg.exec() == QDialog.Accepted:
             self._compare_comment_data = dlg.get_data()
+            self._comment_dirty = True
+            cmt_key = self._current_y_scale_key()
+            if cmt_key and self._compare_comment_data.get("text"):
+                self._session["comments"][cmt_key] = dict(self._compare_comment_data)
+            elif cmt_key and not self._compare_comment_data.get("text"):
+                self._session["comments"].pop(cmt_key, None)
             self._render_preview()
 
     def _auto_discover_compare_xlsx(self) -> None:
@@ -2304,10 +2541,27 @@ class PreviewPlotTab(QWidget):
             render_compare_delta_all_overlay,
         )
 
+        pair_filter = None
+        pair_mode = self.combo_compare_pair.currentText()
+        if "Media" in pair_mode:
+            pair_filter = [c for c in self._compare_df["Comparacao"].unique() if "media" in c.lower()]
+        elif "Subida" in pair_mode:
+            pair_filter = [c for c in self._compare_df["Comparacao"].unique() if "subida" in c.lower()]
+        elif "Descida" in pair_mode:
+            pair_filter = [c for c in self._compare_df["Comparacao"].unique() if "descida" in c.lower()]
+
+        title = self.edit_title.text().strip() or None
+        x_label = self.edit_x_label.text().strip() or None
+        y_label = self.edit_y_label.text().strip() or None
+
         return render_compare_delta_all_overlay(
             self._compare_df,
             metrica=metrica,
             include_uncertainty=self.chk_show_uncertainty.isChecked(),
+            comparacoes_filter=pair_filter,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
         )
 
     # ------------------------------------------------------------------
@@ -2958,7 +3212,7 @@ class PreviewPlotTab(QWidget):
     def _populate_from_record(self, rec: Dict[str, str]) -> None:
         self._debounce_timer.stop()
 
-        # Save current Y scale, X axis, uncertainty and comment to session before switching
+        # Save current Y scale, X axis, uncertainty, tolerance to session before switching
         if self._last_y_col:
             self._session["y_scales"][self._last_y_col] = {
                 "y_min": self.edit_y_min.text().strip(),
@@ -2969,9 +3223,9 @@ class PreviewPlotTab(QWidget):
                 "x_max": self.edit_x_max.text().strip(),
                 "x_step": self.edit_x_step.text().strip(),
                 "show_uncertainty": "1" if self.chk_show_uncertainty.isChecked() else "0",
+                "y_tol_plus": self.edit_y_tol_plus.text().strip(),
+                "y_tol_minus": self.edit_y_tol_minus.text().strip(),
             }
-            if self._compare_comment_data.get("text"):
-                self._session["comments"][self._last_y_col] = dict(self._compare_comment_data)
 
         self._populating = True
 
@@ -3045,8 +3299,8 @@ class PreviewPlotTab(QWidget):
         # Restore comment for new y_col
         self._compare_comment_data = self._session.get("comments", {}).get(new_y_col, _empty_comment_data())
 
-        self.edit_y_tol_plus.setText(_clean_nan(rec.get("y_tol_plus", "")))
-        self.edit_y_tol_minus.setText(_clean_nan(rec.get("y_tol_minus", "")))
+        self.edit_y_tol_plus.setText(mem.get("y_tol_plus", "") or _clean_nan(rec.get("y_tol_plus", "")))
+        self.edit_y_tol_minus.setText(mem.get("y_tol_minus", "") or _clean_nan(rec.get("y_tol_minus", "")))
 
         self.edit_filter_h2o.setText(str(rec.get("filter_h2o_list", rec.get("filter_h2o", ""))))
 
@@ -3090,6 +3344,7 @@ class PreviewPlotTab(QWidget):
 
                 self._apply_y_scale_to_fig(fig)
                 self._apply_x_scale_to_fig(fig)
+                self._apply_tolerance_to_fig(fig)
                 self._apply_comment_to_fig(fig)
                 self._current_fig = fig
                 self._update_canvas(fig)
@@ -3196,7 +3451,7 @@ class PreviewPlotTab(QWidget):
                 yerr_col=yerr_col, title=title, x_label=x_label, y_label=y_label,
                 fixed_x=fixed_x, fixed_y=fixed_y, fixed_y_limits=fixed_y_limits,
                 y_tick_step=y_tick_step, fuels_override=fuels_override,
-                y_tol_plus=y_tol_plus, y_tol_minus=y_tol_minus,
+                y_tol_plus=0, y_tol_minus=0,
                 fuel_colors=fuel_colors, label_variant=label_variant,
                 series_col=series_col,
             )
@@ -3206,6 +3461,7 @@ class PreviewPlotTab(QWidget):
                 self._show_status("Preview: sem curvas geradas.")
                 return
 
+            self._apply_tolerance_to_fig(fig)
             self._apply_comment_to_fig(fig)
             self._current_fig = fig
             self._update_canvas(fig)
@@ -3237,8 +3493,10 @@ class PreviewPlotTab(QWidget):
             step_val = _parse_axis_value(y_step_text, default=np.nan)
             if np.isfinite(step_val) and step_val > 0:
                 cur_min, cur_max = ax.get_ylim()
-                ticks = np.arange(cur_min, cur_max + step_val * 0.5, step_val)
-                ax.set_yticks(ticks)
+                n_ticks = (cur_max - cur_min) / step_val
+                if 0 < n_ticks < 200:
+                    ticks = np.arange(cur_min, cur_max + step_val * 0.5, step_val)
+                    ax.set_yticks(ticks)
 
     def _apply_x_scale_to_fig(self, fig: Figure) -> None:
         """Apply X min/max/step from controls to an already-rendered figure."""
@@ -3259,8 +3517,34 @@ class PreviewPlotTab(QWidget):
             step_val = _parse_axis_value(x_step_text, default=np.nan)
             if np.isfinite(step_val) and step_val > 0:
                 cur_min, cur_max = ax.get_xlim()
-                ticks = np.arange(cur_min, cur_max + step_val * 0.5, step_val)
-                ax.set_xticks(ticks)
+                n_ticks = (cur_max - cur_min) / step_val
+                if 0 < n_ticks < 200:
+                    ticks = np.arange(cur_min, cur_max + step_val * 0.5, step_val)
+                    ax.set_xticks(ticks)
+
+    def _apply_tolerance_to_fig(self, fig: Figure) -> None:
+        """Draw red dashed horizontal tolerance lines at absolute Y values."""
+        tol_plus_text = self.edit_y_tol_plus.text().strip()
+        tol_minus_text = self.edit_y_tol_minus.text().strip()
+        if not tol_plus_text and not tol_minus_text:
+            return
+        ax = fig.gca()
+
+        def _parse(t):
+            try:
+                v = float(t.replace(",", "."))
+                return v if np.isfinite(v) else None
+            except (ValueError, TypeError):
+                return None
+
+        tp = _parse(tol_plus_text)
+        tm = _parse(tol_minus_text)
+        if tp is not None:
+            ax.axhline(tp, color="red", linestyle="--", linewidth=1.4,
+                       dash_capstyle="butt", zorder=5)
+        if tm is not None:
+            ax.axhline(tm, color="red", linestyle="--", linewidth=1.4,
+                       dash_capstyle="butt", zorder=5)
 
     def _apply_comment_to_fig(self, fig: Figure) -> None:
         cmt = self._compare_comment_data
@@ -3387,6 +3671,9 @@ class PreviewPlotTab(QWidget):
                         pass
         self._canvas.mpl_connect("pick_event", self._on_pick_event)
         self._canvas.mpl_connect("motion_notify_event", self._on_hover_check)
+        self._canvas.mpl_connect("button_press_event", self._on_ydrag_press)
+        self._canvas.mpl_connect("motion_notify_event", self._on_ydrag_move)
+        self._canvas.mpl_connect("button_release_event", self._on_ydrag_release)
         if self._exclusion_mode_active and not self._cursor_mode_active:
             self._canvas.setCursor(Qt.CrossCursor)
         elif self._cursor_mode_active:

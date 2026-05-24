@@ -261,6 +261,8 @@ def render_compare_delta_all_overlay(
     include_uncertainty: bool = True,
     title: Optional[str] = None,
     comparacoes_filter: Optional[List[str]] = None,
+    x_label: Optional[str] = None,
+    y_label: Optional[str] = None,
 ) -> Optional[Figure]:
     """Render ALL delta curves for a metric overlaid on the same graph.
 
@@ -309,10 +311,10 @@ def render_compare_delta_all_overlay(
     ref_label = "0 pp" if delta_mode == "diff" else "0%"
     ax.axhline(0.0, color="gray", linestyle="--", linewidth=1.0, label=ref_label)
 
-    ax.set_xlabel("Carga nominal (kW)")
-    y_axis_label = "Diferenca (pp)" if delta_mode == "diff" else "Delta percentual (%)"
-    ax.set_ylabel(y_axis_label)
-    ax.set_title(title or f"Delta — {metrica} — Todos os pares")
+    default_y_label = "Diferenca (pp)" if delta_mode == "diff" else "Delta percentual (%)"
+    ax.set_xlabel(x_label or "Carga nominal (kW)")
+    ax.set_ylabel(y_label or default_y_label)
+    ax.set_title(title or f"Delta — {metrica}")
     ax.grid(True, which="both", linestyle="--", linewidth=0.5)
     ax.legend(loc="best", fontsize=9)
     fig.tight_layout()

@@ -54,7 +54,7 @@ class TestSpecs(unittest.TestCase):
             self.assertIn("slug", COMPARE_ITER_SERIES_META[key])
 
     def test_metric_specs_count(self) -> None:
-        self.assertEqual(len(COMPARE_ITER_METRIC_SPECS), 11)
+        self.assertEqual(len(COMPARE_ITER_METRIC_SPECS), 37)
 
     def test_metric_specs_by_id_lookup(self) -> None:
         for mid in ["consumo", "co2", "n_th"]:

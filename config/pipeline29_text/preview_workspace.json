@@ -1,17 +1,17 @@
 {
   "version": 2,
   "data_source": {
-    "path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list\\lv_kpis_clean.xlsx",
-    "compare_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list\\lv_kpis_clean.xlsx",
-    "raw_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion\\lv_kpis_clean.xlsx",
-    "excl_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list\\lv_kpis_clean.xlsx",
+    "path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list_3_New_Metrics\\lv_kpis_clean.xlsx",
+    "compare_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list_3_New_Metrics\\lv_kpis_clean.xlsx",
+    "raw_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list_3_New_Metrics\\lv_kpis_clean.xlsx",
+    "excl_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list_3_New_Metrics\\lv_kpis_clean.xlsx",
     "active_source": "excl"
   },
   "axis": {
     "x_col": "Load_kW",
-    "x_label": "Power (kW)",
-    "x_min": "0",
-    "x_max": "55",
+    "x_label": "Carga nominal (kW)",
+    "x_min": "-5",
+    "x_max": "50",
     "x_step": "5"
   },
   "y_scales": {
@@ -56,7 +56,7 @@
       "y_step": "1.0",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -66,7 +66,7 @@
       "y_step": "0.02",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -76,7 +76,7 @@
       "y_step": "2",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -86,7 +86,7 @@
       "y_step": "100",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "0"
     },
@@ -96,19 +96,23 @@
       "y_step": "2",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "50",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "T_ADMISSAO_mean_of_windows": {
-      "y_min": "56",
-      "y_max": "64",
+      "y_min": "55",
+      "y_max": "65",
       "y_step": "1",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "50",
       "x_step": "5",
-      "show_uncertainty": "0"
+      "show_uncertainty": "0",
+      "y_tol_plus": "58",
+      "y_tol_minus": "62"
     },
     "T_CARTER_mean_of_windows": {
       "y_min": "90",
@@ -116,19 +120,23 @@
       "y_step": "2",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "50",
       "x_step": "5",
-      "show_uncertainty": "0"
+      "show_uncertainty": "0",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "T_S_AGUA_mean_of_windows": {
-      "y_min": "80.0",
-      "y_max": "100.0",
-      "y_step": "1.0",
+      "y_min": "80",
+      "y_max": "90",
+      "y_step": "1",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "50",
       "x_step": "5",
-      "show_uncertainty": "0"
+      "show_uncertainty": "0",
+      "y_tol_plus": "83.0",
+      "y_tol_minus": "87"
     },
     "T_S_TURB_mean_of_windows": {
       "y_min": "150",
@@ -163,7 +171,14 @@
     "Consumo absoluto": {
       "y_min": "-5",
       "y_max": "5",
-      "y_step": "2"
+      "y_step": "0,5",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "50",
+      "x_step": "5",
+      "show_uncertainty": "1",
+      "y_tol_plus": "",
+      "y_tol_minus": ""
     },
     "CO medido": {
       "y_min": "",
@@ -173,17 +188,31 @@
     "CO2 especifico": {
       "y_min": "",
       "y_max": "",
-      "y_step": ""
+      "y_step": "",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "50",
+      "x_step": "5",
+      "show_uncertainty": "1",
+      "y_tol_plus": "",
+      "y_tol_minus": ""
     },
     "CO2 medido": {
-      "y_min": "30",
-      "y_max": "60",
-      "y_step": "2"
+      "y_min": "-3",
+      "y_max": "3",
+      "y_step": "1"
     },
     "Eficiencia termica": {
-      "y_min": "",
-      "y_max": "",
-      "y_step": ""
+      "y_min": "-2,5",
+      "y_max": "2,5",
+      "y_step": "0,5",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "50",
+      "x_step": "5",
+      "show_uncertainty": "1",
+      "y_tol_plus": "-1",
+      "y_tol_minus": "1"
     },
     "NOX medido": {
       "y_min": "",
@@ -191,14 +220,23 @@
       "y_step": ""
     },
     "NOx especifico": {
-      "y_min": "-5",
-      "y_max": "5",
-      "y_step": "0,5"
+      "y_min": "",
+      "y_max": "",
+      "y_step": "",
+      "y_tol_plus": "",
+      "y_tol_minus": ""
     },
     "O2 medido": {
       "y_min": "",
       "y_max": "",
-      "y_step": ""
+      "y_step": "",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "50",
+      "x_step": "5",
+      "show_uncertainty": "1",
+      "y_tol_plus": "",
+      "y_tol_minus": ""
     },
     "THC especifico": {
       "y_min": "",
@@ -211,9 +249,9 @@
       "y_step": ""
     },
     "CO especifico": {
-      "y_min": "10",
-      "y_max": "22",
-      "y_step": ""
+      "y_min": "-10000",
+      "y_max": "10000",
+      "y_step": "10"
     },
     "Air_g_s": {
       "y_min": "30",
@@ -236,12 +274,12 @@
       "show_uncertainty": "0"
     },
     "T_E_COMP_mean_of_windows": {
-      "y_min": "",
-      "y_max": "",
-      "y_step": "",
+      "y_min": "25",
+      "y_max": "45",
+      "y_step": "2",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "0"
     },
@@ -251,7 +289,7 @@
       "y_step": "1",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "0"
     },
@@ -261,7 +299,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "0"
     },
@@ -271,7 +309,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "0"
     },
@@ -281,7 +319,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "0"
     },
@@ -291,19 +329,21 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
     "T_AMBIENTE_mean_of_windows": {
-      "y_min": "",
-      "y_max": "",
-      "y_step": "",
+      "y_min": "24",
+      "y_max": "38",
+      "y_step": "1",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "50",
       "x_step": "5",
-      "show_uncertainty": "0"
+      "show_uncertainty": "0",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "Q_EVAP_NET_kW": {
       "y_min": "",
@@ -311,9 +351,11 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "50",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "P_S_TURB_RAW_mean_of_windows": {
       "y_min": "",
@@ -321,7 +363,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -331,7 +373,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -341,7 +383,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -351,19 +393,21 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
     "P_COLETOR_RAW_mean_of_windows": {
-      "y_min": "auto",
-      "y_max": "auto",
-      "y_step": "auto",
+      "y_min": "65",
+      "y_max": "150",
+      "y_step": "10",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "50",
       "x_step": "5",
-      "show_uncertainty": "0"
+      "show_uncertainty": "0",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "O2_mean_of_windows": {
       "y_min": "",
@@ -371,7 +415,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -381,7 +425,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -391,7 +435,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -401,7 +445,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -411,7 +455,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -421,7 +465,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -431,7 +475,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -441,7 +485,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -451,7 +495,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -461,7 +505,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -471,19 +515,21 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
     "nan": {
-      "y_min": "",
-      "y_max": "",
-      "y_step": "",
+      "y_min": "-5",
+      "y_max": "5",
+      "y_step": "0,5",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "50",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "Exhaust_H2O_kg_h": {
       "y_min": "",
@@ -571,7 +617,7 @@
       "y_step": "10",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -591,7 +637,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -611,9 +657,11 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "50",
       "x_step": "5",
-      "show_uncertainty": "0"
+      "show_uncertainty": "0",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "KIBOX_AI10_1": {
       "y_min": "auto",
@@ -686,7 +734,7 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -701,9 +749,14 @@
       "y_step": ""
     },
     "KIBOX_IMEPN_AVG_1": {
-      "y_min": "",
-      "y_max": "",
-      "y_step": ""
+      "y_min": "auto",
+      "y_max": "auto",
+      "y_step": "auto",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "55",
+      "x_step": "5",
+      "show_uncertainty": "1"
     },
     "KIBOX_IMEPN_AVG__1": {
       "y_min": "auto",
@@ -716,7 +769,7 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "60",
+      "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
     },
@@ -725,10 +778,332 @@
       "y_max": "auto",
       "y_step": "auto",
       "x_col": "Load_kW",
-      "x_min": "0",
+      "x_min": "-5",
       "x_max": "55",
       "x_step": "5",
       "show_uncertainty": "1"
+    },
+    "KIBOX_APMAX_1": {
+      "y_min": "auto",
+      "y_max": "auto",
+      "y_step": "auto",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "55",
+      "x_step": "5",
+      "show_uncertainty": "1"
+    },
+    "KIBOX_AQMAX_1": {
+      "y_min": "auto",
+      "y_max": "auto",
+      "y_step": "auto",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "55",
+      "x_step": "5",
+      "show_uncertainty": "1"
+    },
+    "KIBOX_ARMAX_AVG_1": {
+      "y_min": "auto",
+      "y_max": "auto",
+      "y_step": "auto",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "55",
+      "x_step": "5",
+      "show_uncertainty": "1"
+    },
+    "KIBOX_IMEPH_AVG_1": {
+      "y_min": "auto",
+      "y_max": "auto",
+      "y_step": "auto",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "55",
+      "x_step": "5",
+      "show_uncertainty": "1"
+    },
+    "KIBOX_IMEPL_AVG_1": {
+      "y_min": "auto",
+      "y_max": "auto",
+      "y_step": "auto",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "55",
+      "x_step": "5",
+      "show_uncertainty": "1"
+    },
+    "KIBOX_IMEPN_COV_1": {
+      "y_min": "auto",
+      "y_max": "auto",
+      "y_step": "auto",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "55",
+      "x_step": "5",
+      "show_uncertainty": "1"
+    },
+    "KIBOX_PMAX_1": {
+      "y_min": "auto",
+      "y_max": "auto",
+      "y_step": "auto",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "55",
+      "x_step": "5",
+      "show_uncertainty": "1"
+    },
+    "KIBOX_RMAX_1": {
+      "y_min": "auto",
+      "y_max": "auto",
+      "y_step": "auto",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "55",
+      "x_step": "5",
+      "show_uncertainty": "1"
+    },
+    "Air_kg_h_from_Fuel_Lambda": {
+      "y_min": "120",
+      "y_max": "220",
+      "y_step": "10",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "55",
+      "x_step": "5",
+      "show_uncertainty": "1"
+    },
+    "MFB_10_50": {
+      "y_min": "auto",
+      "y_max": "auto",
+      "y_step": "auto",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "55",
+      "x_step": "5",
+      "show_uncertainty": "1"
+    },
+    "MFB_50_90": {
+      "y_min": "auto",
+      "y_max": "auto",
+      "y_step": "auto",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "55",
+      "x_step": "5",
+      "show_uncertainty": "1"
+    },
+    "AI10": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": "",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "60",
+      "x_step": "5",
+      "show_uncertainty": "1"
+    },
+    "Eficiencia termica indicada": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
+    },
+    "IMEPH": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
+    },
+    "IMEPL": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
+    },
+    "IMEPN": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": "",
+      "y_tol_plus": "",
+      "y_tol_minus": ""
+    },
+    "IMEPN COV": {
+      "y_min": "-3",
+      "y_max": "1",
+      "y_step": "0,5",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "50",
+      "x_step": "5",
+      "show_uncertainty": "1",
+      "y_tol_plus": "",
+      "y_tol_minus": ""
+    },
+    "MFB 10-50": {
+      "y_min": "-8",
+      "y_max": "2",
+      "y_step": "1",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "50",
+      "x_step": "5",
+      "show_uncertainty": "1",
+      "y_tol_plus": "",
+      "y_tol_minus": ""
+    },
+    "MFB 10-90": {
+      "y_min": "-8",
+      "y_max": "2",
+      "y_step": "1",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "50",
+      "x_step": "5",
+      "show_uncertainty": "1",
+      "y_tol_plus": "",
+      "y_tol_minus": ""
+    },
+    "MFB 50-90": {
+      "y_min": "-8",
+      "y_max": "2",
+      "y_step": "1",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "50",
+      "x_step": "5",
+      "show_uncertainty": "1",
+      "y_tol_plus": "",
+      "y_tol_minus": ""
+    },
+    "PMAX": {
+      "y_min": "-8",
+      "y_max": "2",
+      "y_step": "1",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "50",
+      "x_step": "5",
+      "show_uncertainty": "1",
+      "y_tol_plus": "",
+      "y_tol_minus": ""
+    },
+    "P_COLETOR": {
+      "y_min": "-5",
+      "y_max": "5",
+      "y_step": "0,5",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "50",
+      "x_step": "5",
+      "show_uncertainty": "0",
+      "y_tol_plus": "-2",
+      "y_tol_minus": "2"
+    },
+    "P_E_TURB": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": "",
+      "y_tol_plus": "",
+      "y_tol_minus": ""
+    },
+    "P_S_COMP": {
+      "y_min": "-6",
+      "y_max": "6",
+      "y_step": "2",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "50",
+      "x_step": "5",
+      "show_uncertainty": "1",
+      "y_tol_plus": "",
+      "y_tol_minus": ""
+    },
+    "P_S_TURB": {
+      "y_min": "-6",
+      "y_max": "6",
+      "y_step": "2",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "50",
+      "x_step": "5",
+      "show_uncertainty": "1",
+      "y_tol_plus": "",
+      "y_tol_minus": ""
+    },
+    "RMAX": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": "",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "50",
+      "x_step": "5",
+      "show_uncertainty": "1"
+    },
+    "T_E_TURB": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
+    },
+    "T_E_COMP": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
+    },
+    "AI50": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
+    },
+    "AI90": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
+    },
+    "APMAX": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
+    },
+    "AQMAX": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
+    },
+    "BSFC": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
+    },
+    "T_ADMISSAO": {
+      "y_min": "-5",
+      "y_max": "5",
+      "y_step": "0,5",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "50",
+      "x_step": "5",
+      "show_uncertainty": "0",
+      "y_tol_plus": "-3,3",
+      "y_tol_minus": "3,3"
+    },
+    "T_S_AGUA": {
+      "y_min": "-6",
+      "y_max": "6",
+      "y_step": "2",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "50",
+      "x_step": "5",
+      "show_uncertainty": "1"
+    },
+    "T_S_COMP": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
+    },
+    "T_S_TURB": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
     }
   },
   "comments": {
@@ -748,8 +1123,16 @@
       "color": "#333333",
       "position": "bottom-left"
     },
-    "CO2 medido": {
-      "text": "Vazão de ar aspirado",
+    "Eficiencia termica": {
+      "text": "Valores negativos -> Eficiência térmica menor com aditivo",
+      "font_size": 9,
+      "bold": false,
+      "italic": true,
+      "color": "#333333",
+      "position": "bottom-left"
+    },
+    "CO2 especifico": {
+      "text": "Valores maiores representam piora de CO2 -> Aditivado",
       "font_size": 9,
       "bold": false,
       "italic": true,
@@ -757,7 +1140,95 @@
       "position": "bottom-left"
     },
     "Consumo absoluto": {
-      "text": "Vazão de ar aspirado",
+      "text": "Diferenças de consumo majoritariamente dentro das incertezas de medição",
+      "font_size": 9,
+      "bold": false,
+      "italic": true,
+      "color": "#333333",
+      "position": "bottom-left"
+    },
+    "P_COLETOR": {
+      "text": "Valores estáveis representam repetibilidade entre os ensiaios",
+      "font_size": 9,
+      "bold": false,
+      "italic": true,
+      "color": "#333333",
+      "position": "bottom-left"
+    },
+    "PMAX": {
+      "text": "Valores menores -> Pressões máximas mais baixas com aditivo",
+      "font_size": 9,
+      "bold": false,
+      "italic": true,
+      "color": "#333333",
+      "position": "bottom-left"
+    },
+    "P_S_COMP": {
+      "text": "Pressão de saída do compressor estável -> Ensaios repetitivos",
+      "font_size": 9,
+      "bold": false,
+      "italic": true,
+      "color": "#333333",
+      "position": "bottom-left"
+    },
+    "P_S_TURB": {
+      "text": "Pressão de saída da turbina similar -> Ensaios repetitivos",
+      "font_size": 9,
+      "bold": false,
+      "italic": true,
+      "color": "#333333",
+      "position": "bottom-left"
+    },
+    "RMAX": {
+      "text": "Menor taxa de variação de pressão na operação com aditivo",
+      "font_size": 9,
+      "bold": false,
+      "italic": true,
+      "color": "#333333",
+      "position": "bottom-left"
+    },
+    "T_ADMISSAO": {
+      "text": "Temeperatura de aspiração estável -> Ensaios repetitivos",
+      "font_size": 9,
+      "bold": false,
+      "italic": true,
+      "color": "#333333",
+      "position": "bottom-left"
+    },
+    "T_S_AGUA": {
+      "text": "Temepratura do arrefecimento estável-> Ensaios repetitivos",
+      "font_size": 9,
+      "bold": false,
+      "italic": true,
+      "color": "#333333",
+      "position": "bottom-left"
+    },
+    "IMEPN COV": {
+      "text": "Valores negativos indicam combustão mais estável com aditivo",
+      "font_size": 9,
+      "bold": false,
+      "italic": true,
+      "color": "#333333",
+      "position": "bottom-left"
+    },
+    "MFB 10-90": {
+      "text": "Valores negativos indicam combustão mais lenta com aditivo em baixas cargas",
+      "font_size": 9,
+      "bold": false,
+      "italic": true,
+      "color": "#333333",
+      "position": "bottom-left"
+    },
+    "MFB 10-50": {
+      "text": "Pouco influência percebida na duração da primeira fase da combustão com aditivo",
+      "font_size": 9,
+      "bold": false,
+      "italic": true,
+      "color": "#333333",
+      "position": "bottom-left"
+    },
+    "MFB 50-90": {
+      "text": "Segunda fase da combustão mais lenta refletindo da duração global da combustão com aditivo",
       "font_size": 9,
       "bold": false,
       "italic": true,
@@ -771,19 +1242,15 @@
       "marker": "s"
     },
     "aditivado_descida_2": {
-      "color": "#aa0000",
+      "color": "#e66060",
       "marker": "s"
     },
     "aditivado_descida_3": {
-      "color": "#ff0000",
+      "color": "#ff00e6",
       "marker": "s"
     },
-    "aditivado_subida_2": {
-      "color": "#68b800",
-      "marker": "o"
-    },
     "aditivado_subida_3": {
-      "color": "#5c8a00",
+      "color": "#ff007f",
       "marker": "o"
     },
     "baseline_descida_1": {
@@ -795,7 +1262,7 @@
       "marker": "s"
     },
     "baseline_descida_3": {
-      "color": "#5500ff",
+      "color": "#7ec8f0",
       "marker": "s"
     },
     "baseline_subida_1": {
@@ -803,23 +1270,24 @@
       "marker": "o"
     },
     "baseline_subida_2": {
-      "color": "#000000",
-      "marker": "X"
+      "color": "#4a9fd6",
+      "marker": "o"
     },
     "baseline_subida_3": {
-      "color": "#270075",
+      "color": "#7ec8f0",
       "marker": "o"
     }
   },
   "display": {
     "cursor_font_size": 14,
-    "filter_h2o_list": "",
+    "filter_h2o_list": "0,6,25,35",
     "label_variant": "tag",
-    "lock_x": false,
+    "lock_x": true,
     "series_col": ""
   },
   "compare": {
-    "active_metric": "Consumo absoluto"
+    "active_metric": "MFB 10-90",
+    "active_pair": "Media vs Media"
   },
-  "active_mode": "all_iterations_yx"
+  "active_mode": "compare_bl_vs_adtv"
 }
