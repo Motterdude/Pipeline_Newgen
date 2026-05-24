@@ -934,14 +934,21 @@ class VariableSelectorDialog(QDialog):
         self.search_edit.selectAll()
 
     def _filtered_variables(self) -> List[str]:
+        import unicodedata
         raw = self.search_edit.text().strip()
         if not raw:
             return self.variable_names
         pattern = raw
         if not any(ch in pattern for ch in "*?[]"):
             pattern = f"*{pattern}*"
-        pattern_low = pattern.lower()
-        return [name for name in self.variable_names if fnmatch.fnmatch(name.lower(), pattern_low)]
+        pattern_low = unicodedata.normalize("NFKD", pattern.lower()).encode("ascii", "ignore").decode()
+        return [
+            name for name in self.variable_names
+            if fnmatch.fnmatch(
+                unicodedata.normalize("NFKD", name.lower()).encode("ascii", "ignore").decode(),
+                pattern_low,
+            )
+        ]
 
     def _refresh_list(self) -> None:
         items = self._filtered_variables()
@@ -2383,9 +2390,11 @@ class Pipeline29ConfigEditor(QMainWindow):
         preview_df = self._current_preview_output_df()
         if preview_df is not None and not preview_df.empty:
             names.update([str(name).strip() for name in preview_df.columns if str(name).strip()])
-        preview_plot_df = getattr(self.preview_plot_tab, "_loaded_df", None)
-        if preview_plot_df is not None and not preview_plot_df.empty:
-            names.update([str(c).strip() for c in preview_plot_df.columns if str(c).strip()])
+        for attr in ("_loaded_df", "_excl_df", "_raw_df"):
+            plot_df = getattr(self.preview_plot_tab, attr, None)
+            if plot_df is not None and not plot_df.empty:
+                names.update([str(c).strip() for c in plot_df.columns if str(c).strip()])
+                break
         names.update(_expected_uncertainty_columns(self.mappings_table.records(), self.instruments_table.records()))
         for table_section, columns in (
             (self.mappings_table, SEARCHABLE_COLUMNS_BY_SECTION.get("Mappings", set())),
@@ -2483,12 +2492,14 @@ class Pipeline29ConfigEditor(QMainWindow):
             if suggestion is not None:
                 suggestion["unit"] = unit
                 return suggestion
-        preview_plot_df = getattr(self.preview_plot_tab, "_loaded_df", None)
-        if preview_plot_df is not None and not preview_plot_df.empty:
-            suggestion = _build_axis_suggestion(preview_plot_df, y_text)
-            if suggestion is not None:
-                suggestion["unit"] = unit
-                return suggestion
+        for attr in ("_loaded_df", "_excl_df", "_raw_df"):
+            plot_df = getattr(self.preview_plot_tab, attr, None)
+            if plot_df is not None and not plot_df.empty:
+                suggestion = _build_axis_suggestion(plot_df, y_text)
+                if suggestion is not None:
+                    suggestion["unit"] = unit
+                    return suggestion
+                break
         return None
 
     def _open_row_helper(

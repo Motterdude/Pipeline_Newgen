@@ -404,6 +404,14 @@ class PreviewPlotTab(QWidget):
         self._compare_df: Optional[pd.DataFrame] = None
         self._compare_path: Optional[Path] = None
 
+        # Hover tooltip
+        self._hover_timer = QTimer(self)
+        self._hover_timer.setSingleShot(True)
+        self._hover_timer.setInterval(600)
+        self._hover_timer.timeout.connect(self._show_hover_tooltip)
+        self._hover_last_event = None
+        self._hover_tooltip: Optional[QLabel] = None
+
         # Raw / Excl toggle data sources
         self._raw_path: Optional[Path] = None
         self._raw_df: Optional[pd.DataFrame] = None
@@ -689,7 +697,7 @@ class PreviewPlotTab(QWidget):
 
         self.edit_filter_h2o = QLineEdit()
         self.edit_filter_h2o.setPlaceholderText("0,6,25,35")
-        left_form.addRow("Filter H2O:", self.edit_filter_h2o)
+        self.edit_filter_h2o.setVisible(False)
 
         self.edit_series_col = QLineEdit()
         self.edit_series_col.setPlaceholderText("(vazio = agrupar por fuel)")
@@ -697,11 +705,11 @@ class PreviewPlotTab(QWidget):
         self._completer_series.setCaseSensitivity(Qt.CaseInsensitive)
         self._completer_series.setFilterMode(Qt.MatchContains)
         self.edit_series_col.setCompleter(self._completer_series)
-        left_form.addRow("Series col:", self.edit_series_col)
+        self.edit_series_col.setVisible(False)
 
         self.combo_label_variant = QComboBox()
         self.combo_label_variant.addItems(["box", "tag", "marker", "badge"])
-        left_form.addRow("Label variant:", self.combo_label_variant)
+        self.combo_label_variant.setVisible(False)
 
         # Action buttons
         btn_row1 = QHBoxLayout()
@@ -761,18 +769,14 @@ class PreviewPlotTab(QWidget):
         self._cursor_table.setColumnCount(2)
         self._cursor_table.setHorizontalHeaderLabels(["Serie", "Valor"])
         self._cursor_table.setVisible(False)
-        self._cursor_table.setFixedWidth(220)
-        self._cursor_table.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
+        self._cursor_table.setMinimumWidth(180)
+        self._cursor_table.setMaximumWidth(320)
+        self._cursor_table.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
         self._cursor_table.verticalHeader().setVisible(False)
-        self._cursor_table.setStyleSheet(
-            "QTableWidget { font-size: 11px; }"
-            "QHeaderView::section { font-size: 11px; font-weight: bold; }"
-            "QTableWidget::item { padding: 2px 4px; }"
-        )
         self._cursor_table.verticalHeader().setDefaultSectionSize(22)
         self._cursor_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self._cursor_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
-        self._cursor_table.setColumnWidth(1, 60)
+        self._cursor_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self._apply_cursor_font_size()
 
         right_widget = QWidget()
         right_inner = QHBoxLayout(right_widget)
@@ -1761,6 +1765,7 @@ class PreviewPlotTab(QWidget):
         self.chk_lock_x.setChecked(disp.get("lock_x", False))
         self.edit_series_col.setText(disp.get("series_col", ""))
         self.edit_cursor_font.setText(str(disp.get("cursor_font_size", 15)))
+        self._apply_cursor_font_size(disp.get("cursor_font_size", 15))
         # Active mode
         mode = s.get("active_mode", "all_iterations_yx")
         idx_pt = self.combo_plot_type.findText(mode)
@@ -1830,23 +1835,29 @@ class PreviewPlotTab(QWidget):
     # Cursor Readout
     # ------------------------------------------------------------------
 
-    def _on_cursor_font_changed(self) -> None:
-        size = self.edit_cursor_font.text().strip()
-        try:
-            sz = int(size)
-            if sz < 6:
-                sz = 6
-            if sz > 24:
-                sz = 24
-        except ValueError:
-            sz = 11
-        self.edit_cursor_font.setText(str(sz))
+    def _apply_cursor_font_size(self, sz: int = 0) -> None:
+        if sz <= 0:
+            try:
+                sz = int(self.edit_cursor_font.text().strip() or "11")
+            except ValueError:
+                sz = 11
+        sz = max(6, min(24, sz))
         self._cursor_table.setStyleSheet(
             f"QTableWidget {{ font-size: {sz}px; }}"
             f"QHeaderView::section {{ font-size: {sz}px; font-weight: bold; }}"
             "QTableWidget::item { padding: 2px 4px; }"
         )
         self._cursor_table.verticalHeader().setDefaultSectionSize(sz + 11)
+
+    def _on_cursor_font_changed(self) -> None:
+        size = self.edit_cursor_font.text().strip()
+        try:
+            sz = int(size)
+            sz = max(6, min(24, sz))
+        except ValueError:
+            sz = 11
+        self.edit_cursor_font.setText(str(sz))
+        self._apply_cursor_font_size(sz)
         self._session["display"]["cursor_font_size"] = sz
 
     def _on_cursor_mode_toggled(self, active: bool) -> None:
@@ -1876,6 +1887,7 @@ class PreviewPlotTab(QWidget):
     def _build_snap_grid(self) -> None:
         """Cache sorted X datapoints for fast cursor snapping."""
         self._snap_grid: List[float] = []
+        self._cursor_interpolating: bool = False
         if not self._current_fig:
             return
         ax = self._current_fig.gca()
@@ -1889,11 +1901,16 @@ class PreviewPlotTab(QWidget):
                     if np.isfinite(xv):
                         all_x.add(float(xv))
         self._snap_grid = sorted(all_x)
+        n_unique = len(self._snap_grid)
+        self._cursor_interpolating = n_unique > 40
 
     def _snap_cursor_x(self, raw_x: float) -> float:
-        """Snap cursor to nearest actual datapoint X value (uses cache)."""
+        """Snap cursor to nearest actual datapoint X value (uses cache).
+        In interpolating mode, returns raw_x for free cursor movement."""
         if not hasattr(self, "_snap_grid") or not self._snap_grid:
             self._build_snap_grid()
+        if getattr(self, "_cursor_interpolating", False):
+            return raw_x
         if not self._snap_grid:
             return raw_x
         idx = int(np.searchsorted(self._snap_grid, raw_x))
@@ -1926,6 +1943,134 @@ class PreviewPlotTab(QWidget):
             return
         self._move_cursor_to(self._snap_cursor_x(event.xdata))
 
+    # ------------------------------------------------------------------
+    # Hover tooltip
+    # ------------------------------------------------------------------
+
+    def _on_hover_check(self, event) -> None:
+        if self._exclusion_mode_active:
+            self._hover_timer.stop()
+            self._hide_hover_tooltip()
+            return
+        if event.inaxes is None or event.xdata is None:
+            self._hover_timer.stop()
+            self._hide_hover_tooltip()
+            return
+        self._hover_last_event = event
+        self._hover_timer.stop()
+        self._hide_hover_tooltip()
+        self._hover_timer.start()
+
+    def _show_hover_tooltip(self) -> None:
+        event = self._hover_last_event
+        if event is None or event.inaxes is None or not self._current_fig:
+            return
+        ax = event.inaxes
+        best_dist = float("inf")
+        best_line = None
+        best_idx = -1
+        display_trans = ax.transData
+        for line in ax.get_lines():
+            lbl = line.get_label()
+            if not lbl or lbl.startswith("_") or line == getattr(self, "_cursor_line", None):
+                continue
+            xd = np.asarray(line.get_xdata(), dtype=float)
+            yd = np.asarray(line.get_ydata(), dtype=float)
+            if len(xd) == 0:
+                continue
+            pts_data = np.column_stack([xd, yd])
+            pts_display = display_trans.transform(pts_data)
+            mouse_display = display_trans.transform([[event.xdata, event.ydata]])[0]
+            dists = np.hypot(pts_display[:, 0] - mouse_display[0], pts_display[:, 1] - mouse_display[1])
+            min_idx = int(np.nanargmin(dists))
+            if dists[min_idx] < best_dist:
+                best_dist = dists[min_idx]
+                best_line = line
+                best_idx = min_idx
+        if best_dist > 15 or best_line is None:
+            return
+        x_val = float(best_line.get_xdata()[best_idx])
+        y_val = float(best_line.get_ydata()[best_idx])
+        series_label = best_line.get_label()
+        color_hex = matplotlib.colors.to_hex(best_line.get_color())
+        df = self._get_effective_df()
+        info = self._lookup_point_info(df, x_val, series_label)
+        text_lines = [
+            f"<b>{series_label}</b>",
+            f"Load: {info.get('Load_kW', '—')}",
+            f"Consumo: SD {info.get('sd_consumo', '—')}",
+            f"Rotacao: {info.get('rotacao', '—')} | SD {info.get('sd_rotacao', '—')}",
+            f"T_E_TURB: {info.get('T_E_TURB', '—')} | SD {info.get('sd_T_E_TURB', '—')}",
+            f"P_E_TURB: {info.get('P_E_TURB', '—')} | SD {info.get('sd_P_E_TURB', '—')}",
+            f"P_COLETOR: {info.get('P_COLETOR', '—')} | SD {info.get('sd_P_COLETOR', '—')}",
+        ]
+        html = "<br>".join(text_lines)
+        if self._hover_tooltip is None:
+            self._hover_tooltip = QLabel(self)
+            self._hover_tooltip.setWindowFlags(Qt.ToolTip)
+            self._hover_tooltip.setTextFormat(Qt.RichText)
+        self._hover_tooltip.setStyleSheet(
+            f"QLabel {{ background-color: {color_hex}22; border: 2px solid {color_hex}; "
+            f"padding: 6px 8px; font-size: 15px; border-radius: 4px; }}"
+        )
+        self._hover_tooltip.setText(html)
+        self._hover_tooltip.adjustSize()
+        from PySide6.QtGui import QCursor
+        cursor_pos = QCursor.pos()
+        self._hover_tooltip.move(cursor_pos.x() + 18, cursor_pos.y() + 18)
+        self._hover_tooltip.show()
+
+    def _hide_hover_tooltip(self) -> None:
+        if self._hover_tooltip is not None:
+            self._hover_tooltip.hide()
+
+    def _lookup_point_info(self, df: pd.DataFrame, x_val: float, series_label: str) -> Dict[str, str]:
+        result: Dict[str, str] = {
+            "Load_kW": "—", "sd_consumo": "—", "sd_rotacao": "—",
+            "rotacao": "—", "T_E_TURB": "—", "P_E_TURB": "—",
+            "sd_T_E_TURB": "—", "sd_P_E_TURB": "—",
+            "P_COLETOR": "—", "sd_P_COLETOR": "—",
+        }
+        if df is None or df.empty:
+            return result
+        x_col = self.edit_x_col.text().strip() or "Load_kW"
+        x_vals = pd.to_numeric(df.get(x_col), errors="coerce")
+        mask = np.isclose(x_vals, x_val, atol=0.01)
+        if not mask.any():
+            idx_nearest = (x_vals - x_val).abs().idxmin()
+            mask = df.index == idx_nearest
+        rows = df.loc[mask]
+        if rows.empty:
+            return result
+        row = rows.iloc[0]
+
+        def _fmt(col, unit="", decimals=1):
+            if col not in df.columns:
+                return "—"
+            v = row.get(col)
+            return f"{float(v):.{decimals}f}{' ' + unit if unit else ''}" if pd.notna(v) else "—"
+
+        result["Load_kW"] = _fmt("Load_kW", "kW", 1)
+        for cand in ["Consumo_kg_h_sd_of_windows", "Consumo_sd_of_windows"]:
+            if cand in df.columns:
+                result["sd_consumo"] = _fmt(cand, "kg/h", 3)
+                break
+        for cand in ["Rotação_mean_of_windows", "Rotacao_mean_of_windows"]:
+            if cand in df.columns:
+                result["rotacao"] = _fmt(cand, "rpm", 0)
+                break
+        for cand in ["Rotação_sd_of_windows", "Rotacao_sd_of_windows"]:
+            if cand in df.columns:
+                result["sd_rotacao"] = _fmt(cand, "rpm", 1)
+                break
+        result["T_E_TURB"] = _fmt("T_E_TURB_mean_of_windows", "C", 1)
+        result["sd_T_E_TURB"] = _fmt("T_E_TURB_sd_of_windows", "C", 1)
+        result["P_E_TURB"] = _fmt("P_E_TURB_RAW_mean_of_windows", "kPa", 1)
+        result["sd_P_E_TURB"] = _fmt("P_E_TURB_RAW_sd_of_windows", "kPa", 2)
+        result["P_COLETOR"] = _fmt("P_COLETOR_RAW_mean_of_windows", "kPa", 1)
+        result["sd_P_COLETOR"] = _fmt("P_COLETOR_RAW_sd_of_windows", "kPa", 2)
+        return result
+
     def _on_cursor_move(self, event) -> None:
         if not self._cursor_mode_active or event.inaxes is None or event.xdata is None:
             if self._canvas and not self._exclusion_mode_active:
@@ -1955,6 +2100,8 @@ class PreviewPlotTab(QWidget):
         from PySide6.QtCore import QPointF
         from PySide6.QtGui import QPolygonF
 
+        interpolating = getattr(self, "_cursor_interpolating", False)
+
         self._cursor_table.setRowCount(len(lines))
         for i, line in enumerate(lines):
             xdata = np.asarray(line.get_xdata(), dtype=float)
@@ -1962,13 +2109,25 @@ class PreviewPlotTab(QWidget):
             if len(xdata) == 0:
                 continue
 
-            # Exact match at snapped X (no interpolation)
-            mask = np.isclose(xdata, self._cursor_x, atol=1e-4)
-            if mask.any():
-                y_val = ydata[mask][0]
-                val_text = f"{y_val:.1f}"
+            if interpolating:
+                valid = np.isfinite(xdata) & np.isfinite(ydata)
+                xv, yv = xdata[valid], ydata[valid]
+                if len(xv) >= 2:
+                    sort_idx = np.argsort(xv)
+                    xv, yv = xv[sort_idx], yv[sort_idx]
+                    y_val = float(np.interp(self._cursor_x, xv, yv))
+                    val_text = f"{y_val:.1f}"
+                elif len(xv) == 1:
+                    val_text = f"{yv[0]:.1f}"
+                else:
+                    val_text = "—"
             else:
-                val_text = "—"
+                mask = np.isclose(xdata, self._cursor_x, atol=1e-4)
+                if mask.any():
+                    y_val = ydata[mask][0]
+                    val_text = f"{y_val:.1f}"
+                else:
+                    val_text = "—"
 
             color_hex = matplotlib.colors.to_hex(line.get_color())
             marker = line.get_marker() or "o"
@@ -2001,7 +2160,10 @@ class PreviewPlotTab(QWidget):
             item_label.setIcon(QIcon(px))
             self._cursor_table.setItem(i, 0, item_label)
             self._cursor_table.setItem(i, 1, QTableWidgetItem(val_text))
-        self._cursor_table.setHorizontalHeaderLabels(["Serie", f"@ {self._cursor_x:.1f} kW"])
+
+        x_label = self.edit_x_label.text().strip() or self.edit_x_col.text().strip() or "X"
+        mode_tag = "Interpolating" if interpolating else "Exact match"
+        self._cursor_table.setHorizontalHeaderLabels([f"Serie [{mode_tag}]", f"@ {self._cursor_x:g} ({x_label})"])
 
     # ------------------------------------------------------------------
     # Compare Mode
@@ -2836,9 +2998,13 @@ class PreviewPlotTab(QWidget):
         new_y_col = str(rec.get("y_col", "")).strip()
         mem = self._session.get("y_scales", {}).get(new_y_col, {}) if new_y_col else {}
 
-        if not lock_x:
-            self.edit_x_col.setText(mem.get("x_col", "") or str(rec.get("x_col", "")))
-            self.edit_x_label.setText(str(rec.get("x_label", "")))
+        rec_x_col = mem.get("x_col", "") or str(rec.get("x_col", ""))
+        current_lock_x_col = self.edit_x_col.text().strip()
+        plot_has_different_x = bool(rec_x_col and current_lock_x_col and rec_x_col != current_lock_x_col)
+
+        if not lock_x or plot_has_different_x:
+            self.edit_x_col.setText(rec_x_col)
+            self.edit_x_label.setText(str(rec.get("x_label", "")) or rec_x_col)
             self.edit_x_min.setText(mem.get("x_min", "") or str(rec.get("x_min", "")))
             self.edit_x_max.setText(mem.get("x_max", "") or str(rec.get("x_max", "")))
             self.edit_x_step.setText(mem.get("x_step", "") or str(rec.get("x_step", "")))
@@ -2851,8 +3017,6 @@ class PreviewPlotTab(QWidget):
         else:
             show_unc = str(rec.get("show_uncertainty", "1")).strip()
             self.chk_show_uncertainty.setChecked(show_unc not in ("0", "false", "no"))
-        if not lock_x:
-            self.edit_x_label.setText(str(rec.get("x_label", "")))
         self.edit_y_label.setText(str(rec.get("y_label", "")))
 
         def _clean_nan(v: str) -> str:
@@ -3222,6 +3386,7 @@ class PreviewPlotTab(QWidget):
                     except (IndexError, AttributeError):
                         pass
         self._canvas.mpl_connect("pick_event", self._on_pick_event)
+        self._canvas.mpl_connect("motion_notify_event", self._on_hover_check)
         if self._exclusion_mode_active and not self._cursor_mode_active:
             self._canvas.setCursor(Qt.CrossCursor)
         elif self._cursor_mode_active:

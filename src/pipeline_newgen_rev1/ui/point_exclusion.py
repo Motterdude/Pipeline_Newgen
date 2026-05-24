@@ -156,18 +156,29 @@ def apply_exclusions(
 ) -> pd.DataFrame:
     """Filter out ALL excluded points globally. Returns a copy.
 
-    The y_col parameter is accepted for API compatibility but ignored —
-    all exclusions apply to all plots.
+    Matches by:
+    1. (series_label, Load_kW) — works for all_iterations mode
+    2. (basename) — works regardless of plot_type or x_col
     """
-    keys = store.active_keys()
-    if not keys:
+    if not store.count():
         return df
 
-    load_rounded = pd.to_numeric(df[x_col], errors="coerce").round(6)
-    pair_series = list(zip(series_labels, load_rounded))
+    keys = store.active_keys()
+    excluded_basenames = {e.basename for e in store.all_exclusions() if e.basename}
 
-    mask = pd.Series(
-        [(lbl, lkw) not in keys for lbl, lkw in pair_series],
-        index=df.index,
-    )
+    has_load = "Load_kW" in df.columns
+    load_rounded = pd.to_numeric(df["Load_kW"], errors="coerce").round(6) if has_load else pd.Series(dtype="float64")
+    has_basename = "BaseName" in df.columns
+    basenames = df["BaseName"].astype(str) if has_basename else pd.Series("", index=df.index)
+
+    mask = pd.Series(True, index=df.index)
+    for idx in df.index:
+        if has_basename and basenames.at[idx] in excluded_basenames:
+            mask.at[idx] = False
+        elif has_load:
+            lbl = series_labels.get(idx, "")
+            lkw = load_rounded.get(idx)
+            if pd.notna(lkw) and (lbl, round(float(lkw), 6)) in keys:
+                mask.at[idx] = False
+
     return df.loc[mask].copy()
