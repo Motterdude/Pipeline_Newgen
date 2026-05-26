@@ -4,6 +4,7 @@ Ordem cronológica inversa. Uma linha por sessão. Detalhe completo em `handoff/
 
 ## 2026-05
 
+- **2026-05-25** — [fix-navigation-mode-stickiness](changes/2026-05-25-fix-navigation-mode-stickiness.md) — Fix mode reversion na navegação + suite de validação 94 testes (NavigationHarness stub approach).
 - **2026-05-24** — [session2-compare-metrics-tolerance-fixes](changes/2026-05-24-session2-compare-metrics-tolerance-fixes.md) — 37 compare metrics, MFB_10_50/50_90, media parcial fix, tolerance lines absoluto, compare pair toggle, title bleeding fix, drag rescale, excl quick-pick.
 - **2026-05-24** — [cursor-tooltip-lockx-exclusion-catalog](changes/2026-05-24-cursor-tooltip-lockx-exclusion-catalog.md) — Hover tooltip 600ms, cursor interpolating/exact auto, Lock X per-axis, exclusion by BaseName, catalogo sem acento, GUI clean.
 - **2026-05-23** — [session-mega-gui-improvements](changes/2026-05-23-session-mega-gui-improvements.md) — CONSOLIDADO: 14 fixes/features na GUI (exclusões globais, workspace persistente, KIBOX, lazy load, sync Plots↔Preview, logging). Ver arquivo para detalhes.

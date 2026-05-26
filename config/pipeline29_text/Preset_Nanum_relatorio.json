@@ -1138,16 +1138,16 @@
       "y_tol_minus": ""
     },
     "AI90": {
-      "y_min": "-5",
-      "y_max": "5",
-      "y_step": "0,5",
+      "y_min": "",
+      "y_max": "",
+      "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
       "x_max": "50",
       "x_step": "5",
       "show_uncertainty": "0",
-      "y_tol_plus": "0.0",
-      "y_tol_minus": "0.0"
+      "y_tol_plus": "",
+      "y_tol_minus": ""
     },
     "APMAX": {
       "y_min": "",
@@ -1400,7 +1400,7 @@
     "series_col": ""
   },
   "compare": {
-    "active_metric": "Consumo absoluto",
+    "active_metric": "AI90",
     "active_pair": "Media vs Media"
   },
   "active_mode": "compare_bl_vs_adtv"

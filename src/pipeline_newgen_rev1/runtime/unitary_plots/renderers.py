@@ -196,7 +196,7 @@ def plot_all_fuels(
     groups = series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col)
     colors = fuel_colors or fuel_color_map([g[0] or "" for g in groups])
 
-    plt.figure(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(10, 6))
     any_curve = False
     legend_entries = 0
     table_rows: List[Tuple[str, object, object]] = []
@@ -217,19 +217,19 @@ def plot_all_fuels(
         any_curve = True
         if yerr_col:
             if label:
-                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color, label=label, picker=5)
+                ax.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color, label=label, picker=5)
                 legend_entries += 1
             else:
-                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color, picker=5)
+                ax.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color, picker=5)
         else:
             if label:
-                plt.plot(d[x_col], d[y_col], "o-", color=color, label=label, picker=5)
+                ax.plot(d[x_col], d[y_col], "o-", color=color, label=label, picker=5)
                 legend_entries += 1
             else:
-                plt.plot(d[x_col], d[y_col], "o-", color=color, picker=5)
+                ax.plot(d[x_col], d[y_col], "o-", color=color, picker=5)
 
     if not any_curve:
-        plt.close()
+        plt.close(fig)
         print(f"[WARN] Sem dados para plot {filename}")
         if return_fig:
             return None
@@ -238,24 +238,23 @@ def plot_all_fuels(
     _apply_fixed_x(fixed_x)
     _apply_fixed_y(fixed_y, fixed_y_limits)
 
-    ax = plt.gca()
     guide_entries = _add_y_tolerance_guides(ax, y_tol_plus=y_tol_plus, y_tol_minus=y_tol_minus)
     if fixed_y is None:
         _apply_y_tick_step(ax, y_tick_step)
 
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.title(title)
-    plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_title(title)
+    ax.grid(True, which="both", linestyle="--", linewidth=0.5)
     _add_xy_value_table(ax, table_rows)
     if legend_entries > 0 or guide_entries > 0:
-        plt.legend()
+        ax.legend()
     outpath = target_dir / filename
-    plt.tight_layout()
+    fig.tight_layout()
     if return_fig:
-        return plt.gcf()
-    plt.savefig(outpath, dpi=200)
-    plt.close()
+        return fig
+    fig.savefig(outpath, dpi=200)
+    plt.close(fig)
     print(f"[OK] Salvei {outpath}")
     return True
 
@@ -288,7 +287,7 @@ def plot_all_fuels_xy(
     groups = series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col)
     colors = fuel_colors or fuel_color_map([g[0] or "" for g in groups])
 
-    plt.figure(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(10, 6))
     any_curve = False
     legend_entries = 0
     table_rows: List[Tuple[str, object, object]] = []
@@ -309,19 +308,19 @@ def plot_all_fuels_xy(
         any_curve = True
         if yerr_col:
             if label:
-                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color, label=label, picker=5)
+                ax.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color, label=label, picker=5)
                 legend_entries += 1
             else:
-                plt.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color, picker=5)
+                ax.errorbar(d[x_col], d[y_col], yerr=d[yerr_col], fmt="o-", capsize=3, color=color, picker=5)
         else:
             if label:
-                plt.plot(d[x_col], d[y_col], "o-", color=color, label=label, picker=5)
+                ax.plot(d[x_col], d[y_col], "o-", color=color, label=label, picker=5)
                 legend_entries += 1
             else:
-                plt.plot(d[x_col], d[y_col], "o-", color=color, picker=5)
+                ax.plot(d[x_col], d[y_col], "o-", color=color, picker=5)
 
     if not any_curve:
-        plt.close()
+        plt.close(fig)
         print(f"[WARN] Sem dados para plot {filename}")
         if return_fig:
             return None
@@ -330,24 +329,23 @@ def plot_all_fuels_xy(
     _apply_fixed_x(fixed_x)
     _apply_fixed_y(fixed_y, fixed_y_limits)
 
-    ax = plt.gca()
     guide_entries = _add_y_tolerance_guides(ax, y_tol_plus=y_tol_plus, y_tol_minus=y_tol_minus)
     if fixed_y is None:
         _apply_y_tick_step(ax, y_tick_step)
 
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.title(title)
-    plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_title(title)
+    ax.grid(True, which="both", linestyle="--", linewidth=0.5)
     _add_xy_value_table(ax, table_rows)
     if legend_entries > 0 or guide_entries > 0:
-        plt.legend()
+        ax.legend()
     outpath = target_dir / filename
-    plt.tight_layout()
+    fig.tight_layout()
     if return_fig:
-        return plt.gcf()
-    plt.savefig(outpath, dpi=200)
-    plt.close()
+        return fig
+    fig.savefig(outpath, dpi=200)
+    plt.close(fig)
     print(f"[OK] Salvei {outpath}")
     return True
 

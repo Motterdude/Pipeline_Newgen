@@ -38,6 +38,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QListWidget,
     QListWidgetItem,
+    QMenu,
     QMessageBox,
     QProgressBar,
     QPushButton,
@@ -403,6 +404,7 @@ class PreviewPlotTab(QWidget):
         self._cursor_x: float = 0.0
         self._compare_df: Optional[pd.DataFrame] = None
         self._compare_path: Optional[Path] = None
+        self._active_workspace_path: Optional[Path] = None
 
         # Hover tooltip
         self._hover_timer = QTimer(self)
@@ -763,6 +765,8 @@ class PreviewPlotTab(QWidget):
         self.list_workspaces = QListWidget()
         self.list_workspaces.setMinimumHeight(120)
         self.list_workspaces.setToolTip("Duplo-clique para carregar um workspace salvo")
+        self.list_workspaces.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.list_workspaces.customContextMenuRequested.connect(self._on_workspace_context_menu)
         left_form.addRow(self.list_workspaces)
 
         # Wrap left panel in scroll area
@@ -1490,17 +1494,29 @@ class PreviewPlotTab(QWidget):
         return Path(os.environ.get("USERPROFILE", Path.home())) / ".pipeline_newgen" / "preview_workspace.json"
 
     def _save_workspace(self) -> None:
-        """Save entire session state to disk, including plots.toml config."""
+        """Save session state to the active workspace file."""
         self._sync_ui_to_session()
         self._sync_current_to_plots_table()
-        path = self._workspace_file_path()
+        path = self._active_workspace_path or self._workspace_file_path()
+        if path.exists():
+            reply = QMessageBox.question(
+                self, "Salvar workspace",
+                f"Salvar em '{path.name}'?\n\n"
+                f"Modificado em: {time.strftime('%d/%m/%Y %H:%M', time.localtime(path.stat().st_mtime))}\n\n"
+                "Sim = gravar em cima.  Nao = Save As (novo arquivo).",
+                QMessageBox.Yes | QMessageBox.No,
+            )
+            if reply != QMessageBox.Yes:
+                self._save_workspace_as()
+                return
         path.parent.mkdir(parents=True, exist_ok=True)
         data = {"version": 2, **self._session}
         path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+        self._active_workspace_path = path
         if self._save_config_callback is not None:
             self._save_config_callback()
         self._refresh_workspace_list()
-        self._show_status(f"Workspace + config salvos: {path.name}")
+        self._show_status(f"Workspace salvo: {path.name}")
 
     def _save_workspace_as(self) -> None:
         start_dir = str(self._workspace_file_path().parent)
@@ -1514,6 +1530,7 @@ class PreviewPlotTab(QWidget):
             p.parent.mkdir(parents=True, exist_ok=True)
             data = {"version": 2, **self._session}
             p.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+            self._active_workspace_path = p
             self._refresh_workspace_list()
             self._show_status(f"Workspace salvo: {p.name}")
 
@@ -1575,6 +1592,7 @@ class PreviewPlotTab(QWidget):
             for key in self._session:
                 if key in data:
                     self._session[key] = data[key]
+            self._active_workspace_path = p
             # Full in-memory reset — _restore_session_to_ui will re-hydrate from paths
             self._loaded_df = None
             self._loaded_path = None
@@ -1590,6 +1608,59 @@ class PreviewPlotTab(QWidget):
             self._show_status(f"Workspace carregado: {p.stem}")
         except (json.JSONDecodeError, OSError) as e:
             self._show_status(f"Erro ao carregar workspace: {e}")
+
+    def _on_workspace_context_menu(self, pos) -> None:
+        item = self.list_workspaces.itemAt(pos)
+        if not item:
+            return
+        path_str = item.data(Qt.UserRole)
+        if not path_str:
+            return
+        p = Path(path_str)
+        menu = QMenu(self)
+        act_rename = menu.addAction("Rename")
+        act_delete = menu.addAction("Delete")
+        action = menu.exec(self.list_workspaces.mapToGlobal(pos))
+        if action == act_rename:
+            self._rename_workspace(p)
+        elif action == act_delete:
+            self._delete_workspace(p)
+
+    def _rename_workspace(self, path: Path) -> None:
+        current_name = path.stem
+        new_name, ok = QInputDialog.getText(
+            self, "Rename workspace", "Novo nome (sem extensão):", text=current_name
+        )
+        if not ok or not new_name.strip():
+            return
+        new_name = new_name.strip().replace(" ", "_")
+        new_path = path.parent / f"{new_name}.json"
+        if new_path.exists():
+            QMessageBox.warning(self, "Rename", f"Já existe um workspace '{new_name}.json'.")
+            return
+        try:
+            path.rename(new_path)
+            self._refresh_workspace_list()
+            self._show_status(f"Workspace renomeado: {current_name} → {new_name}")
+        except OSError as e:
+            self._show_status(f"Erro ao renomear: {e}")
+
+    def _delete_workspace(self, path: Path) -> None:
+        if path.name == "preview_workspace.json":
+            QMessageBox.warning(self, "Delete", "Nao e possivel deletar o workspace default.")
+            return
+        reply = QMessageBox.question(
+            self, "Delete workspace",
+            f"Deletar permanentemente '{path.stem}'?",
+            QMessageBox.Yes | QMessageBox.No,
+        )
+        if reply == QMessageBox.Yes:
+            try:
+                path.unlink()
+                self._refresh_workspace_list()
+                self._show_status(f"Workspace deletado: {path.stem}")
+            except OSError as e:
+                self._show_status(f"Erro ao deletar: {e}")
 
     def _load_workspace(self) -> bool:
         """Load session state from disk. Returns True if loaded successfully."""
@@ -1607,6 +1678,7 @@ class PreviewPlotTab(QWidget):
                         self._session[key].update(data[key])
                     else:
                         self._session[key] = data[key]
+            self._active_workspace_path = path
             return True
         except (json.JSONDecodeError, OSError):
             return False
@@ -2379,6 +2451,7 @@ class PreviewPlotTab(QWidget):
         self.combo_compare_pair.setVisible(is_compare)
         if self._populating:
             return
+        self._session["active_mode"] = text
         if is_compare:
             if self._compare_df is None:
                 self._auto_discover_compare_xlsx()
@@ -3233,14 +3306,10 @@ class PreviewPlotTab(QWidget):
 
         lock_x = self.chk_lock_x.isChecked()
         current_ptype = self.combo_plot_type.currentText()
-        session_mode = self._session.get("active_mode", "")
 
-        if current_ptype in ("all_iterations_yx", "compare_bl_vs_adtv"):
+        if current_ptype in ("all_iterations_yx", "compare_bl_vs_adtv",
+                             "all_fuels_yx", "all_fuels_delta_ref"):
             pass
-        elif session_mode and session_mode != str(rec.get("plot_type", "")):
-            idx = self.combo_plot_type.findText(session_mode)
-            if idx >= 0:
-                self.combo_plot_type.setCurrentIndex(idx)
         elif not lock_x:
             ptype = str(rec.get("plot_type", "all_fuels_yx"))
             idx = self.combo_plot_type.findText(ptype)
@@ -3317,6 +3386,9 @@ class PreviewPlotTab(QWidget):
     # ------------------------------------------------------------------
 
     def _render_preview(self) -> None:
+        if getattr(self, "_rendering", False):
+            return
+        self._rendering = True
         t0 = time.perf_counter()
 
         try:
@@ -3471,8 +3543,12 @@ class PreviewPlotTab(QWidget):
             self._refresh_thumbnails()
 
         except Exception as exc:
-            self._show_placeholder(f"Erro no render:\n{exc}")
+            import traceback, logging
+            logging.getLogger("pipeline.preview").exception("Render error")
+            self._show_placeholder(f"Erro no render:\n{exc}\n\n{traceback.format_exc()}")
             self._show_status(f"Preview error: {exc}")
+        finally:
+            self._rendering = False
 
     def _apply_y_scale_to_fig(self, fig: Figure) -> None:
         """Apply Y min/max/step from controls to an already-rendered figure."""

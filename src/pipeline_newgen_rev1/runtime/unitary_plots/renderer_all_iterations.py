@@ -136,7 +136,7 @@ def plot_all_iterations(
         campaign = parts[0] if parts else ""
         iteration_counts[campaign] = iteration_counts.get(campaign, 0) + 1
 
-    plt.figure(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(10, 6))
     any_curve = False
 
     for key in sorted(work["_series_key"].unique()):
@@ -163,19 +163,19 @@ def plot_all_iterations(
         fmt = f"{marker}-"
 
         if yerr_col and yerr_col in group.columns:
-            plt.errorbar(
+            ax.errorbar(
                 group[x_col], group[y_col], yerr=group[yerr_col],
                 fmt=fmt, capsize=3, color=color, label=label,
                 linewidth=1.6, markersize=5.5, picker=5,
             )
         else:
-            plt.plot(
+            ax.plot(
                 group[x_col], group[y_col], fmt,
                 color=color, label=label, linewidth=1.6, markersize=5.5, picker=5,
             )
 
     if not any_curve:
-        plt.close()
+        plt.close(fig)
         if return_fig:
             return None
         return False
@@ -183,21 +183,20 @@ def plot_all_iterations(
     _apply_fixed_x(fixed_x)
     _apply_fixed_y(fixed_y, fixed_y_limits)
 
-    ax = plt.gca()
     guide_entries = _add_y_tolerance_guides(ax, y_tol_plus=y_tol_plus, y_tol_minus=y_tol_minus)
     if fixed_y is None:
         _apply_y_tick_step(ax, y_tick_step)
 
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.title(title)
-    plt.grid(True, which="both", linestyle="--", linewidth=0.5)
-    plt.legend(loc="best", fontsize=9, ncol=2 if any_curve else 1)
-    plt.tight_layout()
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_title(title)
+    ax.grid(True, which="both", linestyle="--", linewidth=0.5)
+    ax.legend(loc="best", fontsize=9, ncol=2 if any_curve else 1)
+    fig.tight_layout()
 
     if return_fig:
-        return plt.gcf()
+        return fig
     outpath = target_dir / filename
-    plt.savefig(outpath, dpi=200)
-    plt.close()
+    fig.savefig(outpath, dpi=200)
+    plt.close(fig)
     return True

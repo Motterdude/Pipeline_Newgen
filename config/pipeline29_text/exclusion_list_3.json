@@ -1,0 +1,475 @@
+{
+  "version": 3,
+  "type": "exclusion_list",
+  "exported_at": "2026-05-24T13:24:25",
+  "exclusions": [
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 0.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_0kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 2.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_2.5kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 5.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_5kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 7.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_7.5kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 10.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_10kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 12.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_12.5kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 15.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_15kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 17.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_17.5kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 20.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_20kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 22.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_22.5kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 25.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_25kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 27.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_27.5kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 30.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_30kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 32.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_32.5kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 35.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_35kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 37.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_37.5kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 40.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_40kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 42.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_42.5kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 1",
+      "load_kw": 45.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_1__D85B15_45kW",
+      "reason": "[SERIE] vazão_de_ar_baixa",
+      "excluded_at": "2026-05-23T15:16:27",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Des 2",
+      "load_kw": 0.0,
+      "y_col": "*",
+      "basename": "Descendo_Aditivado_2__D85B15_0kW",
+      "reason": "Outlier_consumo_especifico_0kw",
+      "excluded_at": "2026-05-23T16:43:54",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 40.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_40kW",
+      "reason": "Oscilação de medição de consumo",
+      "excluded_at": "2026-05-23T17:41:46",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Des 1",
+      "load_kw": 42.5,
+      "y_col": "*",
+      "basename": "Descendo_Aditivado_1__D85B15_42.5kW",
+      "reason": "Oscilação de medição de consumo",
+      "excluded_at": "2026-05-23T17:41:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Des 1",
+      "load_kw": 20.0,
+      "y_col": "*",
+      "basename": "Descendo_Aditivado_1__D85B15_20kW",
+      "reason": "Outlier de CO2 muito baixo",
+      "excluded_at": "2026-05-23T17:43:38",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 7.5,
+      "y_col": "Rotação_mean_of_windows",
+      "basename": "Subindo_Aditivado_2__D85B15_7.5kW",
+      "reason": "Oscilação de rotação",
+      "excluded_at": "2026-05-24T12:26:31",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Des 2",
+      "load_kw": 10.0,
+      "y_col": "Rotação_mean_of_windows",
+      "basename": "Descendo_Aditivado_2__D85B15_10kW",
+      "reason": "Oscilação de rotação e consumo",
+      "excluded_at": "2026-05-24T12:26:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 3",
+      "load_kw": 40.0,
+      "y_col": "n_th_pct",
+      "basename": "Subindo_Aditivado_3__D85B15_40kW",
+      "reason": "Instabilidade medição de consumo",
+      "excluded_at": "2026-05-24T12:47:58",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 3",
+      "load_kw": 10.0,
+      "y_col": "Rotação_mean_of_windows",
+      "basename": "Subindo_Aditivado_3__D85B15_10kW",
+      "reason": "Instabilidade rotação",
+      "excluded_at": "2026-05-24T12:48:44",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Des 1",
+      "load_kw": 10.0,
+      "y_col": "Rotação_mean_of_windows",
+      "basename": "Descendo_Aditivado_1__D85B15_10kW",
+      "reason": "Instabilidade rotação",
+      "excluded_at": "2026-05-24T12:48:52",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Des 2",
+      "load_kw": 25.0,
+      "y_col": "Rotação_mean_of_windows",
+      "basename": "Descendo_Aditivado_2__D85B15_25kW",
+      "reason": "Instabilidade rotação",
+      "excluded_at": "2026-05-24T12:49:01",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Des 3",
+      "load_kw": 12.5,
+      "y_col": "Rotação_mean_of_windows",
+      "basename": "Descendo_Aditivado_3__D85B15_12.5kW",
+      "reason": "Instabilidade rotação",
+      "excluded_at": "2026-05-24T12:49:21",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Des 1",
+      "load_kw": 22.5,
+      "y_col": "Rotação_mean_of_windows",
+      "basename": "Descendo_Aditivado_1__D85B15_22.5kW",
+      "reason": "Instabilidade rotação",
+      "excluded_at": "2026-05-24T12:49:21",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "BL Sub 3",
+      "load_kw": 12.5,
+      "y_col": "Rotação_mean_of_windows",
+      "basename": "Subindo_Baseline_3__D85B15_12.5kW",
+      "reason": "Instabilidade rotação",
+      "excluded_at": "2026-05-24T12:49:35",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Des 1",
+      "load_kw": 25.0,
+      "y_col": "Rotação_mean_of_windows",
+      "basename": "Descendo_Aditivado_1__D85B15_25kW",
+      "reason": "Instabilidade rotação",
+      "excluded_at": "2026-05-24T12:49:35",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 3",
+      "load_kw": 25.0,
+      "y_col": "Rotação_mean_of_windows",
+      "basename": "Subindo_Aditivado_3__D85B15_25kW",
+      "reason": "Instabilidade rotação",
+      "excluded_at": "2026-05-24T12:49:35",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "BL Des 3",
+      "load_kw": 12.5,
+      "y_col": "Rotação_mean_of_windows",
+      "basename": "Descendo_Baseline_3__D85B15_12.5kW",
+      "reason": "Instabilidade rotação",
+      "excluded_at": "2026-05-24T12:49:40",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 0.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_0kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 2.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_2.5kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 5.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_5kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 10.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_10kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 12.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_12.5kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 15.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_15kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 17.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_17.5kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 20.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_20kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 22.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_22.5kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 25.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_25kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 27.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_27.5kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 30.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_30kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 32.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_32.5kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 35.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_35kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 37.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_37.5kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 42.5,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_42.5kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    },
+    {
+      "series_label": "ADTV Sub 2",
+      "load_kw": 45.0,
+      "y_col": "*",
+      "basename": "Subindo_Aditivado_2__D85B15_45kW",
+      "reason": "[SERIE] Offset_NOX_alto_curva_toda",
+      "excluded_at": "2026-05-24T12:58:56",
+      "excluded_by": "user"
+    }
+  ]
+}
