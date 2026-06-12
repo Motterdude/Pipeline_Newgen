@@ -596,6 +596,7 @@ class PreviewPlotTab(QWidget):
             "all_iterations_yx",
             "compare_bl_vs_adtv",
             "kibox_all",
+            "machine_scenarios",
         ])
         left_form.addRow("Plot type:", self.combo_plot_type)
 
@@ -1043,6 +1044,14 @@ class PreviewPlotTab(QWidget):
                 nxt = (self.combo_compare_metric.currentIndex() + 1) % cnt
                 self.combo_compare_metric.setCurrentIndex(nxt)
             return
+        if self.combo_plot_type.currentText() == "machine_scenarios":
+            from ..runtime.special_load_plots.machine_scenarios import MACHINE_SCENARIO_PLOT_REGISTRY
+            cnt = len(MACHINE_SCENARIO_PLOT_REGISTRY)
+            idx = getattr(self, "_machine_scenario_index", 0)
+            self._machine_scenario_index = (idx + 1) % cnt
+            self._apply_machine_scenario_controls(self._machine_scenario_index)
+            self._render_preview()
+            return
         count = self.combo_plot_selector.count()
         if count == 0:
             return
@@ -1055,6 +1064,14 @@ class PreviewPlotTab(QWidget):
             if cnt > 0:
                 prev = (self.combo_compare_metric.currentIndex() - 1) % cnt
                 self.combo_compare_metric.setCurrentIndex(prev)
+            return
+        if self.combo_plot_type.currentText() == "machine_scenarios":
+            from ..runtime.special_load_plots.machine_scenarios import MACHINE_SCENARIO_PLOT_REGISTRY
+            cnt = len(MACHINE_SCENARIO_PLOT_REGISTRY)
+            idx = getattr(self, "_machine_scenario_index", 0)
+            self._machine_scenario_index = (idx - 1) % cnt
+            self._apply_machine_scenario_controls(self._machine_scenario_index)
+            self._render_preview()
             return
         count = self.combo_plot_selector.count()
         if count == 0:
@@ -1072,6 +1089,10 @@ class PreviewPlotTab(QWidget):
             items = [self.combo_compare_metric.itemText(i)
                      for i in range(self.combo_compare_metric.count())]
             active_idx = self.combo_compare_metric.currentIndex()
+        elif self.combo_plot_type.currentText() == "machine_scenarios":
+            from ..runtime.special_load_plots.machine_scenarios import MACHINE_SCENARIO_PLOT_REGISTRY
+            items = [entry["id"] for entry in MACHINE_SCENARIO_PLOT_REGISTRY]
+            active_idx = getattr(self, "_machine_scenario_index", 0)
         else:
             items = [self.combo_plot_selector.itemText(i)
                      for i in range(self.combo_plot_selector.count())]
@@ -1148,6 +1169,23 @@ class PreviewPlotTab(QWidget):
                 fig = render_compare_delta_all_overlay(
                     self._compare_df, metrica=label, include_uncertainty=False,
                 )
+            elif self.combo_plot_type.currentText() == "machine_scenarios":
+                from ..runtime.special_load_plots.machine_scenarios import (
+                    MACHINE_SCENARIO_PLOT_REGISTRY,
+                    plot_machine_scenario_by_index,
+                )
+                idx = next(
+                    (i for i, e in enumerate(MACHINE_SCENARIO_PLOT_REGISTRY) if e["id"] == label),
+                    None,
+                )
+                if idx is None:
+                    return None
+                df = getattr(self, "_scenario_df", None)
+                if df is None or df.empty:
+                    df = self._get_effective_df()
+                if df is None or df.empty:
+                    return None
+                fig = plot_machine_scenario_by_index(df, index=idx, return_fig=True)
             else:
                 return None
 
@@ -2449,6 +2487,9 @@ class PreviewPlotTab(QWidget):
         is_compare = (text == "compare_bl_vs_adtv")
         self.combo_compare_metric.setVisible(is_compare)
         self.combo_compare_pair.setVisible(is_compare)
+        if text == "machine_scenarios":
+            self._machine_scenario_index = 0
+            self._apply_machine_scenario_controls(0)
         if self._populating:
             return
         self._session["active_mode"] = text
@@ -2470,6 +2511,26 @@ class PreviewPlotTab(QWidget):
                 self.edit_y_label.setText("Delta (%)")
                 self._populating = False
                 self._compare_comment_data = self._session.get("comments", {}).get(metric, _empty_comment_data())
+
+    def _apply_machine_scenario_controls(self, idx: int) -> None:
+        """Update UI controls to reflect the active machine scenario."""
+        from ..runtime.special_load_plots.machine_scenarios import MACHINE_SCENARIO_PLOT_REGISTRY
+        if idx < 0 or idx >= len(MACHINE_SCENARIO_PLOT_REGISTRY):
+            return
+        entry = MACHINE_SCENARIO_PLOT_REGISTRY[idx]
+        self._populating = True
+        self.edit_title.setText(entry["title"])
+        self.edit_x_col.setText("UPD_Power_kW")
+        self.edit_x_label.setText("Potencia (kW)")
+        self.edit_y_label.setText(entry["y_label"])
+        self.edit_y_col.setText(entry.get("id", ""))
+        self.edit_x_min.setText("0")
+        self.edit_x_max.setText("55")
+        self.edit_x_step.setText("5")
+        self.edit_y_min.setText("")
+        self.edit_y_max.setText("")
+        self.edit_y_step.setText("")
+        self._populating = False
 
     def _on_compare_metric_changed(self) -> None:
         if self._populating:
@@ -3435,6 +3496,80 @@ class PreviewPlotTab(QWidget):
                 self._show_status("Preview: sem dados carregados.")
                 return
 
+            # Machine scenarios: independent path — bypasses fuel grouping
+            if plot_type == "machine_scenarios":
+                from ..runtime.special_load_plots.machine_scenarios import (
+                    MACHINE_SCENARIO_PLOT_REGISTRY,
+                    plot_machine_scenario_by_index,
+                )
+                from ..runtime.final_table._machine_scenarios import _attach_e94h6_machine_scenario_metrics
+                from ..runtime.final_table._helpers import norm_key
+
+                if self._current_fig is not None:
+                    plt.close(self._current_fig)
+                    self._current_fig = None
+
+                # Recompute scenarios on-the-fly if columns are empty
+                scenario_sample = next(
+                    (c for c in df.columns if c.startswith("Scenario_") and not c.endswith("_Ano")), None
+                )
+                needs_recompute = (
+                    scenario_sample is None
+                    or pd.to_numeric(df.get(scenario_sample, pd.NA), errors="coerce").notna().sum() == 0
+                )
+                if needs_recompute:
+                    defaults_cfg = {}
+                    recompute_err = ""
+                    try:
+                        cfg_dir = self._get_config_dir() if self._get_config_dir else None
+                        if cfg_dir and cfg_dir.exists():
+                            defaults_path = cfg_dir / "defaults.toml"
+                            if defaults_path.exists():
+                                try:
+                                    import tomllib
+                                except ImportError:
+                                    import tomli as tomllib
+                                raw = tomllib.loads(defaults_path.read_text(encoding="utf-8"))
+                                for k, v in (raw.get("defaults", {}) or {}).items():
+                                    defaults_cfg[norm_key(str(k))] = str(v)
+                            else:
+                                recompute_err = f"defaults.toml nao encontrado em {cfg_dir}"
+                        else:
+                            recompute_err = "Config dir nao disponivel"
+                    except Exception as e:
+                        recompute_err = str(e)
+
+                    if defaults_cfg:
+                        df = _attach_e94h6_machine_scenario_metrics(df, defaults_cfg)
+                    elif recompute_err:
+                        print(f"[WARN] machine_scenarios recompute: {recompute_err}")
+
+                self._scenario_df = df
+
+                idx = getattr(self, "_machine_scenario_index", 0)
+                fig = plot_machine_scenario_by_index(df, index=idx, return_fig=True)
+                if fig is None:
+                    entry = MACHINE_SCENARIO_PLOT_REGISTRY[idx]
+                    self._show_placeholder(
+                        f"Sem dados para cenario '{entry['title']}'.\n\n"
+                        f"Cenarios requerem:\n"
+                        f"  - Pontos com Fuel_Label='E94H6'\n"
+                        f"  - Economia_vs_Diesel_pct calculado\n"
+                        f"  - Defaults com custos e maquinas\n\n"
+                        f"Rode Save & Run para recalcular o xlsx."
+                    )
+                    return
+                self._current_fig = fig
+                self._update_canvas(fig)
+                entry = MACHINE_SCENARIO_PLOT_REGISTRY[idx]
+                elapsed = time.perf_counter() - t0
+                self._show_status(
+                    f"Scenario {idx + 1}/{len(MACHINE_SCENARIO_PLOT_REGISTRY)}: "
+                    f"{entry['id']} ({elapsed:.2f}s)"
+                )
+                self._refresh_thumbnails()
+                return
+
             title = self.edit_title.text().strip() or "Preview"
             x_col_raw = self.edit_x_col.text().strip() or "Load_kW"
             y_col_raw = self.edit_y_col.text().strip()
@@ -3701,6 +3836,15 @@ class PreviewPlotTab(QWidget):
                 y_label=y_label or effective_y_col, x_col=x_col,
                 x_label=x_label, **common_kwargs,
             )
+        elif plot_type == "machine_scenarios":
+            from ..runtime.special_load_plots.machine_scenarios import (
+                MACHINE_SCENARIO_PLOT_REGISTRY,
+                plot_machine_scenario_by_index,
+            )
+            idx = getattr(self, "_machine_scenario_index", 0)
+            if idx < 0 or idx >= len(MACHINE_SCENARIO_PLOT_REGISTRY):
+                idx = 0
+            return plot_machine_scenario_by_index(df, index=idx, return_fig=True)
         else:
             return plot_all_fuels(
                 df, y_col=y_col, yerr_col=yerr_col, title=title,
@@ -3824,9 +3968,57 @@ class PreviewPlotTab(QWidget):
     # Export all plots (batch)
     # ------------------------------------------------------------------
 
+    def _export_compare_plots(self, plot_dir: Path) -> int:
+        """Export all compare delta plots (one per metric). Returns count generated."""
+        if self._compare_df is None or self._compare_df.empty:
+            self._auto_discover_compare_xlsx()
+        if self._compare_df is None or self._compare_df.empty:
+            return 0
+
+        from ..runtime.compare_iteracoes.preview_renderers import (
+            render_compare_delta_all_overlay, available_metrics,
+        )
+
+        metrics = available_metrics(self._compare_df)
+        if not metrics:
+            return 0
+
+        pair_filter = None
+        pair_mode = self.combo_compare_pair.currentText()
+        if "Media" in pair_mode:
+            pair_filter = [c for c in self._compare_df["Comparacao"].unique() if "media" in c.lower()]
+        elif "Subida" in pair_mode:
+            pair_filter = [c for c in self._compare_df["Comparacao"].unique() if "subida" in c.lower()]
+        elif "Descida" in pair_mode:
+            pair_filter = [c for c in self._compare_df["Comparacao"].unique() if "descida" in c.lower()]
+
+        include_unc = self.chk_show_uncertainty.isChecked()
+        count = 0
+        for metrica in metrics:
+            fig = render_compare_delta_all_overlay(
+                self._compare_df,
+                metrica=metrica,
+                include_uncertainty=include_unc,
+                comparacoes_filter=pair_filter,
+            )
+            if fig is None:
+                continue
+            safe_name = metrica.replace("/", "_").replace("\\", "_").replace(" ", "_")
+            outpath = plot_dir / f"compare_delta_{safe_name}.png"
+            fig.savefig(outpath, dpi=200)
+            plt.close(fig)
+            count += 1
+        return count
+
     def _export_all_plots(self) -> None:
-        """Export ALL enabled plots using draft overrides + progress bar."""
+        """Export ALL enabled plots using draft overrides + progress bar.
+
+        Respects the active view mode: if the user is viewing in
+        all_iterations_yx mode, exports use plot_all_iterations (separated
+        by campaign/direction/iteration) instead of the record's plot_type.
+        """
         self._save_draft()
+        self._sync_ui_to_session()
 
         df = self._get_effective_df()
         if df is None or df.empty:
@@ -3852,6 +4044,9 @@ class PreviewPlotTab(QWidget):
         records = self._get_plots_records()
         fuel_colors = self._get_fuel_colors()
 
+        active_mode = self.combo_plot_type.currentText()
+        use_iterations = (active_mode == "all_iterations_yx")
+
         total = len(records)
         self._progress_bar.setRange(0, total)
         self._progress_bar.setValue(0)
@@ -3860,6 +4055,7 @@ class PreviewPlotTab(QWidget):
 
         generated = 0
         skipped = 0
+        compare_exported = False
         for i, base_rec in enumerate(records):
             rec = self._draft_overrides.get(i, base_rec)
 
@@ -3886,7 +4082,17 @@ class PreviewPlotTab(QWidget):
                 QApplication.processEvents()
                 continue
 
-            show_unc = str(rec.get("show_uncertainty", "1")).strip()
+            filename = str(rec.get("filename", base_rec.get("filename", f"plot_{i}.png"))).strip()
+            title = str(rec.get("title", "")).strip() or filename
+            x_label = str(rec.get("x_label", "")).strip() or x_col
+            y_label = str(rec.get("y_label", "")).strip() or y_col
+            plot_type = str(rec.get("plot_type", "all_fuels_yx")).strip()
+
+            # Merge session y_scales (user-adjusted axes in preview) over record defaults
+            y_col_key = str(rec.get("y_col", "")).strip()
+            mem = self._session.get("y_scales", {}).get(y_col_key, {}) if y_col_key else {}
+
+            show_unc = mem.get("show_uncertainty", "") or str(rec.get("show_uncertainty", "1")).strip()
             yerr_raw = str(rec.get("yerr_col", "")).strip()
             yerr_col = None
             if yerr_raw and show_unc not in ("0", "false", "no"):
@@ -3895,17 +4101,18 @@ class PreviewPlotTab(QWidget):
                 except (KeyError, Exception):
                     pass
 
-            filename = str(rec.get("filename", base_rec.get("filename", f"plot_{i}.png"))).strip()
-            title = str(rec.get("title", "")).strip() or filename
-            x_label = str(rec.get("x_label", "")).strip() or x_col
-            y_label = str(rec.get("y_label", "")).strip() or y_col
-            plot_type = str(rec.get("plot_type", "all_fuels_yx")).strip()
+            eff_x_min = mem.get("x_min", "") or str(rec.get("x_min", ""))
+            eff_x_max = mem.get("x_max", "") or str(rec.get("x_max", ""))
+            eff_x_step = mem.get("x_step", "") or str(rec.get("x_step", ""))
+            eff_y_min = mem.get("y_min", "") or str(rec.get("y_min", ""))
+            eff_y_max = mem.get("y_max", "") or str(rec.get("y_max", ""))
+            eff_y_step = mem.get("y_step", "") or str(rec.get("y_step", ""))
 
-            fixed_x = _parse_axis_spec(rec.get("x_min", pd.NA), rec.get("x_max", pd.NA), rec.get("x_step", pd.NA))
-            fixed_y = _parse_axis_spec(rec.get("y_min", pd.NA), rec.get("y_max", pd.NA), rec.get("y_step", pd.NA))
-            fixed_y_limits = _parse_axis_limits(rec.get("y_min", pd.NA), rec.get("y_max", pd.NA))
-            y_tol_plus = _to_float(rec.get("y_tol_plus", 0), 0.0)
-            y_tol_minus = _to_float(rec.get("y_tol_minus", 0), 0.0)
+            fixed_x = _parse_axis_spec(eff_x_min or pd.NA, eff_x_max or pd.NA, eff_x_step or pd.NA)
+            fixed_y = _parse_axis_spec(eff_y_min or pd.NA, eff_y_max or pd.NA, eff_y_step or pd.NA)
+            fixed_y_limits = _parse_axis_limits(eff_y_min or pd.NA, eff_y_max or pd.NA)
+            y_tol_plus = _to_float(mem.get("y_tol_plus", "") or rec.get("y_tol_plus", 0), 0.0)
+            y_tol_minus = _to_float(mem.get("y_tol_minus", "") or rec.get("y_tol_minus", 0), 0.0)
             fuels_override = _parse_csv_list_ints(rec.get("filter_h2o_list", pd.NA))
 
             common_kw = dict(
@@ -3915,32 +4122,58 @@ class PreviewPlotTab(QWidget):
                 fuel_colors=fuel_colors, plot_dir=plot_dir, return_fig=False,
             )
 
+            # When the active view mode is all_iterations_yx, redirect
+            # fuel-grouped plot types to use the iteration-separated renderer
+            # so the export matches what the user sees in preview.
+            effective_type = plot_type
+            if use_iterations and plot_type in (
+                "all_fuels_yx", "all_fuels", "",
+                "all_fuels_delta_ref", "delta_ref",
+            ):
+                effective_type = "all_iterations_yx"
+
             try:
-                if plot_type in ("all_fuels_yx", "all_fuels", ""):
+                if effective_type == "compare_bl_vs_adtv":
+                    if not compare_exported:
+                        generated += self._export_compare_plots(plot_dir)
+                        compare_exported = True
+                elif effective_type == "all_iterations_yx":
+                    plot_all_iterations(
+                        df, y_col=y_col, yerr_col=yerr_col, title=title,
+                        filename=filename, y_label=y_label, x_col=x_col,
+                        x_label=x_label,
+                        style_overrides=self._series_style_overrides,
+                        **common_kw)
+                    generated += 1
+                elif effective_type in ("all_fuels_yx", "all_fuels"):
                     plot_all_fuels(df, y_col=y_col, yerr_col=yerr_col, title=title,
                                    filename=filename, y_label=y_label, x_col=x_col,
                                    x_label=x_label, **common_kw)
-                elif plot_type in ("all_fuels_xy", "xy"):
+                    generated += 1
+                elif effective_type in ("all_fuels_xy", "xy"):
                     plot_all_fuels_xy(df, x_col=x_col, y_col=y_col, yerr_col=yerr_col,
                                       title=title, filename=filename, x_label=x_label,
                                       y_label=y_label, **common_kw)
-                elif plot_type in ("all_fuels_labels", "labels"):
+                    generated += 1
+                elif effective_type in ("all_fuels_labels", "labels"):
                     lv = str(rec.get("label_variant", "box")).strip() or "box"
                     plot_all_fuels_with_value_labels(df, y_col=y_col, title=title,
                                                      filename=filename, y_label=y_label,
                                                      label_variant=lv, x_col=x_col,
                                                      x_label=x_label, **common_kw)
-                elif plot_type in ("all_fuels_delta_ref", "delta_ref"):
+                    generated += 1
+                elif effective_type in ("all_fuels_delta_ref", "delta_ref"):
                     plot_all_fuels_delta_ref(df, y_col=y_col, y_col_delta=y_col+"_delta",
                                              yerr_col=yerr_col, yerr_col_delta=None,
                                              title=title, filename=filename, y_label=y_label,
                                              y_label_delta=y_label+" (delta %)",
                                              x_col=x_col, x_label=x_label, **common_kw)
+                    generated += 1
                 else:
                     plot_all_fuels(df, y_col=y_col, yerr_col=yerr_col, title=title,
                                    filename=filename, y_label=y_label, x_col=x_col,
                                    x_label=x_label, **common_kw)
-                generated += 1
+                    generated += 1
             except Exception:
                 skipped += 1
 

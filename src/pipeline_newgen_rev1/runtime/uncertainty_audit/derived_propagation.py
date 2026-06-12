@@ -100,6 +100,42 @@ def propagate_bsfc(final_table: pd.DataFrame) -> Dict[str, pd.Series]:
     return {"uA_BSFC_g_kWh": uA, "uB_BSFC_g_kWh": uB}
 
 
+def propagate_bsfc_vol(final_table: pd.DataFrame) -> Dict[str, pd.Series]:
+    """BSFC_L_kWh = BSFC_g_kWh / density   (density in kg/m³ = g/L, treated as constant)"""
+    val = pd.to_numeric(final_table.get("BSFC_L_kWh", pd.NA), errors="coerce")
+    P = pd.to_numeric(final_table.get("Potência Total_mean_of_windows", pd.NA), errors="coerce")
+    uA_P = pd.to_numeric(final_table.get("uA_P_kw", pd.NA), errors="coerce")
+    uB_P = pd.to_numeric(final_table.get("uB_P_kw", pd.NA), errors="coerce")
+    m_dot = pd.to_numeric(final_table.get("Consumo_kg_h_mean_of_windows", pd.NA), errors="coerce")
+    uA_m = pd.to_numeric(final_table.get("uA_Consumo_kg_h", pd.NA), errors="coerce")
+    uB_m = pd.to_numeric(final_table.get("uB_Consumo_kg_h", pd.NA), errors="coerce")
+
+    rel_uA_sq = _safe_ratio(uA_P, P) ** 2 + _safe_ratio(uA_m, m_dot) ** 2
+    rel_uB_sq = _safe_ratio(uB_P, P) ** 2 + _safe_ratio(uB_m, m_dot) ** 2
+
+    uA = val.abs() * np.sqrt(rel_uA_sq)
+    uB = val.abs() * np.sqrt(rel_uB_sq)
+    return {"uA_BSFC_L_kWh": uA, "uB_BSFC_L_kWh": uB}
+
+
+def propagate_bsfc_fin(final_table: pd.DataFrame) -> Dict[str, pd.Series]:
+    """BSFC_R_kWh = BSFC_L_kWh * Fuel_Cost_R_L   (cost treated as constant)"""
+    val = pd.to_numeric(final_table.get("BSFC_R_kWh", pd.NA), errors="coerce")
+    P = pd.to_numeric(final_table.get("Potência Total_mean_of_windows", pd.NA), errors="coerce")
+    uA_P = pd.to_numeric(final_table.get("uA_P_kw", pd.NA), errors="coerce")
+    uB_P = pd.to_numeric(final_table.get("uB_P_kw", pd.NA), errors="coerce")
+    m_dot = pd.to_numeric(final_table.get("Consumo_kg_h_mean_of_windows", pd.NA), errors="coerce")
+    uA_m = pd.to_numeric(final_table.get("uA_Consumo_kg_h", pd.NA), errors="coerce")
+    uB_m = pd.to_numeric(final_table.get("uB_Consumo_kg_h", pd.NA), errors="coerce")
+
+    rel_uA_sq = _safe_ratio(uA_P, P) ** 2 + _safe_ratio(uA_m, m_dot) ** 2
+    rel_uB_sq = _safe_ratio(uB_P, P) ** 2 + _safe_ratio(uB_m, m_dot) ** 2
+
+    uA = val.abs() * np.sqrt(rel_uA_sq)
+    uB = val.abs() * np.sqrt(rel_uB_sq)
+    return {"uA_BSFC_R_kWh": uA, "uB_BSFC_R_kWh": uB}
+
+
 def propagate_emission_gkwh(
     final_table: pd.DataFrame,
     *,

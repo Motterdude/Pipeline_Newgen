@@ -52,7 +52,11 @@ COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
         "title": "CO medido",
         "y_label": "CO medido (ppm)",
         "filename_slug": "co_medido",
-        "delta_mode": "ratio",
+        # diff (nao ratio): CO opera no chao de ruido do analisador (mediana ~0.005 %vol,
+        # ~37% das leituras negativas/oscilando em torno de zero). O delta percentual
+        # 100*(adt/base-1) explode quando o Baseline ~= 0 e nao tem significado fisico.
+        # O delta absoluto (com U_delta propagado via GUM) e a metrica honesta aqui.
+        "delta_mode": "diff",
     },
     {
         "metric_id": "o2",
@@ -97,7 +101,8 @@ COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
         "title": "CO especifico",
         "y_label": "CO especifico (g/kWh)",
         "filename_slug": "co_g_kwh",
-        "delta_mode": "ratio",
+        # diff (nao ratio): derivado do mesmo CO de chao de ruido — ver nota em metric_id "co".
+        "delta_mode": "diff",
     },
     {
         "metric_id": "nox_g_kwh",
@@ -142,6 +147,24 @@ COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
         "title": "BSFC",
         "y_label": "BSFC (g/kWh)",
         "filename_slug": "bsfc_g_kwh",
+        "delta_mode": "ratio",
+    },
+    {
+        "metric_id": "bsfc_vol",
+        "metric_col": "BSFC_L_kWh",
+        "value_name": "bsfc_l_kwh",
+        "title": "BSFC volumetrico",
+        "y_label": "BSFC (L/kWh)",
+        "filename_slug": "bsfc_l_kwh",
+        "delta_mode": "ratio",
+    },
+    {
+        "metric_id": "bsfc_fin",
+        "metric_col": "BSFC_R_kWh",
+        "value_name": "bsfc_r_kwh",
+        "title": "BSFC financeiro",
+        "y_label": "BSFC (R$/kWh)",
+        "filename_slug": "bsfc_r_kwh",
         "delta_mode": "ratio",
     },
     {
@@ -359,6 +382,15 @@ COMPARE_ITER_METRIC_SPECS: List[Dict[str, str]] = [
         "y_label": "IMEPN COV (%)",
         "filename_slug": "imepn_cov",
         "delta_mode": "diff",
+    },
+    {
+        "metric_id": "qmax",
+        "metric_col": "KIBOX_QMAX_1",
+        "value_name": "kibox_qmax",
+        "title": "QMAX",
+        "y_label": "QMAX (J/degCA)",
+        "filename_slug": "qmax",
+        "delta_mode": "ratio",
     },
 ]
 

@@ -96,6 +96,18 @@ AUDITED_MEASURANDS: Tuple[MeasurandSpec, ...] = (
         derived_from=("Consumo_kg_h", "P_kw"),
     ),
     MeasurandSpec(
+        key="BSFC_L_kWh",
+        value_col="BSFC_L_kWh",
+        kind="derived",
+        derived_from=("Consumo_kg_h", "P_kw"),
+    ),
+    MeasurandSpec(
+        key="BSFC_R_kWh",
+        value_col="BSFC_R_kWh",
+        kind="derived",
+        derived_from=("Consumo_kg_h", "P_kw"),
+    ),
+    MeasurandSpec(
         key="NOx_g_kWh",
         value_col="NOx_g_kWh",
         kind="derived",

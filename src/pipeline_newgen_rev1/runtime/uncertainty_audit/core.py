@@ -23,6 +23,8 @@ from .contribution import contribution_var
 from .decomposition import decompose_uB
 from .derived_propagation import (
     propagate_bsfc,
+    propagate_bsfc_fin,
+    propagate_bsfc_vol,
     propagate_consumo_L_h,
     propagate_emission_gkwh,
     propagate_n_th,
@@ -35,6 +37,8 @@ _DERIVED_PROPAGATORS = {
     "Consumo_L_h": (propagate_consumo_L_h, {}),
     "n_th_pct": (propagate_n_th, {}),
     "BSFC_g_kWh": (propagate_bsfc, {}),
+    "BSFC_L_kWh": (propagate_bsfc_vol, {}),
+    "BSFC_R_kWh": (propagate_bsfc_fin, {}),
     "NOx_g_kWh": (propagate_emission_gkwh, {"value_col": "NOx_g_kWh", "conc_col_mean": "NOX_mean_of_windows", "conc_prefix": "NOx_ppm"}),
     "CO_g_kWh": (propagate_emission_gkwh, {"value_col": "CO_g_kWh", "conc_col_mean": "CO_mean_of_windows", "conc_prefix": "CO_pct"}),
     "CO2_g_kWh": (propagate_emission_gkwh, {"value_col": "CO2_g_kWh", "conc_col_mean": "CO2_mean_of_windows", "conc_prefix": "CO2_pct"}),

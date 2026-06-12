@@ -1,5 +1,7 @@
 {
   "version": 3,
+  "type": "exclusion_list",
+  "exported_at": "2026-06-12T09:58:06",
   "exclusions": [
     {
       "series_label": "ADTV Sub 1",

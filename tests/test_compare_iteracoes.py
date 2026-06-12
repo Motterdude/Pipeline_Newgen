@@ -54,7 +54,7 @@ class TestSpecs(unittest.TestCase):
             self.assertIn("slug", COMPARE_ITER_SERIES_META[key])
 
     def test_metric_specs_count(self) -> None:
-        self.assertEqual(len(COMPARE_ITER_METRIC_SPECS), 37)
+        self.assertEqual(len(COMPARE_ITER_METRIC_SPECS), 40)
 
     def test_metric_specs_by_id_lookup(self) -> None:
         for mid in ["consumo", "co2", "n_th"]:
@@ -64,6 +64,16 @@ class TestSpecs(unittest.TestCase):
         spec = metric_spec_for_id("co2")
         self.assertIsNotNone(spec)
         self.assertEqual(spec["metric_col"], "CO2_mean_of_windows")
+
+    def test_co_metrics_use_diff_mode(self) -> None:
+        """CO opera no chao de ruido: delta deve ser absoluto (diff), nao percentual.
+
+        Trava de regressao — ratio dividiria por Baseline ~0 e explodiria.
+        """
+        for mid in ["co", "co_g_kwh"]:
+            spec = metric_spec_for_id(mid)
+            self.assertIsNotNone(spec)
+            self.assertEqual(spec["delta_mode"], "diff", f"{mid} deve usar delta_mode=diff")
 
     def test_pair_context(self) -> None:
         ctx = compare_iter_pair_context("baseline_media", "aditivado_media")
@@ -274,6 +284,67 @@ class TestDelta(unittest.TestCase):
             interpret_neg="neg", interpret_pos="pos",
         )
         self.assertTrue(delta.empty)
+
+    def test_delta_diff_mode_propagates_uncertainty(self) -> None:
+        """Modo diff: delta_abs = right - left e U_delta propagado via GUM (RSS)."""
+        left = pd.DataFrame({
+            "Load_kW": [10.0], "m": [0.30],
+            "uA_m": [0.01], "uB_m": [0.02], "uc_m": [0.0224], "U_m": [0.0447],
+            "n_points": [3],
+        })
+        right = pd.DataFrame({
+            "Load_kW": [10.0], "m": [0.34],
+            "uA_m": [0.01], "uB_m": [0.02], "uc_m": [0.0224], "U_m": [0.0447],
+            "n_points": [3],
+        })
+        delta = build_delta_table(
+            left, right, value_name="m",
+            label_left="BL", label_right="ADTV",
+            interpret_neg="adtv_menor", interpret_pos="adtv_maior",
+            delta_mode="diff",
+        )
+        self.assertEqual(len(delta), 1)
+        row = delta.iloc[0]
+        # delta absoluto, NAO percentual
+        self.assertAlmostEqual(row["delta_pct"], 0.04, places=6)
+        self.assertAlmostEqual(row["delta_abs"], 0.04, places=6)
+        # incerteza combinada propagada: uc_delta = sqrt(uc_l^2 + uc_r^2)
+        expected_uc = math.sqrt(0.0224 ** 2 + 0.0224 ** 2)
+        self.assertAlmostEqual(row["uc_delta_pct"], expected_uc, places=6)
+        self.assertAlmostEqual(row["U_delta_pct"], K_COVERAGE * expected_uc, places=6)
+        # demonstra a incerteza: |delta| < U_delta -> nao significativo
+        self.assertEqual(row["significancia_95pct"], "diferenca_dentro_de_U")
+
+    def test_delta_diff_survives_near_zero_baseline(self) -> None:
+        """Caso CO: Baseline ~0 (ate negativo) NAO deve explodir no modo diff.
+
+        No modo ratio este mesmo ponto produziria delta_pct na casa dos milhares
+        (divisao por ~zero). No modo diff o delta fica no nivel fisico do sinal.
+        """
+        left = pd.DataFrame({
+            "Load_kW": [7.5], "m": [-0.0003],  # Baseline no chao de ruido
+            "uA_m": [0.001], "uB_m": [0.0577], "uc_m": [0.0577], "U_m": [0.1154],
+            "n_points": [2],
+        })
+        right = pd.DataFrame({
+            "Load_kW": [7.5], "m": [0.0196],
+            "uA_m": [0.001], "uB_m": [0.0577], "uc_m": [0.0577], "U_m": [0.1154],
+            "n_points": [2],
+        })
+        delta = build_delta_table(
+            left, right, value_name="m",
+            label_left="BL", label_right="ADTV",
+            interpret_neg="adtv_menor", interpret_pos="adtv_maior",
+            delta_mode="diff",
+        )
+        self.assertEqual(len(delta), 1)
+        row = delta.iloc[0]
+        # delta absoluto pequeno e finito (~0.02 %vol), nao milhares de %
+        self.assertTrue(np.isfinite(row["delta_pct"]))
+        self.assertLess(abs(row["delta_pct"]), 0.1)
+        self.assertAlmostEqual(row["delta_pct"], 0.0199, places=4)
+        # o sinal e indistinguivel do ruido: dentro da incerteza
+        self.assertEqual(row["significancia_95pct"], "diferenca_dentro_de_U")
 
 
 # ---------------------------------------------------------------------------

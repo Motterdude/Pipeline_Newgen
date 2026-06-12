@@ -28,3 +28,4 @@ out_*/
 
 # User-specific preset files (machine-specific data paths)
 preview_presets.json
+.firecrawl/

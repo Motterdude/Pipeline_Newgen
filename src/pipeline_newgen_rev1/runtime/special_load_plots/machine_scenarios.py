@@ -105,9 +105,10 @@ def _plot_machine_scenario_dual_metric(
     title: str,
     filename: str,
     y_label: str,
-    plot_dir: Path,
+    plot_dir: Optional[Path] = None,
     y_tick_divisor: Optional[float] = None,
-) -> Optional[Path]:
+    return_fig: bool = False,
+):
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -168,6 +169,8 @@ def _plot_machine_scenario_dual_metric(
         return None
 
     _style_machine_scenario_axes(fig, ax, title=title, x_label=x_label, y_label=y_label, y_tick_divisor=y_tick_divisor)
+    if return_fig:
+        return fig
     outpath = plot_dir / filename
     fig.savefig(outpath, dpi=200)
     plt.close(fig)
@@ -182,9 +185,10 @@ def _plot_machine_scenario_single_metric(
     title: str,
     filename: str,
     y_label: str,
-    plot_dir: Path,
+    plot_dir: Optional[Path] = None,
     y_tick_divisor: Optional[float] = None,
-) -> Optional[Path]:
+    return_fig: bool = False,
+):
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -234,60 +238,116 @@ def _plot_machine_scenario_single_metric(
         return None
 
     _style_machine_scenario_axes(fig, ax, title=title, x_label=x_label, y_label=y_label, y_tick_divisor=y_tick_divisor)
+    if return_fig:
+        return fig
     outpath = plot_dir / filename
     fig.savefig(outpath, dpi=200)
     plt.close(fig)
     return outpath
 
 
+MACHINE_SCENARIO_PLOT_REGISTRY = [
+    {
+        "id": "custo_r_h",
+        "kind": "dual",
+        "diesel_suffix": "Diesel_Custo_R_h",
+        "ethanol_suffix": "E94H6_Custo_R_h",
+        "ethanol_u_suffix": "U_E94H6_Custo_R_h",
+        "title": "Cenario de maquinas: custo horario diesel vs E94H6",
+        "filename": "scenario_maquinas_custo_r_h_diesel_vs_e94h6.png",
+        "y_label": "Custo horario (R$/h)",
+        "y_tick_divisor": None,
+    },
+    {
+        "id": "economia_r_h",
+        "kind": "single",
+        "value_suffix": "Economia_R_h",
+        "u_suffix": "U_Economia_R_h",
+        "title": "Cenario de maquinas: economia horaria vs diesel (negativo = economia)",
+        "filename": "scenario_maquinas_economia_r_h_vs_diesel.png",
+        "y_label": "Delta de custo vs diesel (R$/h)",
+        "y_tick_divisor": None,
+    },
+    {
+        "id": "consumo_l_h",
+        "kind": "dual",
+        "diesel_suffix": "Diesel_L_h",
+        "ethanol_suffix": "E94H6_L_h",
+        "ethanol_u_suffix": "U_E94H6_L_h",
+        "title": "Cenario de maquinas: consumo volumetrico diesel vs E94H6",
+        "filename": "scenario_maquinas_consumo_l_h_diesel_vs_e94h6.png",
+        "y_label": "Consumo volumetrico (L/h)",
+        "y_tick_divisor": None,
+    },
+    {
+        "id": "consumo_anual_l",
+        "kind": "single",
+        "value_suffix": "E94H6_L_ano",
+        "u_suffix": "U_E94H6_L_ano",
+        "title": "Cenario de maquinas: consumo anual de E94H6",
+        "filename": "scenario_maquinas_consumo_anual_e94h6_l.png",
+        "y_label": "Consumo anual de E94H6 (x10^3 L/ano)",
+        "y_tick_divisor": 1000.0,
+    },
+    {
+        "id": "custo_anual",
+        "kind": "dual",
+        "diesel_suffix": "Diesel_Custo_R_ano",
+        "ethanol_suffix": "E94H6_Custo_R_ano",
+        "ethanol_u_suffix": "U_E94H6_Custo_R_ano",
+        "title": "Cenario de maquinas: custo anual diesel vs E94H6",
+        "filename": "scenario_maquinas_custo_anual_diesel_vs_e94h6.png",
+        "y_label": "Custo anual (x10^3 R$/ano)",
+        "y_tick_divisor": 1000.0,
+    },
+    {
+        "id": "economia_anual",
+        "kind": "single",
+        "value_suffix": "Economia_R_ano",
+        "u_suffix": "U_Economia_R_ano",
+        "title": "Cenario de maquinas: economia anual vs diesel (negativo = economia)",
+        "filename": "scenario_maquinas_economia_anual_vs_diesel.png",
+        "y_label": "Delta de custo anual vs diesel (x10^3 R$/ano)",
+        "y_tick_divisor": 1000.0,
+    },
+]
+
+
+def _render_scenario_entry(df, entry, *, plot_dir=None, return_fig=False):
+    if entry["kind"] == "dual":
+        return _plot_machine_scenario_dual_metric(
+            df,
+            diesel_suffix=entry["diesel_suffix"],
+            ethanol_suffix=entry["ethanol_suffix"],
+            ethanol_u_suffix=entry["ethanol_u_suffix"],
+            title=entry["title"], filename=entry["filename"],
+            y_label=entry["y_label"], plot_dir=plot_dir,
+            y_tick_divisor=entry["y_tick_divisor"],
+            return_fig=return_fig,
+        )
+    else:
+        return _plot_machine_scenario_single_metric(
+            df,
+            value_suffix=entry["value_suffix"],
+            u_suffix=entry["u_suffix"],
+            title=entry["title"], filename=entry["filename"],
+            y_label=entry["y_label"], plot_dir=plot_dir,
+            y_tick_divisor=entry["y_tick_divisor"],
+            return_fig=return_fig,
+        )
+
+
+def plot_machine_scenario_by_index(df: pd.DataFrame, *, index: int = 0, return_fig: bool = True):
+    """Render a single machine scenario plot by index (0-5). For GUI preview navigation."""
+    if index < 0 or index >= len(MACHINE_SCENARIO_PLOT_REGISTRY):
+        return None
+    return _render_scenario_entry(df, MACHINE_SCENARIO_PLOT_REGISTRY[index], return_fig=return_fig)
+
+
 def plot_machine_scenario_suite(df: pd.DataFrame, *, plot_dir: Path) -> int:
     count = 0
-    calls = [
-        lambda: _plot_machine_scenario_dual_metric(
-            df, diesel_suffix="Diesel_Custo_R_h", ethanol_suffix="E94H6_Custo_R_h",
-            ethanol_u_suffix="U_E94H6_Custo_R_h",
-            title="Cenario de maquinas: custo horario diesel vs E94H6",
-            filename="scenario_maquinas_custo_r_h_diesel_vs_e94h6.png",
-            y_label="Custo horario (R$/h)", plot_dir=plot_dir,
-        ),
-        lambda: _plot_machine_scenario_single_metric(
-            df, value_suffix="Economia_R_h", u_suffix="U_Economia_R_h",
-            title="Cenario de maquinas: economia horaria vs diesel (negativo = economia)",
-            filename="scenario_maquinas_economia_r_h_vs_diesel.png",
-            y_label="Delta de custo vs diesel (R$/h)", plot_dir=plot_dir,
-        ),
-        lambda: _plot_machine_scenario_dual_metric(
-            df, diesel_suffix="Diesel_L_h", ethanol_suffix="E94H6_L_h",
-            ethanol_u_suffix="U_E94H6_L_h",
-            title="Cenario de maquinas: consumo volumetrico diesel vs E94H6",
-            filename="scenario_maquinas_consumo_l_h_diesel_vs_e94h6.png",
-            y_label="Consumo volumetrico (L/h)", plot_dir=plot_dir,
-        ),
-        lambda: _plot_machine_scenario_single_metric(
-            df, value_suffix="E94H6_L_ano", u_suffix="U_E94H6_L_ano",
-            title="Cenario de maquinas: consumo anual de E94H6",
-            filename="scenario_maquinas_consumo_anual_e94h6_l.png",
-            y_label="Consumo anual de E94H6 (x10^3 L/ano)",
-            plot_dir=plot_dir, y_tick_divisor=1000.0,
-        ),
-        lambda: _plot_machine_scenario_dual_metric(
-            df, diesel_suffix="Diesel_Custo_R_ano", ethanol_suffix="E94H6_Custo_R_ano",
-            ethanol_u_suffix="U_E94H6_Custo_R_ano",
-            title="Cenario de maquinas: custo anual diesel vs E94H6",
-            filename="scenario_maquinas_custo_anual_diesel_vs_e94h6.png",
-            y_label="Custo anual (x10^3 R$/ano)",
-            plot_dir=plot_dir, y_tick_divisor=1000.0,
-        ),
-        lambda: _plot_machine_scenario_single_metric(
-            df, value_suffix="Economia_R_ano", u_suffix="U_Economia_R_ano",
-            title="Cenario de maquinas: economia anual vs diesel (negativo = economia)",
-            filename="scenario_maquinas_economia_anual_vs_diesel.png",
-            y_label="Delta de custo anual vs diesel (x10^3 R$/ano)",
-            plot_dir=plot_dir, y_tick_divisor=1000.0,
-        ),
-    ]
-    for call in calls:
-        result = call()
+    for entry in MACHINE_SCENARIO_PLOT_REGISTRY:
+        result = _render_scenario_entry(df, entry, plot_dir=plot_dir)
         if result is not None:
             count += 1
     return count

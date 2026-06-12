@@ -120,6 +120,21 @@ def _resolve_col(df: pd.DataFrame, col_req: str) -> str:
 
 def guess_uncertainty_col(df: pd.DataFrame, y_col: str, mappings: dict) -> Optional[str]:
     candidates = [f"U_{y_col}"]
+    # Heuristic: CO_mean_of_windows → U_CO_pct (strip _mean_of_windows suffix)
+    _SUFFIXES = ("_mean_of_windows", "_sd_of_windows")
+    for sfx in _SUFFIXES:
+        if y_col.endswith(sfx):
+            stem = y_col[: -len(sfx)]
+            candidates.append(f"U_{stem}")
+            # Also try known instrument prefixes (CO → CO_pct, NOX → NOx_ppm)
+            _STEM_TO_PREFIX = {
+                "CO": "CO_pct", "CO2": "CO2_pct", "O2": "O2_pct",
+                "NOX": "NOx_ppm", "NO": "NO_ppm", "THC": "THC_ppm",
+            }
+            prefix = _STEM_TO_PREFIX.get(stem.upper(), _STEM_TO_PREFIX.get(stem, ""))
+            if prefix:
+                candidates.append(f"U_{prefix}")
+            break
     for key_norm, spec in mappings.items():
         col_mean_req = str(spec.get("mean", "")).strip()
         if not col_mean_req:

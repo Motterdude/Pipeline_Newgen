@@ -128,6 +128,21 @@ def plot_all_iterations(
         )
 
     work = df.copy()
+
+    # Apply fuel filter (fuels_override) before grouping by iteration
+    if fuels_override is not None:
+        from .fuel_groups import fuel_plot_groups
+        kept_indices = pd.Index([], dtype=work.index.dtype)
+        for _label, group_df in fuel_plot_groups(work, fuels_override=fuels_override):
+            if not group_df.empty:
+                kept_indices = kept_indices.append(group_df.index)
+        if not kept_indices.empty:
+            work = work.loc[work.index.isin(kept_indices)]
+        if work.empty:
+            if return_fig:
+                return None
+            return False
+
     work["_series_key"] = _derive_series_column(work)
 
     iteration_counts: Dict[str, int] = {}

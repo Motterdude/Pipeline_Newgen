@@ -64,6 +64,7 @@ def build_final_table(
     defaults: Dict[str, str],
 ) -> pd.DataFrame:
     mappings = {norm_key(k): v for k, v in mappings.items()}
+    defaults = {norm_key(k): v for k, v in defaults.items()}
     instruments_df = pd.DataFrame(instruments) if instruments else pd.DataFrame()
     if not instruments_df.empty and "key" in instruments_df.columns and "key_norm" not in instruments_df.columns:
         instruments_df["key_norm"] = instruments_df["key"].map(norm_key)
@@ -272,6 +273,28 @@ def build_final_table(
     df["uc_BSFC_g_kWh"] = (ua_bsfc**2 + ub_bsfc**2) ** 0.5
     df["U_BSFC_g_kWh"] = K_COVERAGE * df["uc_BSFC_g_kWh"]
     df.loc[invalid_bsfc, ["uA_BSFC_g_kWh", "uB_BSFC_g_kWh", "uc_BSFC_g_kWh", "U_BSFC_g_kWh"]] = pd.NA
+
+    # --- 5e-bis. BSFC volumetric (L/kWh) ---
+    valid_vol_bsfc = ~invalid_bsfc & fuel_density.gt(0)
+    bsfc_l = (Fkgh * (1000.0 / fuel_density)) / PkW
+    df["BSFC_L_kWh"] = bsfc_l.where(valid_vol_bsfc, pd.NA)
+    df["uA_BSFC_L_kWh"] = (pd.to_numeric(df["uA_BSFC_g_kWh"], errors="coerce") / fuel_density).where(valid_vol_bsfc, pd.NA)
+    df["uB_BSFC_L_kWh"] = (pd.to_numeric(df["uB_BSFC_g_kWh"], errors="coerce") / fuel_density).where(valid_vol_bsfc, pd.NA)
+    ua_bsfc_l = pd.to_numeric(df["uA_BSFC_L_kWh"], errors="coerce")
+    ub_bsfc_l = pd.to_numeric(df["uB_BSFC_L_kWh"], errors="coerce")
+    df["uc_BSFC_L_kWh"] = (ua_bsfc_l**2 + ub_bsfc_l**2) ** 0.5
+    df["U_BSFC_L_kWh"] = K_COVERAGE * df["uc_BSFC_L_kWh"]
+
+    # --- 5e-ter. BSFC financial (R$/kWh) ---
+    valid_fin_bsfc = valid_vol_bsfc & fuel_cost.gt(0)
+    bsfc_r = bsfc_l * fuel_cost
+    df["BSFC_R_kWh"] = bsfc_r.where(valid_fin_bsfc, pd.NA)
+    df["uA_BSFC_R_kWh"] = (ua_bsfc_l * fuel_cost).where(valid_fin_bsfc, pd.NA)
+    df["uB_BSFC_R_kWh"] = (ub_bsfc_l * fuel_cost).where(valid_fin_bsfc, pd.NA)
+    ua_bsfc_r = pd.to_numeric(df["uA_BSFC_R_kWh"], errors="coerce")
+    ub_bsfc_r = pd.to_numeric(df["uB_BSFC_R_kWh"], errors="coerce")
+    df["uc_BSFC_R_kWh"] = (ua_bsfc_r**2 + ub_bsfc_r**2) ** 0.5
+    df["U_BSFC_R_kWh"] = K_COVERAGE * df["uc_BSFC_R_kWh"]
 
     # --- 5f. Delta vs reference fuel ---
     df = _attach_delta_vs_ref_metrics(df)

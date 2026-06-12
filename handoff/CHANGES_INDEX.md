@@ -2,8 +2,15 @@
 
 Ordem cronológica inversa. Uma linha por sessão. Detalhe completo em `handoff/changes/YYYY-MM-DD-slug.md`.
 
+## 2026-06
+
+- **2026-06-12** — [co-uncertainty-full-scale](changes/2026-06-12-co-uncertainty-full-scale.md) — CO/CO2/O2: acc_pct→acc_abs (1% of Full Scale, não da leitura) conforme manual CAI 600 Series; fix bug guess_uncertainty_col que impedia barras de erro em CO/CO2/O2/NOx/THC medidos no compare; co_g_kwh adicionado ao compare.toml.
+- **2026-06-12** — [co-delta-mode-diff](changes/2026-06-12-co-delta-mode-diff.md) — CO medido e específico passam de delta ratio para diff (absoluto): evita explosão do % quando Baseline ~0 (chão de ruído), com incerteza GUM demonstrada; preserva pares média/subida/descida.
+- **2026-06-02** — [qmax-compare-and-gui-state-fix](changes/2026-06-02-qmax-compare-and-gui-state-fix.md) — QMAX adicionado ao compare; fix typo no config_gui_state que esvaziava a lista de workspaces.
+
 ## 2026-05
 
+- **2026-05-28** — [export-all-plots-wysiwyg](changes/2026-05-28-export-all-plots-wysiwyg.md) — Export All agora WYSIWYG: respeita modo ativo (iterations/compare), filtra combustível, usa escalas da sessão.
 - **2026-05-25** — [fix-navigation-mode-stickiness](changes/2026-05-25-fix-navigation-mode-stickiness.md) — Fix mode reversion na navegação + suite de validação 94 testes (NavigationHarness stub approach).
 - **2026-05-24** — [session2-compare-metrics-tolerance-fixes](changes/2026-05-24-session2-compare-metrics-tolerance-fixes.md) — 37 compare metrics, MFB_10_50/50_90, media parcial fix, tolerance lines absoluto, compare pair toggle, title bleeding fix, drag rescale, excl quick-pick.
 - **2026-05-24** — [cursor-tooltip-lockx-exclusion-catalog](changes/2026-05-24-cursor-tooltip-lockx-exclusion-catalog.md) — Hover tooltip 600ms, cursor interpolating/exact auto, Lock X per-axis, exclusion by BaseName, catalogo sem acento, GUI clean.

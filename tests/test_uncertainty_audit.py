@@ -165,6 +165,8 @@ class EnrichIntegrationTests(unittest.TestCase):
                 "n_th_pct": [33.0],
                 "LHV_kJ_kg": [43500.0],
                 "BSFC_g_kWh": [250.0],
+                "BSFC_L_kWh": [0.3],
+                "BSFC_R_kWh": [1.5],
                 "NOx_g_kWh": [4.0],
                 "CO_g_kWh": [1.0],
                 "CO2_g_kWh": [800.0],

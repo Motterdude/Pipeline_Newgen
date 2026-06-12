@@ -7,6 +7,8 @@ from .core import enrich_final_table_with_audit
 from .decomposition import decompose_uB
 from .derived_propagation import (
     propagate_bsfc,
+    propagate_bsfc_fin,
+    propagate_bsfc_vol,
     propagate_consumo_L_h,
     propagate_emission_gkwh,
     propagate_n_th,
@@ -22,6 +24,8 @@ __all__ = [
     "decompose_uB",
     "enrich_final_table_with_audit",
     "propagate_bsfc",
+    "propagate_bsfc_fin",
+    "propagate_bsfc_vol",
     "propagate_consumo_L_h",
     "propagate_emission_gkwh",
     "propagate_n_th",
