@@ -3,6 +3,6 @@ schema_version = 1
 [metadata]
 "format" = "pipeline29_text"
 "schema_version" = 1
-"updated_at_utc" = "2026-06-12T16:31:38+00:00"
+"updated_at_utc" = "2026-06-21T19:00:26+00:00"
 "source_kind" = "text"
 "source_path" = "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\config\\pipeline29_text"

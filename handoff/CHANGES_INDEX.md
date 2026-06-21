@@ -4,6 +4,7 @@ Ordem cronológica inversa. Uma linha por sessão. Detalhe completo em `handoff/
 
 ## 2026-06
 
+- **2026-06-21** — [evaporative-nef-metrics](changes/2026-06-21-evaporative-nef-metrics.md) — Novo módulo: potencial evaporativo (h_fg Watson, blend, effectiveness) + Net Energy Factor (Fagundez ED interpolation) + sanity flags; 15 colunas novas no lv_kpis_clean.xlsx.
 - **2026-06-12** — [co-uncertainty-full-scale](changes/2026-06-12-co-uncertainty-full-scale.md) — CO/CO2/O2: acc_pct→acc_abs (1% of Full Scale, não da leitura) conforme manual CAI 600 Series; fix bug guess_uncertainty_col que impedia barras de erro em CO/CO2/O2/NOx/THC medidos no compare; co_g_kwh adicionado ao compare.toml.
 - **2026-06-12** — [co-delta-mode-diff](changes/2026-06-12-co-delta-mode-diff.md) — CO medido e específico passam de delta ratio para diff (absoluto): evita explosão do % quando Baseline ~0 (chão de ruído), com incerteza GUM demonstrada; preserva pares média/subida/descida.
 - **2026-06-02** — [qmax-compare-and-gui-state-fix](changes/2026-06-02-qmax-compare-and-gui-state-fix.md) — QMAX adicionado ao compare; fix typo no config_gui_state que esvaziava a lista de workspaces.

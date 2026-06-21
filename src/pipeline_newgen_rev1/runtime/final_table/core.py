@@ -19,6 +19,7 @@ from ._airflow import (
     add_airflow_channels_prefer_maf_inplace,
 )
 from ._delta_vs_ref import _attach_delta_vs_ref_metrics
+from ._evaporative_nef import attach_evaporative_metrics, attach_nef_metrics
 from ._diesel_cost_delta import _attach_diesel_cost_delta_metrics
 from ._emissions import add_specific_emissions_channels_inplace
 from ._fuel_defaults import (
@@ -479,6 +480,10 @@ def build_final_table(
         df["Q_EVAP_NET_kW"] = mdot_air * cp_used * dT
     else:
         df["Q_EVAP_NET_kW"] = pd.NA
+
+    # --- 10b. Evaporative potential + NEF ---
+    df = attach_evaporative_metrics(df)
+    df = attach_nef_metrics(df)
 
     # --- 11. Volumetric efficiency ---
     df = add_volumetric_efficiency_from_airflow_method_inplace(df, defaults)
