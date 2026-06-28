@@ -439,7 +439,7 @@ class PreviewPlotTab(QWidget):
             "y_scales": {},
             "comments": {},
             "series_styles": {},
-            "display": {"cursor_font_size": 15, "filter_h2o_list": "", "label_variant": "tag", "lock_x": False, "series_col": ""},
+            "display": {"cursor_font_size": 15, "plot_font_size": 12, "filter_h2o_list": "", "label_variant": "tag", "lock_x": False, "series_col": ""},
             "compare": {"active_metric": ""},
             "active_mode": "all_iterations_yx",
         }
@@ -522,6 +522,10 @@ class PreviewPlotTab(QWidget):
         self.btn_comment.setFixedWidth(90)
         self.btn_comment.setToolTip("Editar comentario com formatacao (aparece no grafico)")
         data_bar.addWidget(self.btn_comment)
+        self.btn_plot_font = QPushButton("Font...")
+        self.btn_plot_font.setFixedWidth(55)
+        self.btn_plot_font.setToolTip("Tamanho da fonte dos eixos, titulo e legenda do grafico")
+        data_bar.addWidget(self.btn_plot_font)
         outer_layout.addLayout(data_bar)
 
         # -- Raw / Excl toggle bar --
@@ -899,6 +903,7 @@ class PreviewPlotTab(QWidget):
         self.combo_compare_metric.currentIndexChanged.connect(self._on_compare_metric_changed)
         self.combo_compare_pair.currentIndexChanged.connect(self._schedule_render)
         self.btn_comment.clicked.connect(self._open_comment_dialog)
+        self.btn_plot_font.clicked.connect(self._open_plot_font_dialog)
         self.combo_plot_type.currentTextChanged.connect(self._on_plot_type_changed)
 
     def _schedule_render(self) -> None:
@@ -2572,6 +2577,18 @@ class PreviewPlotTab(QWidget):
         self._debounce_timer.stop()
         self._render_preview()
 
+    def _open_plot_font_dialog(self) -> None:
+        from PySide6.QtWidgets import QInputDialog
+        current = int(self._session["display"].get("plot_font_size", 12))
+        size, ok = QInputDialog.getInt(
+            self, "Plot Font Size",
+            "Tamanho da fonte (eixos, titulo, legenda):",
+            current, 6, 32, 1,
+        )
+        if ok:
+            self._session["display"]["plot_font_size"] = size
+            self._render_preview()
+
     def _open_comment_dialog(self) -> None:
         def _apply_cb(data):
             self._compare_comment_data = data
@@ -3706,6 +3723,7 @@ class PreviewPlotTab(QWidget):
                 return
 
             self._apply_tolerance_to_fig(fig)
+            self._apply_plot_font_size(fig)
             self._apply_comment_to_fig(fig)
             self._current_fig = fig
             self._update_canvas(fig)
@@ -3769,6 +3787,21 @@ class PreviewPlotTab(QWidget):
                 if 0 < n_ticks < 200:
                     ticks = np.arange(cur_min, cur_max + step_val * 0.5, step_val)
                     ax.set_xticks(ticks)
+
+    def _apply_plot_font_size(self, fig: Figure) -> None:
+        size = int(self._session["display"].get("plot_font_size", 12))
+        if size <= 0:
+            return
+        for ax in fig.get_axes():
+            ax.set_xlabel(ax.get_xlabel(), fontsize=size)
+            ax.set_ylabel(ax.get_ylabel(), fontsize=size)
+            ax.set_title(ax.get_title(), fontsize=size + 2)
+            ax.tick_params(axis="both", labelsize=size - 1)
+            leg = ax.get_legend()
+            if leg:
+                for text in leg.get_texts():
+                    text.set_fontsize(size - 1)
+        fig.tight_layout()
 
     def _apply_tolerance_to_fig(self, fig: Figure) -> None:
         """Draw red dashed horizontal tolerance lines at absolute Y values (disabled)."""
@@ -4078,6 +4111,10 @@ class PreviewPlotTab(QWidget):
         records = self._get_plots_records()
         fuel_colors = self._get_fuel_colors()
 
+        plot_font = int(self._session["display"].get("plot_font_size", 12))
+        _prev_rc = {k: plt.rcParams[k] for k in ("font.size", "axes.titlesize", "axes.labelsize", "xtick.labelsize", "ytick.labelsize", "legend.fontsize")}
+        plt.rcParams.update({"font.size": plot_font, "axes.titlesize": plot_font + 2, "axes.labelsize": plot_font, "xtick.labelsize": plot_font - 1, "ytick.labelsize": plot_font - 1, "legend.fontsize": plot_font - 1})
+
         active_mode = self.combo_plot_type.currentText()
         use_iterations = (active_mode == "all_iterations_yx")
 
@@ -4215,6 +4252,7 @@ class PreviewPlotTab(QWidget):
             QApplication.processEvents()
 
         self._progress_bar.setVisible(False)
+        plt.rcParams.update(_prev_rc)
         self._show_status(f"Export All: {generated} gerados, {skipped} pulados -> {plot_dir}")
 
     # ------------------------------------------------------------------

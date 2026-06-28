@@ -4,6 +4,7 @@ Ordem cronológica inversa. Uma linha por sessão. Detalhe completo em `handoff/
 
 ## 2026-06
 
+- **2026-06-28** — [plot-font-size](changes/2026-06-28-plot-font-size.md) — Botão "Font..." no Preview Plot: tamanho da fonte dos eixos/titulo/legenda configurável e persistido no workspace.
 - **2026-06-28** — [remove-tolerance-lines](changes/2026-06-28-remove-tolerance-lines.md) — Removidas linhas de tolerância dos gráficos (poluição visual); UI fields ocultos, desenho desativado.
 - **2026-06-28** — [pendrive-migration-and-fuel-colors](changes/2026-06-28-pendrive-migration-and-fuel-colors.md) — Migração completa para pen-drive E:\; pasta `config/workspaces/` centralizada; fix Series Colors no modo all_fuels_yx (cores nunca matchavam labels).
 - **2026-06-21** — [evaporative-nef-metrics](changes/2026-06-21-evaporative-nef-metrics.md) — Novo módulo: potencial evaporativo (h_fg Watson, blend, effectiveness) + Net Energy Factor (Fagundez ED interpolation) + sanity flags; 15 colunas novas no lv_kpis_clean.xlsx.
