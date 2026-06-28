@@ -27,6 +27,9 @@ def resolve_fuel_color(
     fuel_label: str,
     defaults: Dict[str, str],
 ) -> Optional[str]:
+    direct = defaults.get(fuel_label, "").strip()
+    if direct:
+        return direct
     key = f"{FUEL_COLOR_PREFIX}{fuel_label}"
     custom = defaults.get(key, "").strip()
     if custom:

@@ -1,17 +1,17 @@
 {
   "version": 2,
   "data_source": {
-    "path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list\\lv_kpis_clean.xlsx",
-    "compare_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list\\lv_kpis_clean.xlsx",
-    "raw_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion\\lv_kpis_clean.xlsx",
-    "excl_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list\\lv_kpis_clean.xlsx",
+    "path": "E:\\Mestrado\\Pipeline_Newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list\\lv_kpis_clean.xlsx",
+    "compare_path": "E:\\Mestrado\\Pipeline_Newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list\\lv_kpis_clean.xlsx",
+    "raw_path": "E:\\Mestrado\\Pipeline_Newgen\\out_nanum_post_injector_fix_renamed_combustion\\lv_kpis_clean.xlsx",
+    "excl_path": "E:\\Mestrado\\Pipeline_Newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list\\lv_kpis_clean.xlsx",
     "active_source": "excl"
   },
   "axis": {
     "x_col": "Load_kW",
-    "x_label": "Carga nominal (kW)",
-    "x_min": "-5",
-    "x_max": "60",
+    "x_label": "Power (kW)",
+    "x_min": "0",
+    "x_max": "55",
     "x_step": "5"
   },
   "y_scales": {
@@ -46,8 +46,8 @@
       "y_step": "0.02"
     },
     "n_th_ind_pct": {
-      "y_min": "35",
-      "y_max": "55",
+      "y_min": "20",
+      "y_max": "45",
       "y_step": "2"
     },
     "NOX_mean_of_windows": {
@@ -76,14 +76,14 @@
       "y_step": "1.0"
     },
     "T_S_TURB_mean_of_windows": {
-      "y_min": "200",
+      "y_min": "150",
       "y_max": "650",
-      "y_step": "20"
+      "y_step": "50"
     },
     "T_WATERCOOLER_mean_of_windows": {
       "y_min": "20",
       "y_max": "100",
-      "y_step": ""
+      "y_step": "5"
     },
     "UMIDADE_mean_of_windows": {
       "y_min": "20",
@@ -141,19 +141,19 @@
       "y_step": ""
     },
     "CO especifico": {
-      "y_min": "",
-      "y_max": "",
+      "y_min": "10",
+      "y_max": "22",
       "y_step": ""
     },
     "Air_g_s": {
-      "y_min": "-5",
-      "y_max": "5",
-      "y_step": "0,5"
+      "y_min": "30",
+      "y_max": "60",
+      "y_step": "2"
     },
     "T_E_TURB_mean_of_windows": {
-      "y_min": "",
-      "y_max": "",
-      "y_step": ""
+      "y_min": "200",
+      "y_max": "700",
+      "y_step": "50"
     },
     "T_E_COMP_mean_of_windows": {
       "y_min": "",
@@ -161,9 +161,9 @@
       "y_step": ""
     },
     "T_E_CIL_AVG_mean_of_windows": {
-      "y_min": "",
-      "y_max": "",
-      "y_step": ""
+      "y_min": "58",
+      "y_max": "67",
+      "y_step": "1"
     },
     "T_S_CIL_4_mean_of_windows": {
       "y_min": "",
@@ -321,14 +321,14 @@
       "y_step": ""
     },
     "Air_kg_h": {
-      "y_min": "",
-      "y_max": "",
-      "y_step": ""
+      "y_min": "120",
+      "y_max": "220",
+      "y_step": "10"
     },
     "BSFC_g_kWh": {
-      "y_min": "",
-      "y_max": "",
-      "y_step": ""
+      "y_min": "200",
+      "y_max": "1100",
+      "y_step": "50"
     },
     "CO_g_kWh": {
       "y_min": "",
@@ -351,9 +351,44 @@
       "y_step": ""
     },
     "UMIDADE_ABS_g_m3": {
+      "y_min": "10",
+      "y_max": "22",
+      "y_step": ""
+    },
+    "KIBOX_RMAX_AVG_1": {
       "y_min": "",
       "y_max": "",
       "y_step": ""
+    },
+    "T_RADIADOR_mean_of_windows": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
+    },
+    "T_S_COMP_mean_of_windows": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
+    },
+    "THC_g_kWh": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
+    },
+    "THC_mean_of_windows": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
+    },
+    "KIBOX_AI50_1": {
+      "y_min": "auto",
+      "y_max": "auto",
+      "y_step": "auto"
+    },
+    "KIBOX_IMEPN_COV_1": {
+      "y_min": "auto",
+      "y_max": "auto",
+      "y_step": "auto"
     }
   },
   "comments": {
@@ -364,9 +399,21 @@
       "italic": false,
       "color": "#000000",
       "position": "bottom-left"
+    },
+    "Air_g_s": {
+      "text": "Vazão de ar aspirado",
+      "font_size": 9,
+      "bold": false,
+      "italic": true,
+      "color": "#333333",
+      "position": "bottom-left"
     }
   },
   "series_styles": {
+    "aditivado_descida_1": {
+      "color": "#d62728",
+      "marker": "s"
+    },
     "aditivado_descida_2": {
       "color": "#aa0000",
       "marker": "s"
@@ -374,10 +421,6 @@
     "aditivado_descida_3": {
       "color": "#ff0000",
       "marker": "s"
-    },
-    "aditivado_subida_1": {
-      "color": "#2f4700",
-      "marker": "o"
     },
     "aditivado_subida_2": {
       "color": "#68b800",
@@ -387,9 +430,25 @@
       "color": "#5c8a00",
       "marker": "o"
     },
+    "baseline_descida_1": {
+      "color": "#1f77b4",
+      "marker": "s"
+    },
+    "baseline_descida_2": {
+      "color": "#4a9fd6",
+      "marker": "s"
+    },
     "baseline_descida_3": {
       "color": "#5500ff",
       "marker": "s"
+    },
+    "baseline_subida_1": {
+      "color": "#1f77b4",
+      "marker": "o"
+    },
+    "baseline_subida_2": {
+      "color": "#000000",
+      "marker": "X"
     },
     "baseline_subida_3": {
       "color": "#270075",
@@ -398,13 +457,13 @@
   },
   "display": {
     "cursor_font_size": 15,
-    "filter_h2o_list": "0,6,25,35",
-    "label_variant": "box",
+    "filter_h2o_list": "",
+    "label_variant": "tag",
     "lock_x": false,
     "series_col": ""
   },
   "compare": {
-    "active_metric": "THC especifico"
+    "active_metric": "CO2 medido"
   },
   "active_mode": "all_iterations_yx"
 }

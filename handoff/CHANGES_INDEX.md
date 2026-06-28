@@ -4,6 +4,7 @@ Ordem cronológica inversa. Uma linha por sessão. Detalhe completo em `handoff/
 
 ## 2026-06
 
+- **2026-06-28** — [pendrive-migration-and-fuel-colors](changes/2026-06-28-pendrive-migration-and-fuel-colors.md) — Migração completa para pen-drive E:\; pasta `config/workspaces/` centralizada; fix Series Colors no modo all_fuels_yx (cores nunca matchavam labels).
 - **2026-06-21** — [evaporative-nef-metrics](changes/2026-06-21-evaporative-nef-metrics.md) — Novo módulo: potencial evaporativo (h_fg Watson, blend, effectiveness) + Net Energy Factor (Fagundez ED interpolation) + sanity flags; 15 colunas novas no lv_kpis_clean.xlsx.
 - **2026-06-12** — [co-uncertainty-full-scale](changes/2026-06-12-co-uncertainty-full-scale.md) — CO/CO2/O2: acc_pct→acc_abs (1% of Full Scale, não da leitura) conforme manual CAI 600 Series; fix bug guess_uncertainty_col que impedia barras de erro em CO/CO2/O2/NOx/THC medidos no compare; co_g_kwh adicionado ao compare.toml.
 - **2026-06-12** — [co-delta-mode-diff](changes/2026-06-12-co-delta-mode-diff.md) — CO medido e específico passam de delta ratio para diff (absoluto): evita explosão do % quando Baseline ~0 (chão de ruído), com incerteza GUM demonstrada; preserva pares média/subida/descida.

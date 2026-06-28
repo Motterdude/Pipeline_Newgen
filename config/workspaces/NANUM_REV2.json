@@ -1,10 +1,10 @@
 {
   "version": 2,
   "data_source": {
-    "path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list_3_New_Metrics_qmax_CO_diff_fixed\\lv_kpis_clean.xlsx",
-    "compare_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list_3_New_Metrics_qmax_CO_diff_fixed\\lv_kpis_clean.xlsx",
-    "raw_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list_3_New_Metrics_qmax_CO_diff_fixed\\lv_kpis_clean.xlsx",
-    "excl_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list_3_New_Metrics_qmax_CO_diff_fixed\\lv_kpis_clean.xlsx",
+    "path": "E:\\Mestrado\\Pipeline_Newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list_3_New_Metrics\\lv_kpis_clean.xlsx",
+    "compare_path": "E:\\Mestrado\\Pipeline_Newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list_3_New_Metrics\\lv_kpis_clean.xlsx",
+    "raw_path": "E:\\Mestrado\\Pipeline_Newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list_3_New_Metrics\\lv_kpis_clean.xlsx",
+    "excl_path": "E:\\Mestrado\\Pipeline_Newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list_3_New_Metrics\\lv_kpis_clean.xlsx",
     "active_source": "excl"
   },
   "axis": {
@@ -196,9 +196,9 @@
       "y_tol_minus": "0.0"
     },
     "Consumo absoluto": {
-      "y_min": "",
-      "y_max": "",
-      "y_step": "",
+      "y_min": "-5",
+      "y_max": "5",
+      "y_step": "0,5",
       "x_col": "Load_kW",
       "x_min": "-5",
       "x_max": "50",
@@ -210,14 +210,7 @@
     "CO medido": {
       "y_min": "",
       "y_max": "",
-      "y_step": "",
-      "x_col": "Load_kW",
-      "x_min": "-5",
-      "x_max": "60",
-      "x_step": "5",
-      "show_uncertainty": "1",
-      "y_tol_plus": "",
-      "y_tol_minus": ""
+      "y_step": ""
     },
     "CO2 especifico": {
       "y_min": "",
@@ -1450,17 +1443,58 @@
       "position": "bottom-left"
     }
   },
-  "series_styles": {},
+  "series_styles": {
+    "aditivado_descida_1": {
+      "color": "#d62728",
+      "marker": "s"
+    },
+    "aditivado_descida_2": {
+      "color": "#e66060",
+      "marker": "s"
+    },
+    "aditivado_descida_3": {
+      "color": "#ff00e6",
+      "marker": "s"
+    },
+    "aditivado_subida_3": {
+      "color": "#ff007f",
+      "marker": "o"
+    },
+    "baseline_descida_1": {
+      "color": "#1f77b4",
+      "marker": "s"
+    },
+    "baseline_descida_2": {
+      "color": "#4a9fd6",
+      "marker": "s"
+    },
+    "baseline_descida_3": {
+      "color": "#7ec8f0",
+      "marker": "s"
+    },
+    "baseline_subida_1": {
+      "color": "#1f77b4",
+      "marker": "o"
+    },
+    "baseline_subida_2": {
+      "color": "#4a9fd6",
+      "marker": "o"
+    },
+    "baseline_subida_3": {
+      "color": "#7ec8f0",
+      "marker": "o"
+    }
+  },
   "display": {
     "cursor_font_size": 14,
     "filter_h2o_list": "0,6,25,35",
-    "label_variant": "tag",
+    "label_variant": "badge",
     "lock_x": true,
     "series_col": ""
   },
   "compare": {
-    "active_metric": "CO medido",
-    "active_pair": "Todos (overlay)"
+    "active_metric": "Consumo absoluto",
+    "active_pair": "Media vs Media"
   },
-  "active_mode": "compare_bl_vs_adtv"
+  "active_mode": "all_iterations_yx"
 }

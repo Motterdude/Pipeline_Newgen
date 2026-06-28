@@ -194,7 +194,7 @@ def plot_all_fuels(
         target_dir.mkdir(parents=True, exist_ok=True)
 
     groups = series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col)
-    colors = fuel_colors or fuel_color_map([g[0] or "" for g in groups])
+    colors = fuel_color_map([g[0] or "" for g in groups], fuel_colors)
 
     fig, ax = plt.subplots(figsize=(10, 6))
     any_curve = False
@@ -285,7 +285,7 @@ def plot_all_fuels_xy(
         target_dir.mkdir(parents=True, exist_ok=True)
 
     groups = series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col)
-    colors = fuel_colors or fuel_color_map([g[0] or "" for g in groups])
+    colors = fuel_color_map([g[0] or "" for g in groups], fuel_colors)
 
     fig, ax = plt.subplots(figsize=(10, 6))
     any_curve = False
@@ -376,7 +376,7 @@ def plot_all_fuels_with_value_labels(
         target_dir.mkdir(parents=True, exist_ok=True)
 
     groups = series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col)
-    colors = fuel_colors or fuel_color_map([g[0] or "" for g in groups])
+    colors = fuel_color_map([g[0] or "" for g in groups], fuel_colors)
 
     fig, ax = plt.subplots(figsize=(10, 6))
     any_curve = False
@@ -466,7 +466,7 @@ def plot_all_fuels_delta_ref(
     has_delta = y_col_delta and y_col_delta in df.columns
 
     groups = series_fuel_plot_groups(df, fuels_override=fuels_override, series_col=series_col)
-    colors = fuel_colors or fuel_color_map([g[0] or "" for g in groups])
+    colors = fuel_color_map([g[0] or "" for g in groups], fuel_colors)
 
     fig, ax1 = plt.subplots(figsize=(10, 6))
     ax2 = ax1.twinx() if has_delta else None

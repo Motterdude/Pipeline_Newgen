@@ -1,8 +1,8 @@
 {
   "version": 2,
   "data_source": {
-    "path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion\\lv_kpis_clean.xlsx",
-    "compare_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix\\plots\\compare_iteracoes_bl_vs_adtv\\compare_iteracoes_metricas_incertezas.xlsx"
+    "path": "E:\\Mestrado\\Pipeline_Newgen\\out_nanum_post_injector_fix_renamed_combustion\\lv_kpis_clean.xlsx",
+    "compare_path": "E:\\Mestrado\\Pipeline_Newgen\\out_nanum_post_injector_fix\\plots\\compare_iteracoes_bl_vs_adtv\\compare_iteracoes_metricas_incertezas.xlsx"
   },
   "axis": {
     "x_col": "Load_kW",

@@ -1523,13 +1523,20 @@ class PreviewPlotTab(QWidget):
     # Workspace Persistence
     # ------------------------------------------------------------------
 
-    def _workspace_file_path(self) -> Path:
+    def _workspaces_dir(self) -> Path:
         if self._get_config_dir:
             try:
-                return self._get_config_dir() / "preview_workspace.json"
+                ws_dir = self._get_config_dir().parent / "workspaces"
+                ws_dir.mkdir(parents=True, exist_ok=True)
+                return ws_dir
             except Exception:
                 pass
-        return Path(os.environ.get("USERPROFILE", Path.home())) / ".pipeline_newgen" / "preview_workspace.json"
+        fallback = Path(os.environ.get("USERPROFILE", Path.home())) / ".pipeline_newgen" / "workspaces"
+        fallback.mkdir(parents=True, exist_ok=True)
+        return fallback
+
+    def _workspace_file_path(self) -> Path:
+        return self._workspaces_dir() / "preview_workspace.json"
 
     def _save_workspace(self) -> None:
         """Save session state to the active workspace file."""
@@ -3267,36 +3274,68 @@ class PreviewPlotTab(QWidget):
             )
             return
 
-        from ..runtime.unitary_plots.renderer_all_iterations import (
-            _derive_series_column, _build_series_label, _style_for_series,
-        )
-        series_keys_raw = _derive_series_column(df).unique().tolist()
-        series_keys = sorted(set(series_keys_raw))
+        plot_type = self.combo_plot_type.currentText()
+        is_fuel_mode = plot_type in ("all_fuels_yx", "all_fuels", "all_fuels_xy",
+                                      "xy", "all_fuels_labels", "labels",
+                                      "all_fuels_delta_ref", "delta_ref", "kibox_all")
 
-        initial_styles: Dict[str, Dict[str, str]] = {}
-        for key in series_keys:
-            if key in self._series_style_overrides:
-                initial_styles[key] = self._series_style_overrides[key]
-            else:
-                color, marker = _style_for_series(key, {})
-                initial_styles[key] = {"color": color, "marker": marker}
+        if is_fuel_mode:
+            from ..runtime.unitary_plots.fuel_groups import fuel_plot_groups
+            from ..runtime.fuel_colors import fuel_color_map, DEFAULT_FUEL_COLORS
+            groups = fuel_plot_groups(df)
+            series_keys = [label for label, _ in groups if label]
+            if not series_keys:
+                series_keys = ["(sem label)"]
 
-        labeled_keys = [_build_series_label(k) for k in series_keys]
-        label_to_key = dict(zip(labeled_keys, series_keys))
-        initial_by_label = {_build_series_label(k): v for k, v in initial_styles.items()}
+            fuel_colors = self._get_fuel_colors()
+            colors = fuel_color_map(series_keys, fuel_colors)
 
-        dlg = SeriesStyleDialog(labeled_keys, initial_by_label, parent=self)
-        if dlg.exec() == QDialog.Accepted:
-            styles_by_label = dlg.get_styles()
-            if not styles_by_label:
-                self._series_style_overrides = {}
-            else:
-                self._series_style_overrides = {
-                    label_to_key[lbl]: style
-                    for lbl, style in styles_by_label.items()
-                    if lbl in label_to_key
-                }
-            self._render_preview()
+            initial_styles: Dict[str, Dict[str, str]] = {}
+            for key in series_keys:
+                if key in self._series_style_overrides:
+                    initial_styles[key] = self._series_style_overrides[key]
+                else:
+                    initial_styles[key] = {"color": colors.get(key, "#333333"), "marker": "o"}
+
+            dlg = SeriesStyleDialog(series_keys, initial_styles, parent=self)
+            if dlg.exec() == QDialog.Accepted:
+                styles = dlg.get_styles()
+                if not styles:
+                    self._series_style_overrides = {}
+                else:
+                    self._series_style_overrides = dict(styles)
+                self._render_preview()
+        else:
+            from ..runtime.unitary_plots.renderer_all_iterations import (
+                _derive_series_column, _build_series_label, _style_for_series,
+            )
+            series_keys_raw = _derive_series_column(df).unique().tolist()
+            series_keys = sorted(set(series_keys_raw))
+
+            initial_styles: Dict[str, Dict[str, str]] = {}
+            for key in series_keys:
+                if key in self._series_style_overrides:
+                    initial_styles[key] = self._series_style_overrides[key]
+                else:
+                    color, marker = _style_for_series(key, {})
+                    initial_styles[key] = {"color": color, "marker": marker}
+
+            labeled_keys = [_build_series_label(k) for k in series_keys]
+            label_to_key = dict(zip(labeled_keys, series_keys))
+            initial_by_label = {_build_series_label(k): v for k, v in initial_styles.items()}
+
+            dlg = SeriesStyleDialog(labeled_keys, initial_by_label, parent=self)
+            if dlg.exec() == QDialog.Accepted:
+                styles_by_label = dlg.get_styles()
+                if not styles_by_label:
+                    self._series_style_overrides = {}
+                else:
+                    self._series_style_overrides = {
+                        label_to_key[lbl]: style
+                        for lbl, style in styles_by_label.items()
+                        if lbl in label_to_key
+                    }
+                self._render_preview()
 
     # ------------------------------------------------------------------
     # Public methods
@@ -3631,6 +3670,10 @@ class PreviewPlotTab(QWidget):
             y_tol_plus = _to_float(y_tol_plus_text or 0, 0.0)
             y_tol_minus = _to_float(y_tol_minus_text or 0, 0.0)
             fuel_colors = self._get_fuel_colors()
+            if self._series_style_overrides and plot_type not in ("all_iterations_yx",):
+                for key, style in self._series_style_overrides.items():
+                    if "color" in style:
+                        fuel_colors[key] = style["color"]
 
             series_col = None
             if series_col_raw:

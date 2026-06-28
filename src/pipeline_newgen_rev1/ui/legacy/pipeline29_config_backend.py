@@ -78,7 +78,7 @@ def default_project_root(project_root: Optional[Path] = None) -> Path:
 
 
 def default_preset_dir(project_root: Optional[Path] = None) -> Path:
-    return default_project_root(project_root) / "config" / "presets"
+    return default_project_root(project_root) / "config" / "workspaces"
 
 
 def _records_to_dataframe(records: List[Dict[str, Any]], columns: List[str]) -> pd.DataFrame:

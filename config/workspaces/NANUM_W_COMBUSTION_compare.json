@@ -1,8 +1,11 @@
 {
   "version": 2,
   "data_source": {
-    "path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion\\lv_kpis_clean.xlsx",
-    "compare_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix\\plots\\compare_iteracoes_bl_vs_adtv\\compare_iteracoes_metricas_incertezas.xlsx"
+    "path": "E:\\Mestrado\\Pipeline_Newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list\\lv_kpis_clean.xlsx",
+    "compare_path": "E:\\Mestrado\\Pipeline_Newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list\\lv_kpis_clean.xlsx",
+    "raw_path": "E:\\Mestrado\\Pipeline_Newgen\\out_nanum_post_injector_fix_renamed_combustion\\lv_kpis_clean.xlsx",
+    "excl_path": "E:\\Mestrado\\Pipeline_Newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list\\lv_kpis_clean.xlsx",
+    "active_source": "excl"
   },
   "axis": {
     "x_col": "Load_kW",
@@ -118,9 +121,9 @@
       "y_step": ""
     },
     "NOx especifico": {
-      "y_min": "",
-      "y_max": "",
-      "y_step": ""
+      "y_min": "-5",
+      "y_max": "5",
+      "y_step": "0,5"
     },
     "O2 medido": {
       "y_min": "",
@@ -346,6 +349,11 @@
       "y_min": "",
       "y_max": "",
       "y_step": ""
+    },
+    "UMIDADE_ABS_g_m3": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": ""
     }
   },
   "comments": {
@@ -396,7 +404,7 @@
     "series_col": ""
   },
   "compare": {
-    "active_metric": "NOx especifico"
+    "active_metric": "THC especifico"
   },
   "active_mode": "all_iterations_yx"
 }

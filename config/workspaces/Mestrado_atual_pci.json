@@ -1,17 +1,17 @@
 {
   "version": 2,
   "data_source": {
-    "path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list_3_New_Metrics\\lv_kpis_clean.xlsx",
-    "compare_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list_3_New_Metrics\\lv_kpis_clean.xlsx",
-    "raw_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list_3_New_Metrics\\lv_kpis_clean.xlsx",
-    "excl_path": "C:\\Users\\sc61730\\OneDrive - Stellantis\\Pessoal\\pipeline_newgen\\out_nanum_post_injector_fix_renamed_combustion_excl_list_3_New_Metrics\\lv_kpis_clean.xlsx",
+    "path": "E:\\Mestrado\\Pipeline_Newgen\\out_mestrado_organizado_PCI_REV2\\lv_kpis_clean.xlsx",
+    "compare_path": "E:\\Mestrado\\Pipeline_Newgen\\out_mestrado_organizado_PCI_REV2\\lv_kpis_clean.xlsx",
+    "raw_path": "E:\\Mestrado\\Pipeline_Newgen\\out_mestrado_organizado_PCI_REV2\\lv_kpis_clean.xlsx",
+    "excl_path": "E:\\Mestrado\\Pipeline_Newgen\\out_mestrado_organizado_PCI_REV2\\lv_kpis_clean.xlsx",
     "active_source": "excl"
   },
   "axis": {
     "x_col": "Load_kW",
     "x_label": "Carga nominal (kW)",
     "x_min": "-5",
-    "x_max": "50",
+    "x_max": "60",
     "x_step": "5"
   },
   "y_scales": {
@@ -23,32 +23,45 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "n_mech_pct": {
-      "y_min": "0.0",
-      "y_max": "100.0",
-      "y_step": "10.0",
+      "y_min": "45",
+      "y_max": "90",
+      "y_step": "5",
       "x_col": "Load_kW",
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "ETA_V_pct": {
-      "y_min": "50",
+      "y_min": "0",
       "y_max": "100",
       "y_step": "5",
       "x_col": "Load_kW",
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "Ignition_Delay_abs_degCA": {
-      "y_min": "",
-      "y_max": "",
-      "y_step": "0.5"
+      "y_min": "10",
+      "y_max": "19",
+      "y_step": "0.5",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "60",
+      "x_step": "5",
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "Motec_Ignition Timing_mean_of_windows": {
       "y_min": "",
@@ -56,7 +69,7 @@
       "y_step": "1.0",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -68,19 +81,19 @@
       "y_step": "0.02",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
       "y_tol_minus": "0.0"
     },
     "n_th_ind_pct": {
-      "y_min": "20",
-      "y_max": "45",
+      "y_min": "22",
+      "y_max": "54",
       "y_step": "2",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -92,19 +105,19 @@
       "y_step": "100",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "0",
       "y_tol_plus": "0.0",
       "y_tol_minus": "0.0"
     },
     "n_th_pct": {
-      "y_min": "6",
-      "y_max": "36",
+      "y_min": "8",
+      "y_max": "40",
       "y_step": "2",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -116,7 +129,7 @@
       "y_step": "1",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "0",
       "y_tol_plus": "58",
@@ -128,7 +141,7 @@
       "y_step": "2",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "0",
       "y_tol_plus": "0.0",
@@ -140,7 +153,7 @@
       "y_step": "1",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "0",
       "y_tol_plus": "83.0",
@@ -154,7 +167,9 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "T_WATERCOOLER_mean_of_windows": {
       "y_min": "20",
@@ -164,7 +179,9 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "0"
+      "show_uncertainty": "0",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "UMIDADE_mean_of_windows": {
       "y_min": "20",
@@ -174,7 +191,9 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "Consumo absoluto": {
       "y_min": "-5",
@@ -273,7 +292,9 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "T_E_TURB_mean_of_windows": {
       "y_min": "200",
@@ -283,7 +304,9 @@
       "x_min": "0",
       "x_max": "17",
       "x_step": "5",
-      "show_uncertainty": "0"
+      "show_uncertainty": "0",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "T_E_COMP_mean_of_windows": {
       "y_min": "25",
@@ -291,9 +314,11 @@
       "y_step": "2",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "55",
+      "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "0"
+      "show_uncertainty": "0",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "T_E_CIL_AVG_mean_of_windows": {
       "y_min": "58",
@@ -301,9 +326,11 @@
       "y_step": "1",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "55",
+      "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "0"
+      "show_uncertainty": "0",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "T_S_CIL_4_mean_of_windows": {
       "y_min": "",
@@ -311,9 +338,11 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "55",
+      "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "0"
+      "show_uncertainty": "0",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "T_S_CIL_3_mean_of_windows": {
       "y_min": "",
@@ -321,9 +350,11 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "55",
+      "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "0"
+      "show_uncertainty": "0",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "T_S_CIL_2_mean_of_windows": {
       "y_min": "",
@@ -331,9 +362,11 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "55",
+      "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "0"
+      "show_uncertainty": "0",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "T_S_CIL_1_mean_of_windows": {
       "y_min": "",
@@ -341,9 +374,11 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "55",
+      "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "T_AMBIENTE_mean_of_windows": {
       "y_min": "24",
@@ -351,7 +386,7 @@
       "y_step": "1",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "0",
       "y_tol_plus": "0.0",
@@ -363,7 +398,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -375,7 +410,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -387,7 +422,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -399,7 +434,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -411,7 +446,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "",
@@ -423,7 +458,7 @@
       "y_step": "10",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "0",
       "y_tol_plus": "0.0",
@@ -435,7 +470,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -447,7 +482,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -459,7 +494,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -471,23 +506,23 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
       "y_tol_minus": "0.0"
     },
     "MFB_10_90": {
-      "y_min": "",
-      "y_max": "",
-      "y_step": "",
+      "y_min": "20",
+      "y_max": "40",
+      "y_step": "2",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
-      "y_tol_plus": "",
-      "y_tol_minus": ""
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "MAF_mean_of_windows": {
       "y_min": "",
@@ -495,7 +530,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -507,7 +542,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -519,7 +554,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -531,7 +566,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -543,7 +578,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -555,7 +590,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -567,7 +602,7 @@
       "y_step": "0,5",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "0.0",
@@ -581,7 +616,9 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "Economia_vs_Diesel_R_h": {
       "y_min": "",
@@ -591,7 +628,9 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "Economia_vs_Diesel_pct": {
       "y_min": "",
@@ -601,7 +640,9 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "DT_ADMISSAO_TO_T_E_CIL_AVG_C": {
       "y_min": "",
@@ -611,17 +652,21 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "Custo_R_h": {
-      "y_min": "",
-      "y_max": "",
-      "y_step": "",
+      "y_min": "10",
+      "y_max": "80",
+      "y_step": "5",
       "x_col": "Load_kW",
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "-10",
+      "y_tol_minus": "-10"
     },
     "Consumo_kg_h_mean_of_windows": {
       "y_min": "",
@@ -631,7 +676,9 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "Consumo_L_h": {
       "y_min": "",
@@ -641,7 +688,9 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "CO2_mean_of_windows": {
       "y_min": "",
@@ -651,7 +700,9 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "Air_kg_h": {
       "y_min": "120",
@@ -665,13 +716,15 @@
     },
     "BSFC_g_kWh": {
       "y_min": "200",
-      "y_max": "1100",
-      "y_step": "50",
+      "y_max": "1700",
+      "y_step": "100",
       "x_col": "Load_kW",
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "CO_g_kWh": {
       "y_min": "",
@@ -679,9 +732,11 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "55",
+      "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "CO_mean_of_windows": {
       "y_min": "",
@@ -691,7 +746,9 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "CO2_g_kWh": {
       "y_min": "",
@@ -699,7 +756,7 @@
       "y_step": "",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "0",
       "y_tol_plus": "0.0",
@@ -711,7 +768,7 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "",
@@ -725,7 +782,9 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "KIBOX_RMAX_AVG_1": {
       "y_min": "",
@@ -740,7 +799,9 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "0"
+      "show_uncertainty": "0",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "T_S_COMP_mean_of_windows": {
       "y_min": "",
@@ -750,7 +811,9 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "0"
+      "show_uncertainty": "0",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "THC_g_kWh": {
       "y_min": "",
@@ -760,7 +823,9 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "THC_mean_of_windows": {
       "y_min": "",
@@ -770,18 +835,20 @@
       "x_min": "-5",
       "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "KIBOX_AI50_1": {
-      "y_min": "auto",
-      "y_max": "auto",
+      "y_min": "5",
+      "y_max": "22",
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
-      "y_tol_plus": "",
+      "y_tol_plus": "8",
       "y_tol_minus": ""
     },
     "KIBOX_AI50_AVG_1": {
@@ -800,7 +867,7 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "",
@@ -817,7 +884,7 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "",
@@ -829,7 +896,7 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "",
@@ -841,7 +908,7 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "",
@@ -853,7 +920,7 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "",
@@ -865,7 +932,7 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "",
@@ -877,7 +944,7 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "",
@@ -889,7 +956,7 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "",
@@ -901,7 +968,7 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "",
@@ -913,7 +980,7 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "",
@@ -925,21 +992,23 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "",
       "y_tol_minus": ""
     },
     "Air_kg_h_from_Fuel_Lambda": {
-      "y_min": "120",
+      "y_min": "0",
       "y_max": "220",
       "y_step": "10",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "55",
+      "x_max": "60",
       "x_step": "5",
-      "show_uncertainty": "1"
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "MFB_10_50": {
       "y_min": "auto",
@@ -947,7 +1016,7 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "",
@@ -959,7 +1028,7 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
-      "x_max": "50",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "",
@@ -1138,16 +1207,16 @@
       "y_tol_minus": ""
     },
     "AI90": {
-      "y_min": "",
-      "y_max": "",
-      "y_step": "",
+      "y_min": "-5",
+      "y_max": "5",
+      "y_step": "0,5",
       "x_col": "Load_kW",
       "x_min": "-5",
       "x_max": "50",
       "x_step": "5",
       "show_uncertainty": "0",
-      "y_tol_plus": "",
-      "y_tol_minus": ""
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
     },
     "APMAX": {
       "y_min": "",
@@ -1213,7 +1282,43 @@
       "y_step": "auto",
       "x_col": "Load_kW",
       "x_min": "-5",
+      "x_max": "60",
+      "x_step": "5",
+      "show_uncertainty": "1",
+      "y_tol_plus": "",
+      "y_tol_minus": ""
+    },
+    "Air_kg_h_from_MAF": {
+      "y_min": "",
+      "y_max": "",
+      "y_step": "",
+      "x_col": "Load_kW",
+      "x_min": "-5",
       "x_max": "50",
+      "x_step": "5",
+      "show_uncertainty": "1",
+      "y_tol_plus": "0.0",
+      "y_tol_minus": "0.0"
+    },
+    "BSFC_L_kWh": {
+      "y_min": "auto",
+      "y_max": "auto",
+      "y_step": "auto",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "60",
+      "x_step": "5",
+      "show_uncertainty": "1",
+      "y_tol_plus": "",
+      "y_tol_minus": ""
+    },
+    "BSFC_R_kWh": {
+      "y_min": "1",
+      "y_max": "4",
+      "y_step": "0,25",
+      "x_col": "Load_kW",
+      "x_min": "-5",
+      "x_max": "60",
       "x_step": "5",
       "show_uncertainty": "1",
       "y_tol_plus": "",
@@ -1350,48 +1455,7 @@
       "position": "bottom-left"
     }
   },
-  "series_styles": {
-    "aditivado_descida_1": {
-      "color": "#d62728",
-      "marker": "s"
-    },
-    "aditivado_descida_2": {
-      "color": "#e66060",
-      "marker": "s"
-    },
-    "aditivado_descida_3": {
-      "color": "#ff00e6",
-      "marker": "s"
-    },
-    "aditivado_subida_3": {
-      "color": "#ff007f",
-      "marker": "o"
-    },
-    "baseline_descida_1": {
-      "color": "#1f77b4",
-      "marker": "s"
-    },
-    "baseline_descida_2": {
-      "color": "#4a9fd6",
-      "marker": "s"
-    },
-    "baseline_descida_3": {
-      "color": "#7ec8f0",
-      "marker": "s"
-    },
-    "baseline_subida_1": {
-      "color": "#1f77b4",
-      "marker": "o"
-    },
-    "baseline_subida_2": {
-      "color": "#4a9fd6",
-      "marker": "o"
-    },
-    "baseline_subida_3": {
-      "color": "#7ec8f0",
-      "marker": "o"
-    }
-  },
+  "series_styles": {},
   "display": {
     "cursor_font_size": 14,
     "filter_h2o_list": "0,6,25,35",
@@ -1400,8 +1464,8 @@
     "series_col": ""
   },
   "compare": {
-    "active_metric": "AI90",
+    "active_metric": "BSFC",
     "active_pair": "Media vs Media"
   },
-  "active_mode": "compare_bl_vs_adtv"
+  "active_mode": "all_fuels_yx"
 }
