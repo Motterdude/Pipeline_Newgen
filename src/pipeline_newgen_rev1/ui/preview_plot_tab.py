@@ -708,17 +708,11 @@ class PreviewPlotTab(QWidget):
         y_axis_widget.setLayout(y_axis_row)
         left_form.addRow("Y min/max/step:", y_axis_widget)
 
-        # Y tolerance row
-        tol_row = QHBoxLayout()
+        # Y tolerance row (hidden — kept for workspace compat but not shown)
         self.edit_y_tol_plus = QLineEdit()
-        self.edit_y_tol_plus.setPlaceholderText("tol+")
         self.edit_y_tol_minus = QLineEdit()
-        self.edit_y_tol_minus.setPlaceholderText("tol-")
-        tol_row.addWidget(self.edit_y_tol_plus)
-        tol_row.addWidget(self.edit_y_tol_minus)
-        tol_widget = QWidget()
-        tol_widget.setLayout(tol_row)
-        left_form.addRow("Y tol+/tol-:", tol_widget)
+        self.edit_y_tol_plus.setVisible(False)
+        self.edit_y_tol_minus.setVisible(False)
 
         self.edit_filter_h2o = QLineEdit()
         self.edit_filter_h2o.setPlaceholderText("0,6,25,35")
@@ -3777,11 +3771,8 @@ class PreviewPlotTab(QWidget):
                     ax.set_xticks(ticks)
 
     def _apply_tolerance_to_fig(self, fig: Figure) -> None:
-        """Draw red dashed horizontal tolerance lines at absolute Y values."""
-        tol_plus_text = self.edit_y_tol_plus.text().strip()
-        tol_minus_text = self.edit_y_tol_minus.text().strip()
-        if not tol_plus_text and not tol_minus_text:
-            return
+        """Draw red dashed horizontal tolerance lines at absolute Y values (disabled)."""
+        return
         ax = fig.gca()
 
         def _parse(t):

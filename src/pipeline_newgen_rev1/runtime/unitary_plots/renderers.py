@@ -33,18 +33,7 @@ def _add_y_tolerance_guides(
     y_tol_plus: object,
     y_tol_minus: object,
 ) -> int:
-    n = 0
-    tp = _to_float(y_tol_plus, float("nan"))
-    tm = _to_float(y_tol_minus, float("nan"))
-    if np.isfinite(tp):
-        ax.axhline(tp, color="red", linestyle="--", linewidth=1.4,
-                   dash_capstyle="butt", label=f"tol {tp:g}")
-        n += 1
-    if np.isfinite(tm):
-        ax.axhline(tm, color="red", linestyle="--", linewidth=1.4,
-                   dash_capstyle="butt", label=f"tol {tm:g}")
-        n += 1
-    return n
+    return 0
 
 
 def _apply_y_tick_step(ax: plt.Axes, y_tick_step: Optional[float]) -> None:
